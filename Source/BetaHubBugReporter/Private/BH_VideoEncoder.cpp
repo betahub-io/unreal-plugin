@@ -25,7 +25,7 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
 #endif
 
     outputFile = FPaths::Combine(FPaths::ProjectDir(), TEXT("recordings/output%03d.mp4"));
-    encodingSettings = TEXT("-y -f rawvideo -pix_fmt rgba -s ") + FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) + TEXT(" -r ") + FString::FromInt(targetFPS) + TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 10 -reset_timestamps 1 ");
+    encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") + FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) + TEXT(" -r ") + FString::FromInt(targetFPS) + TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 10 -reset_timestamps 1 ");
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);

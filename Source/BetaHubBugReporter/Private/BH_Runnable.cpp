@@ -91,6 +91,14 @@ void FBH_Runnable::Stop()
 {
     UE_LOG(LogTemp, Log, TEXT("Stopping process."));
     StopTaskCounter.Increment();
+
+    if (ProcessHandle.IsValid())
+    {
+        FPlatformProcess::TerminateProc(ProcessHandle);
+        FPlatformProcess::WaitForProc(ProcessHandle);
+        FPlatformProcess::CloseProc(ProcessHandle);
+        ProcessHandle.Reset();
+    }
 }
 
 bool FBH_Runnable::IsProcessRunning(int32* ExitCode)
