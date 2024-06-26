@@ -157,6 +157,8 @@ void UBH_BackgroundService::TriggerBugReportForm()
         return;
     }
 
+    ReportForm->Init(GameRecorder);
+
     UE_LOG(LogTemp, Log, TEXT("ReportForm widget created successfully."));
 
     // Set the widget to be centered in the viewport
