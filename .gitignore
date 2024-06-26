@@ -1,0 +1,51 @@
+# Ignore files related to Unreal Engine
+*.log
+*.pdb
+*.obj
+*.exe
+*.dll
+*.app
+*.dylib
+*.stackdump
+*.i
+*.o
+*.suo
+*.user
+*.userprefs
+*.tmp
+*.csproj
+*.pidb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+
+# Ignore directories
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vscode/
+.idea/
+
+# Ignore Mac specific files
+.DS_Store
+
+# Ignore Windows specific files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Ignore Unreal Engine specific files
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.suo
+*.tmp
+
+# Ignore other files and directories
+.git_/
