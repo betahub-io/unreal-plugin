@@ -40,6 +40,7 @@ public class BetaHubBugReporter : ModuleRules
 				"SlateCore",
 				"UMG",
 				"InputCore",
+				"Settings"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
