@@ -2,29 +2,56 @@
 #include "Components/Button.h"
 #include "Components/EditableTextBox.h"
 #include "GameFramework/PlayerController.h"
+#include "BH_BugReport.h"
+#include "BH_PopupWidget.h"
 
-void UBH_ReportFormWidget::Init(UBH_GameRecorder* InGameRecorder)
+// constructor
+UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
+    , GameRecorder(nullptr)
+    , Settings(nullptr)
+    , bWasCursorVisible(false)
+    , bWasCursorLocked(false)
 {
+    // find the widget class
+    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/Popup"));
+    if (WidgetClassFinder.Succeeded())
+    {
+        PopupWidgetClass = WidgetClassFinder.Class;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to find widget class at specified path."));
+    }
+}
+
+void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder)
+{
+    Settings = InSettings;
     GameRecorder = InGameRecorder;
 }
 
 void UBH_ReportFormWidget::SubmitReport()
-{
-    if (GameRecorder)
-    {
-        FString RecordingData = GameRecorder->SaveRecording();
-        // Add code to submit the report along with the recording data
+{ 
+    FString BugDescription = BugDescriptionEdit->GetText().ToString();
+    FString StepsToReproduce = StepsToReproduceEdit->GetText().ToString();
 
-        // Log the values from the editable text boxes
-        FString BugDescription = BugDescriptionEdit->GetText().ToString();
-        FString StepsToReproduce = StepsToReproduceEdit->GetText().ToString();
+    UE_LOG(LogTemp, Log, TEXT("Bug Description: %s"), *BugDescription);
+    UE_LOG(LogTemp, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
 
-        UE_LOG(LogTemp, Log, TEXT("Bug Description: %s"), *BugDescription);
-        UE_LOG(LogTemp, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
-    }
-
-    // Close the widget
-    RemoveFromParent();
+    UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
+    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, "",
+        [this]()
+        {
+            ShowPopup("Success", "Report submitted successfully!");
+            RemoveFromParent();
+        },
+        [this](const FString& ErrorMessage)
+        {
+            ShowPopup("Error", ErrorMessage);
+            RemoveFromParent();
+        }
+    );
 }
 
 void UBH_ReportFormWidget::SetCursorState()
@@ -87,4 +114,21 @@ void UBH_ReportFormWidget::NativeDestruct()
 void UBH_ReportFormWidget::OnSubmitButtonClicked()
 {
     SubmitReport();
+}
+
+void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Description)
+{
+    if (PopupWidgetClass)
+    {
+        UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), PopupWidgetClass);
+        if (PopupWidget)
+        {
+            PopupWidget->SetMessage(Title, Description);
+            PopupWidget->AddToViewport();
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("PopupWidgetClass is null."));
+    }
 }

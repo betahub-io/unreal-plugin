@@ -16,14 +16,24 @@ private:
     UPROPERTY()
     UBH_GameRecorder* GameRecorder;
 
+    UPROPERTY()
+    TSubclassOf<UUserWidget> PopupWidgetClass;
+    
+    UBH_PluginSettings* Settings;
+
     bool bWasCursorVisible;
     bool bWasCursorLocked;
+
+    void ShowPopup(const FString& Title, const FString& Description);
 
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
 
 public:
+    // constructor
+    UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer);
+
     UPROPERTY(meta = (BindWidget))
     UButton* SubmitButton;
 
@@ -34,7 +44,7 @@ public:
     UMultiLineEditableTextBox* StepsToReproduceEdit;
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
-    void Init(UBH_GameRecorder* InGameRecorder);
+    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder);
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     void SubmitReport();

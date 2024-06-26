@@ -40,7 +40,10 @@ public class BetaHubBugReporter : ModuleRules
 				"SlateCore",
 				"UMG",
 				"InputCore",
-				"Settings"
+				"Settings",
+				"Http",
+				"Json",
+				"JsonUtilities"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

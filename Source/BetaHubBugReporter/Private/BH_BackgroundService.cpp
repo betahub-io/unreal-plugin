@@ -157,7 +157,7 @@ void UBH_BackgroundService::TriggerBugReportForm()
         return;
     }
 
-    ReportForm->Init(GameRecorder);
+    ReportForm->Init(Settings, GameRecorder);
 
     UE_LOG(LogTemp, Log, TEXT("ReportForm widget created successfully."));
 
