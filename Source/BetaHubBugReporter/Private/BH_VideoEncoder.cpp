@@ -95,110 +95,99 @@ void BH_VideoEncoder::ResumeRecording()
 
 void BH_VideoEncoder::RunEncoding()
 {
-    try
+    // Wait for the first valid frame
+    TSharedPtr<FBH_Frame> firstFrame = nullptr;
+    while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
     {
-        // Wait for the first valid frame
-        TSharedPtr<FBH_Frame> firstFrame = nullptr;
-        while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
+        firstFrame = frameBuffer->GetFrame();
+        if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
-            firstFrame = frameBuffer->GetFrame();
-            if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
-            {
-                UE_LOG(LogTemp, Log, TEXT("Waiting for the first valid frame..."));
-                FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
-            }
+            UE_LOG(LogTemp, Log, TEXT("Waiting for the first valid frame..."));
+            FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
+        }
+    }
+
+    FString commandLine = encodingSettings + TEXT("\"") + outputFile + TEXT("\"");
+
+    // Create and start the runnable for ffmpeg
+    FBH_Runnable* ffmpegRunnable = new FBH_Runnable(*ffmpegPath, commandLine);
+
+    FPlatformProcess::Sleep(0.2);
+
+    int exitCode;
+    if (!ffmpegRunnable->IsProcessRunning(&exitCode))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to start ffmpeg process. Exit code: %d"), exitCode);
+
+        // Print output
+        FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+        if (!ffmpegOutput.IsEmpty())
+        {
+            UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
         }
 
-        FString commandLine = encodingSettings + TEXT("\"") + outputFile + TEXT("\"");
+        delete ffmpegRunnable;
+        return;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("FFmpeg process started successfully."));
+    }
 
-        // Create and start the runnable for ffmpeg
-        FBH_Runnable* ffmpegRunnable = new FBH_Runnable(*ffmpegPath, commandLine);
+    const float frameInterval = 1.0f / targetFPS;
 
-        FPlatformProcess::Sleep(0.2);
-
-        int exitCode;
-        if (!ffmpegRunnable->IsProcessRunning(&exitCode))
+    while (!stopEvent->Wait(0))
+    {
+        if (!pauseEvent->Wait(0))
         {
-            UE_LOG(LogTemp, Error, TEXT("Failed to start ffmpeg process. Exit code: %d"), exitCode);
-
-            // Print output
-            FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
-            if (!ffmpegOutput.IsEmpty())
+            TSharedPtr<FBH_Frame> frame = frameBuffer->GetFrame();
+            if (frame.IsValid())
             {
-                UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
-            }
+                // Log frame retrieval success
+                // UE_LOG(LogTemp, Log, TEXT("Frame retrieved successfully."));
 
-            delete ffmpegRunnable;
-            return;
-        }
-        else
-        {
-            UE_LOG(LogTemp, Log, TEXT("FFmpeg process started successfully."));
-        }
-
-        const float frameInterval = 1.0f / targetFPS;
-
-        while (!stopEvent->Wait(0))
-        {
-            if (!pauseEvent->Wait(0))
-            {
-                TSharedPtr<FBH_Frame> frame = frameBuffer->GetFrame();
-                if (frame.IsValid())
+                // Convert the TArray<FColor> to a byte array
+                TArray<uint8> byteData;
+                byteData.SetNum(frame->Data.Num() * sizeof(FColor));
+                if (byteData.Num() > 0)
                 {
-                    // Log frame retrieval success
-                    // UE_LOG(LogTemp, Log, TEXT("Frame retrieved successfully."));
+                    FMemory::Memcpy(byteData.GetData(), frame->Data.GetData(), frame->Data.Num() * sizeof(FColor));
 
-                    // Convert the TArray<FColor> to a byte array
-                    TArray<uint8> byteData;
-                    byteData.SetNum(frame->Data.Num() * sizeof(FColor));
-                    if (byteData.Num() > 0)
+                    // Log the data size
+                    // UE_LOG(LogTemp, Log, TEXT("Byte data size: %d"), byteData.Num());
+
+                    // Write data to the pipe all at once
+                    ffmpegRunnable->WriteToPipe(byteData);
+
+                    // Read the buffered output
+                    FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+                    if (!ffmpegOutput.IsEmpty())
                     {
-                        FMemory::Memcpy(byteData.GetData(), frame->Data.GetData(), frame->Data.Num() * sizeof(FColor));
-
-                        // Log the data size
-                        // UE_LOG(LogTemp, Log, TEXT("Byte data size: %d"), byteData.Num());
-
-                        // Write data to the pipe all at once
-                        ffmpegRunnable->WriteToPipe(byteData);
-
-                        // Read the buffered output
-                        FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
-                        if (!ffmpegOutput.IsEmpty())
-                        {
-                            UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
-                        }
-                    }
-                    else
-                    {
-                        UE_LOG(LogTemp, Warning, TEXT("Byte data size is zero, skipping write."));
+                        UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
                     }
                 }
                 else
                 {
-                    UE_LOG(LogTemp, Warning, TEXT("Failed to retrieve frame from frame buffer."));
+                    UE_LOG(LogTemp, Warning, TEXT("Byte data size is zero, skipping write."));
                 }
-                FPlatformProcess::Sleep(frameInterval);
             }
-
-            // Check if ffmpeg has exited
-            int32 ExitCode = 0;
-            if (!ffmpegRunnable->IsProcessRunning(&ExitCode))
+            else
             {
-                UE_LOG(LogTemp, Warning, TEXT("FFmpeg exited with code %d"), ExitCode);
-                break;
+                UE_LOG(LogTemp, Warning, TEXT("Failed to retrieve frame from frame buffer."));
             }
+            FPlatformProcess::Sleep(frameInterval);
         }
 
-        // Ensure the runnable is stopped and cleaned up
-        ffmpegRunnable->Stop();
-        delete ffmpegRunnable;
+        // Check if ffmpeg has exited
+        int32 ExitCode = 0;
+        if (!ffmpegRunnable->IsProcessRunning(&ExitCode))
+        {
+            UE_LOG(LogTemp, Warning, TEXT("FFmpeg exited with code %d"), ExitCode);
+            break;
+        }
     }
-    catch (const std::exception& e)
-    {
-        UE_LOG(LogTemp, Error, TEXT("Exception caught in RunEncoding: %s"), *FString(e.what()));
-    }
-    catch (...)
-    {
-        UE_LOG(LogTemp, Error, TEXT("Unknown exception caught in RunEncoding."));
-    }
+
+    // Ensure the runnable is stopped and cleaned up
+    ffmpegRunnable->Stop();
+    delete ffmpegRunnable;
 }
