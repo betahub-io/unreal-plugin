@@ -31,4 +31,6 @@ private:
     FThreadSafeCounter StopTaskCounter;
     FString OutputBuffer;
     std::mutex BufferMutex;
+
+    void TerminateProcess();
 };

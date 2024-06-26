@@ -61,12 +61,22 @@ uint32 FBH_Runnable::Run()
         }
     }
 
-    FPlatformProcess::WaitForProc(ProcessHandle);
-    FPlatformProcess::CloseProc(ProcessHandle);
+    TerminateProcess();
 
     UE_LOG(LogTemp, Log, TEXT("Process stopped."));
 
     return 0;
+}
+
+void FBH_Runnable::TerminateProcess()
+{
+    if (ProcessHandle.IsValid())
+    {
+        FPlatformProcess::TerminateProc(ProcessHandle);
+        FPlatformProcess::WaitForProc(ProcessHandle);
+        FPlatformProcess::CloseProc(ProcessHandle);
+        ProcessHandle.Reset();
+    }
 }
 
 void FBH_Runnable::WriteToPipe(const TArray<uint8>& Data)
@@ -92,12 +102,9 @@ void FBH_Runnable::Stop()
     UE_LOG(LogTemp, Log, TEXT("Stopping process."));
     StopTaskCounter.Increment();
 
-    if (ProcessHandle.IsValid())
+    if (Thread)
     {
-        FPlatformProcess::TerminateProc(ProcessHandle);
-        FPlatformProcess::WaitForProc(ProcessHandle);
-        FPlatformProcess::CloseProc(ProcessHandle);
-        ProcessHandle.Reset();
+        Thread->WaitForCompletion();
     }
 }
 
