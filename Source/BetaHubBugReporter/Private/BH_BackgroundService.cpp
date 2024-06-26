@@ -4,10 +4,20 @@
 #include "Blueprint/UserWidget.h"
 #include "BH_ReportFormWidget.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/CanvasPanelSlot.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr), InputComponent(nullptr)
 {
+    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/BugReportingForm"));
+    if (WidgetClassFinder.Succeeded())
+    {
+        ReportFormWidgetClass = WidgetClassFinder.Class;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to find widget class at specified path."));
+    }
 }
 
 void UBH_BackgroundService::Init(UBH_PluginSettings* InSettings)
@@ -48,6 +58,8 @@ void UBH_BackgroundService::InitializeService()
 
     if (Settings && Settings->bEnableShortcut)
     {
+        UE_LOG(LogTemp, Log, TEXT("Shortcut is enabled."));
+
         if (GEngine && GEngine->GameViewport)
         {
             UWorld* World = GEngine->GameViewport->GetWorld();
@@ -61,8 +73,25 @@ void UBH_BackgroundService::InitializeService()
                     InputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_BackgroundService::HandleInput);
                     PlayerController->PushInputComponent(InputComponent);
                 }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("PlayerController is null."));
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("World is null."));
+            
             }
         }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Shortcut is disabled."));
     }
 }
 
@@ -94,24 +123,63 @@ void UBH_BackgroundService::StopService()
 
 void UBH_BackgroundService::HandleInput()
 {
+    UE_LOG(LogTemp, Log, TEXT("Shortcut key pressed."));
     TriggerBugReportForm();
 }
-
 void UBH_BackgroundService::TriggerBugReportForm()
 {
-    if (GEngine && GEngine->GameViewport)
+    if (!GEngine || !GEngine->GameViewport)
     {
-        UWorld* World = GEngine->GameViewport->GetWorld();
-        if (World)
-        {
-            // Assuming BH_ReportFormWidget is a UUserWidget-derived class
-            UBH_ReportFormWidget* ReportForm = CreateWidget<UBH_ReportFormWidget>(World, UBH_ReportFormWidget::StaticClass());
-            if (ReportForm)
-            {
-                ReportForm->Init(GameRecorder);
-                ReportForm->AddToViewport();
-            }
-        }
+        UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        return;
+    }
+
+    UWorld* World = GEngine->GameViewport->GetWorld();
+    if (!World)
+    {
+        UE_LOG(LogTemp, Error, TEXT("World is null."));
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("World is valid."));
+
+    if (!ReportFormWidgetClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("ReportFormWidgetClass is null."));
+        return;
+    }
+
+    // Create the widget
+    UBH_ReportFormWidget* ReportForm = CreateWidget<UBH_ReportFormWidget>(World, ReportFormWidgetClass);
+    if (!ReportForm)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create ReportForm widget."));
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("ReportForm widget created successfully."));
+
+    // Set the widget to be centered in the viewport
+    ReportForm->AddToViewport();
+
+    // // Get viewport size
+    // FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
+    // FVector2D WidgetSize = ReportForm->GetDesiredSize();
+
+    // // Center the widget
+    // FVector2D Position = (ViewportSize - WidgetSize) / 2.0f;
+    // ReportForm->SetPositionInViewport(Position, false);
+    // ReportForm->SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
+
+    UE_LOG(LogTemp, Log, TEXT("ReportForm visibility: %s"), *UEnum::GetValueAsString(ReportForm->GetVisibility()));
+
+    if (ReportForm->IsInViewport())
+    {
+        UE_LOG(LogTemp, Log, TEXT("ReportForm widget is in the viewport."));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("ReportForm widget is NOT in the viewport."));
     }
 }
 

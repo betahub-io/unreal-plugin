@@ -15,6 +15,9 @@ private:
     UPROPERTY()
     UBH_GameRecorder* GameRecorder;
 
+    UPROPERTY()
+    TSubclassOf<UUserWidget> ReportFormWidgetClass;
+
     UInputComponent* InputComponent;
     FTimerHandle TimerHandle;
 
