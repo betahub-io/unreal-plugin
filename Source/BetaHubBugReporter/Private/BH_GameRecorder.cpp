@@ -46,8 +46,15 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS)
     }
 
     
-    VideoEncoder->StartRecording();
-    bIsRecording = true;
+    if (!bIsRecording)
+    {
+        VideoEncoder->StartRecording();
+        bIsRecording = true;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Recording is already in progress."));
+    }
 }
 
 void UBH_GameRecorder::PauseRecording()
@@ -55,6 +62,7 @@ void UBH_GameRecorder::PauseRecording()
     if (VideoEncoder.IsValid())
     {
         VideoEncoder->PauseRecording();
+        bIsRecording = false;
     }
 }
 
@@ -63,6 +71,7 @@ void UBH_GameRecorder::StopRecording()
     if (VideoEncoder.IsValid())
     {
         VideoEncoder->StopRecording();
+        bIsRecording = false;
     }
 }
 
@@ -71,6 +80,12 @@ FString UBH_GameRecorder::SaveRecording()
     if (!VideoEncoder.IsValid())
     {
         UE_LOG(LogTemp, Error, TEXT("VideoEncoder is null."));
+        return FString();
+    }
+
+    if (bIsRecording)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Recording is still in progress."));
         return FString();
     }
 

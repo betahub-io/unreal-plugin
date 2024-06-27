@@ -15,7 +15,7 @@ public:
     virtual uint32 Run() override;
     void WriteToPipe(const TArray<uint8>& Data);
     FString GetBufferedOutput();
-    void Stop();
+    void Stop(bool bCloseStdin = false);
     bool IsProcessRunning(int32* ExitCode = nullptr);
     void WaitForExit();
 
@@ -24,12 +24,14 @@ private:
     FString Params;
     FString WorkingDirectory;
     FProcHandle ProcessHandle;
+
     void* StdInReadPipe;
     void* StdInWritePipe;
     void* StdOutReadPipe;
     void* StdOutWritePipe;
     FRunnableThread* Thread;
     FThreadSafeCounter StopTaskCounter;
+    FThreadSafeBool bTerminateByStdinFlag;
     FString OutputBuffer;
     std::mutex BufferMutex;
 

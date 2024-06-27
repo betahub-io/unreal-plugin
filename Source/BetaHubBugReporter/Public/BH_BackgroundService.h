@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "BH_PluginSettings.h"
 #include "BH_GameRecorder.h"
+#include "BH_LogCapture.h"
 #include "BH_BackgroundService.generated.h"
 
 UCLASS()
@@ -14,6 +15,8 @@ private:
     UBH_PluginSettings* Settings;
     UPROPERTY()
     UBH_GameRecorder* GameRecorder;
+
+    UBH_LogCapture* LogCapture;
 
     UPROPERTY()
     TSubclassOf<UUserWidget> ReportFormWidgetClass;

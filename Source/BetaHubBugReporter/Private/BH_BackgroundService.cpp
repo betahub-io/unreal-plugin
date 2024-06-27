@@ -24,10 +24,13 @@ void UBH_BackgroundService::Init(UBH_PluginSettings* InSettings)
 {
     Settings = InSettings;
     GameRecorder = NewObject<UBH_GameRecorder>(this);
+    LogCapture = new UBH_LogCapture();
 }
 
 void UBH_BackgroundService::StartService()
 {
+    GLog->AddOutputDevice(LogCapture);
+    
     if (GEngine && GEngine->GameViewport)
     {
         InitializeService();
@@ -97,6 +100,9 @@ void UBH_BackgroundService::InitializeService()
 
 void UBH_BackgroundService::StopService()
 {
+    GLog->RemoveOutputDevice(LogCapture);
+    delete LogCapture;
+    
     if (InputComponent)
     {
         if (GEngine && GEngine->GameViewport)
@@ -157,21 +163,12 @@ void UBH_BackgroundService::TriggerBugReportForm()
         return;
     }
 
-    ReportForm->Init(Settings, GameRecorder);
+    ReportForm->Init(Settings, GameRecorder, LogCapture->GetCapturedLogs());
 
     UE_LOG(LogTemp, Log, TEXT("ReportForm widget created successfully."));
 
     // Set the widget to be centered in the viewport
     ReportForm->AddToViewport();
-
-    // // Get viewport size
-    // FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
-    // FVector2D WidgetSize = ReportForm->GetDesiredSize();
-
-    // // Center the widget
-    // FVector2D Position = (ViewportSize - WidgetSize) / 2.0f;
-    // ReportForm->SetPositionInViewport(Position, false);
-    // ReportForm->SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
 
     UE_LOG(LogTemp, Log, TEXT("ReportForm visibility: %s"), *UEnum::GetValueAsString(ReportForm->GetVisibility()));
 

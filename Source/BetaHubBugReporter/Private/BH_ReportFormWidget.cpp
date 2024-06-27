@@ -25,10 +25,11 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     }
 }
 
-void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder)
+void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InLogFileContents)
 {
     Settings = InSettings;
     GameRecorder = InGameRecorder;
+    LogFileContents = InLogFileContents;
 }
 
 void UBH_ReportFormWidget::SubmitReport()
@@ -40,7 +41,7 @@ void UBH_ReportFormWidget::SubmitReport()
     UE_LOG(LogTemp, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
 
     UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
-    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, "",
+    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, "", LogFileContents,
         [this]()
         {
             ShowPopup("Success", "Report submitted successfully!");
@@ -101,6 +102,8 @@ void UBH_ReportFormWidget::NativeConstruct()
     {
         SubmitButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnSubmitButtonClicked);
     }
+
+    GameRecorder->StopRecording();
 }
 
 void UBH_ReportFormWidget::NativeDestruct()
@@ -109,10 +112,13 @@ void UBH_ReportFormWidget::NativeDestruct()
 
     // Restore cursor state when the widget is destructed (hidden)
     RestoreCursorState();
+
+    GameRecorder->StartRecording(Settings->MaxRecordedFrames);
 }
 
 void UBH_ReportFormWidget::OnSubmitButtonClicked()
 {
+    SubmitLabel->SetText(FText::FromString("Submitting..."));
     SubmitReport();
 }
 
@@ -120,12 +126,12 @@ void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
 {
     if (PopupWidgetClass)
     {
-        UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), PopupWidgetClass);
-        if (PopupWidget)
-        {
-            PopupWidget->SetMessage(Title, Description);
-            PopupWidget->AddToViewport();
-        }
+        // UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), UBH_PopupWidget::StaticClass());
+        // if (PopupWidget)
+        // {
+        //     PopupWidget->SetMessage(Title, Description);
+        //     PopupWidget->AddToViewport();
+        // }
     }
     else
     {

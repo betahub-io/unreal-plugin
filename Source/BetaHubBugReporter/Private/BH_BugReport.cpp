@@ -22,13 +22,14 @@ void UBH_BugReport::SubmitReport(
     const FString& Description,
     const FString& StepsToReproduce,
     const FString& ScreenshotPath,
+    const FString& LogFileContents,
     TFunction<void()> OnSuccess,
     TFunction<void(const FString&)> OnFailure
 )
 {
-    Async(EAsyncExecution::Thread, [this, Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, OnSuccess, OnFailure]()
+    Async(EAsyncExecution::Thread, [this, Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents, OnSuccess, OnFailure]()
     {
-        SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, OnSuccess, OnFailure);
+        SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents, OnSuccess, OnFailure);
     });
 }
 
@@ -38,6 +39,7 @@ void UBH_BugReport::SubmitReportAsync(
     const FString& Description,
     const FString& StepsToReproduce,
     const FString& ScreenshotPath,
+    const FString& LogFileContents,
     TFunction<void()> OnSuccess,
     TFunction<void(const FString&)> OnFailure
     )
@@ -52,7 +54,6 @@ void UBH_BugReport::SubmitReportAsync(
     FString VideoPath;
     if (GameRecorder)
     {
-        GameRecorder->StopRecording();
         VideoPath = GameRecorder->SaveRecording();
     }
 
@@ -67,7 +68,9 @@ void UBH_BugReport::SubmitReportAsync(
     InitialRequest->AddField(TEXT("issue[unformatted_steps_to_reproduce]"), StepsToReproduce);
     InitialRequest->FinalizeFormData();
 
-    InitialRequest->ProcessRequest([this, Settings, GameRecorder, VideoPath, ScreenshotPath, InitialRequest, OnSuccess, OnFailure](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+    InitialRequest->ProcessRequest(
+        [this, Settings, GameRecorder, VideoPath, ScreenshotPath, LogFileContents, InitialRequest, OnSuccess, OnFailure]
+        (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bWasSuccessful && Response->GetResponseCode() == 201)
         {
@@ -77,11 +80,15 @@ void UBH_BugReport::SubmitReportAsync(
             {
                 if (!VideoPath.IsEmpty())
                 {
-                    SubmitMedia(Settings, IssueId, TEXT("video_clips"), TEXT("video_clip[video]"), VideoPath, TEXT("video/mp4"));
+                    SubmitMedia(Settings, IssueId, TEXT("video_clips"), TEXT("video_clip[video]"), VideoPath, "", TEXT("video/mp4"));
                 }
                 if (!ScreenshotPath.IsEmpty())
                 {
-                    SubmitMedia(Settings, IssueId, TEXT("screenshots"), TEXT("screenshot[image]"), ScreenshotPath, TEXT("image/png"));
+                    SubmitMedia(Settings, IssueId, TEXT("screenshots"), TEXT("screenshot[image]"), ScreenshotPath, "", TEXT("image/png"));
+                }
+                if (!LogFileContents.IsEmpty())
+                {
+                    SubmitMedia(Settings, IssueId, TEXT("log_files"), TEXT("log_file[contents]"), "", LogFileContents, TEXT("text/plain"));
                 }
             }
         }
@@ -102,7 +109,14 @@ void UBH_BugReport::SubmitReportAsync(
     });
 }
 
-void UBH_BugReport::SubmitMedia(UBH_PluginSettings* Settings, const FString& IssueId, const FString& Endpoint, const FString& FieldName, const FString& FilePath, const FString& ContentType)
+void UBH_BugReport::SubmitMedia(
+    UBH_PluginSettings* Settings,
+    const FString& IssueId,
+    const FString& Endpoint,
+    const FString& FieldName,
+    const FString& FilePath,
+    const FString& Contents,
+    const FString& ContentType)
 {
     if (!Settings)
     {
@@ -118,14 +132,28 @@ void UBH_BugReport::SubmitMedia(UBH_PluginSettings* Settings, const FString& Iss
     MediaRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
     MediaRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
     MediaRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
-    MediaRequest->AddFile(FieldName, FilePath, ContentType);
+
+    if (!Contents.IsEmpty())
+    {
+        MediaRequest->AddField(FieldName, Contents);
+    }
+    else if (!FilePath.IsEmpty())
+    {
+        MediaRequest->AddFile(FieldName, FilePath, ContentType);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Both FilePath and Contents are empty."));
+        return;
+    }
+
     MediaRequest->FinalizeFormData();
 
     UE_LOG(LogTemp, Log, TEXT("Submitting media to %s"), *url);
 
     MediaRequest->ProcessRequest([MediaRequest](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
-        if (bWasSuccessful && Response->GetResponseCode() == 200)
+        if (bWasSuccessful && (Response->GetResponseCode() == 200 || Response->GetResponseCode() == 201))
         {
             UE_LOG(LogTemp, Log, TEXT("Media submitted successfully."));
         }

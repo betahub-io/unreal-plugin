@@ -29,6 +29,6 @@ public:
     FKey ShortcutKey;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
-        meta=(ToolTip="The maximum number of frames to record in a bug report."))
+        meta=(ToolTip="The maximum number of frames per second (FPS) to record in the bug report video."))
     int32 MaxRecordedFrames;
 };

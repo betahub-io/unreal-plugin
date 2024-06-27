@@ -6,7 +6,8 @@
 
 FBH_Runnable::FBH_Runnable(const FString& Command, const FString& Params, const FString& WorkingDirectory)
     : Command(Command), Params(Params), WorkingDirectory(WorkingDirectory), ProcessHandle(nullptr),
-      StdInReadPipe(nullptr), StdInWritePipe(nullptr), StdOutReadPipe(nullptr), StdOutWritePipe(nullptr), StopTaskCounter(0)
+      StdInReadPipe(nullptr), StdInWritePipe(nullptr), StdOutReadPipe(nullptr), StdOutWritePipe(nullptr), StopTaskCounter(0),
+      bTerminateByStdinFlag(false)
 {
     FPlatformProcess::CreatePipe(StdOutReadPipe, StdOutWritePipe);
     FPlatformProcess::CreatePipe(StdInReadPipe, StdInWritePipe, true);
@@ -24,6 +25,7 @@ FBH_Runnable::~FBH_Runnable()
     {
         Thread->WaitForCompletion();
         delete Thread;
+        Thread = nullptr;
     }
     FPlatformProcess::ClosePipe(StdInReadPipe, StdInWritePipe);
     FPlatformProcess::ClosePipe(StdOutReadPipe, StdOutWritePipe);
@@ -39,6 +41,8 @@ uint32 FBH_Runnable::Run()
         UE_LOG(LogTemp, Error, TEXT("Failed to start process."));
         return 1;
     }
+
+    bool bExitedGracefully = false;
 
     while (StopTaskCounter.GetValue() == 0)
     {
@@ -57,13 +61,25 @@ uint32 FBH_Runnable::Run()
         else
         {
             UE_LOG(LogTemp, Log, TEXT("Process exited with code %d."), exitCode);
+            bExitedGracefully = true;
             StopTaskCounter.Increment();
         }
     }
 
-    TerminateProcess();
+    if (!bExitedGracefully)
+    {
+        if (bTerminateByStdinFlag)
+        {
+            // close stdin pipe to terminate the process
+            FPlatformProcess::ClosePipe(StdInReadPipe, StdInWritePipe);
+        }
+        else
+        {
+            TerminateProcess();
+        }
 
-    UE_LOG(LogTemp, Log, TEXT("Process stopped."));
+        UE_LOG(LogTemp, Log, TEXT("Process stopped."));
+    }
 
     return 0;
 }
@@ -75,7 +91,6 @@ void FBH_Runnable::TerminateProcess()
         FPlatformProcess::TerminateProc(ProcessHandle);
         FPlatformProcess::WaitForProc(ProcessHandle);
         FPlatformProcess::CloseProc(ProcessHandle);
-        ProcessHandle.Reset();
     }
 }
 
@@ -97,14 +112,22 @@ FString FBH_Runnable::GetBufferedOutput()
     return BufferedOutput;
 }
 
-void FBH_Runnable::Stop()
+void FBH_Runnable::Stop(bool bCloseStdin)
 {
-    UE_LOG(LogTemp, Log, TEXT("Stopping process."));
-    StopTaskCounter.Increment();
-
     if (Thread)
     {
+        UE_LOG(LogTemp, Log, TEXT("Stopping process %s %s."), *Command, *Params);
+
+        if (bCloseStdin)
+        {
+            bTerminateByStdinFlag = true;
+        }
+
+        StopTaskCounter.Increment();
+
         Thread->WaitForCompletion();
+        delete Thread;
+        Thread = nullptr;
     }
 }
 

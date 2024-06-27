@@ -5,6 +5,7 @@
 #include "BH_GameRecorder.h"
 #include "Components/Button.h"
 #include "Components/MultiLineEditableTextBox.h"
+#include "Components/TextBlock.h"
 #include "BH_ReportFormWidget.generated.h"
 
 UCLASS()
@@ -18,6 +19,8 @@ private:
 
     UPROPERTY()
     TSubclassOf<UUserWidget> PopupWidgetClass;
+
+    FString LogFileContents;
     
     UBH_PluginSettings* Settings;
 
@@ -43,8 +46,11 @@ public:
     UPROPERTY(meta = (BindWidget))
     UMultiLineEditableTextBox* StepsToReproduceEdit;
 
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* SubmitLabel;
+
     UFUNCTION(BlueprintCallable, Category="BugReport")
-    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder);
+    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString &InLogFileContents);
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     void SubmitReport();

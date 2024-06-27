@@ -21,6 +21,7 @@ public:
         const FString& Description,
         const FString& StepsToReproduce,
         const FString& ScreenshotPath,
+        const FString& LogFileContents,
         TFunction<void()> OnSuccess,
         TFunction<void(const FString&)> OnFailure);
 
@@ -31,9 +32,19 @@ private:
         const FString& Description,
         const FString& StepsToReproduce,
         const FString& ScreenshotPath,
+        const FString& LogFileContents,
         TFunction<void()> OnSuccess,
         TFunction<void(const FString&)> OnFailure);
-    void SubmitMedia(UBH_PluginSettings* Settings, const FString& IssueId, const FString& Endpoint, const FString& FieldName, const FString& FilePath, const FString& ContentType);
+
+    void SubmitMedia(
+        UBH_PluginSettings* Settings,
+        const FString& IssueId,
+        const FString& Endpoint,
+        const FString& FieldName,
+        const FString& FilePath,
+        const FString& Contents,
+        const FString& ContentType);
+
     FString ParseIssueIdFromResponse(const FString& Response);
     void ShowPopup(const FString& Message);
 };

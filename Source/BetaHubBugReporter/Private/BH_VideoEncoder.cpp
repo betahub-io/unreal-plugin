@@ -33,6 +33,15 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
         PlatformFile.CreateDirectory(*segmentsDir);
     }
 
+    // Remove all existing segment files
+    IFileManager& FileManager = IFileManager::Get();
+    TArray<FString> SegmentFiles;
+    FileManager.FindFiles(SegmentFiles, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+    for (const FString& SegmentFile : SegmentFiles)
+    {
+        FileManager.Delete(*(segmentsDir / SegmentFile));
+    }
+
     outputFile = FPaths::Combine(segmentsDir, TEXT("segment_%03d.mp4"));
     encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
         FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
@@ -200,7 +209,11 @@ void BH_VideoEncoder::RunEncoding()
     }
 
     // Ensure the runnable is stopped and cleaned up
-    ffmpegRunnable->Stop();
+
+    // true here tells the runnable to close stdin instead of forcefully terminating the process
+    // this is necessary for ffmpeg to properly close the output file
+    ffmpegRunnable->Stop(true);
+
     delete ffmpegRunnable;
 }
 
@@ -242,6 +255,8 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         FString FullPath = FPaths::Combine(segmentsDir, SegmentFile);
         FullPath.ReplaceInline(TEXT("\\"), TEXT("/"));
         ConcatFileContent.Append(FString::Printf(TEXT("file '%s'\n"), *FullPath));
+
+        UE_LOG(LogTemp, Log, TEXT("Segment file: %s"), *FullPath);
     }
     FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath);
 
