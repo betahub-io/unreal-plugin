@@ -111,13 +111,17 @@ void UBH_BugReport::SubmitMedia(UBH_PluginSettings* Settings, const FString& Iss
     }
 
     BH_HttpRequest* MediaRequest = new BH_HttpRequest();
-    MediaRequest->SetURL(Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues/") + IssueId + TEXT("/") + Endpoint);
+
+    FString url = Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues/g-") + IssueId + TEXT("/") + Endpoint;
+    MediaRequest->SetURL(url);
     MediaRequest->SetVerb("POST");
     MediaRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
     MediaRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
     MediaRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
     MediaRequest->AddFile(FieldName, FilePath, ContentType);
     MediaRequest->FinalizeFormData();
+
+    UE_LOG(LogTemp, Log, TEXT("Submitting media to %s"), *url);
 
     MediaRequest->ProcessRequest([MediaRequest](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {

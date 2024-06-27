@@ -17,6 +17,7 @@ public:
     FString GetBufferedOutput();
     void Stop();
     bool IsProcessRunning(int32* ExitCode = nullptr);
+    void WaitForExit();
 
 private:
     FString Command;

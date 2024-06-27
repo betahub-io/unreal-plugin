@@ -1,6 +1,7 @@
 #include "BH_VideoEncoder.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
 #include "BH_Runnable.h"
 
 BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 InScreenHeight, UBH_FrameBuffer* InFrameBuffer)
@@ -24,7 +25,15 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
     #error Unsupported platform
 #endif
 
-    outputFile = FPaths::Combine(FPaths::ProjectDir(), TEXT("recordings/output%03d.mp4"));
+    // Set up the segments directory in the Saved folder
+    segmentsDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments"));
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if (!PlatformFile.DirectoryExists(*segmentsDir))
+    {
+        PlatformFile.CreateDirectory(*segmentsDir);
+    }
+
+    outputFile = FPaths::Combine(segmentsDir, TEXT("segment_%03d.mp4"));
     encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") + FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) + TEXT(" -r ") + FString::FromInt(targetFPS) + TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 10 -reset_timestamps 1 ");
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -190,4 +199,85 @@ void BH_VideoEncoder::RunEncoding()
     // Ensure the runnable is stopped and cleaned up
     ffmpegRunnable->Stop();
     delete ffmpegRunnable;
+}
+
+FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
+{
+    FString MergedFilePath;
+
+    // Ensure ffmpeg path is set
+    if (ffmpegPath.IsEmpty())
+    {
+        UE_LOG(LogTemp, Error, TEXT("FFmpeg path is not set."));
+        return MergedFilePath;
+    }
+
+    // Get the list of segment files
+    IFileManager& FileManager = IFileManager::Get();
+    TArray<FString> SegmentFiles;
+    FileManager.FindFiles(SegmentFiles, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+
+    // Sort and take the last MaxSegments
+    SegmentFiles.Sort();
+    if (SegmentFiles.Num() > MaxSegments)
+    {
+        SegmentFiles.RemoveAt(0, SegmentFiles.Num() - MaxSegments, true);
+    }
+
+    // Check if there are any segments to merge
+    if (SegmentFiles.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No segments found to merge."));
+        return MergedFilePath;
+    }
+
+    // Create the concat file
+    FString ConcatFilePath = segmentsDir / TEXT("concat.txt");
+    FString ConcatFileContent;
+    for (const FString& SegmentFile : SegmentFiles)
+    {
+        FString FullPath = FPaths::Combine(segmentsDir, SegmentFile);
+        FullPath.ReplaceInline(TEXT("\\"), TEXT("/"));
+        ConcatFileContent.Append(FString::Printf(TEXT("file '%s'\n"), *FullPath));
+    }
+    FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath);
+
+    // Set the merged file path
+    MergedFilePath = FPaths::Combine(FPaths::ProjectSavedDir(), FString::Printf(TEXT("Gameplay_%s.mp4"), *FDateTime::Now().ToString(TEXT("yyyyMMdd_HHmmss"))));
+
+    // FFmpeg command to merge segments
+    FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""), *ConcatFilePath, *MergedFilePath);
+
+    // Create and start the runnable for merging
+    FBH_Runnable* MergeRunnable = new FBH_Runnable(*ffmpegPath, CommandLine);
+
+    // Wait for the process to complete
+    MergeRunnable->WaitForExit();
+
+    int exitCode;
+    MergeRunnable->IsProcessRunning(&exitCode);
+
+    // Cleanup concat file
+    FileManager.Delete(*ConcatFilePath);
+
+    if (exitCode == 0)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Segments merged successfully."));
+        
+        // Clean up segment files
+        for (const FString& SegmentFile : SegmentFiles)
+        {
+            FileManager.Delete(*(segmentsDir / SegmentFile));
+        }
+
+        delete MergeRunnable;
+        return MergedFilePath;
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to merge segments. Exit code: %d"), exitCode);
+        UE_LOG(LogTemp, Error, TEXT("FFmpeg Output: %s"), *MergeRunnable->GetBufferedOutput());
+        delete MergeRunnable;
+        return FString();
+    }
 }

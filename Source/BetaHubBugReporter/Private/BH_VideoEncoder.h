@@ -14,6 +14,7 @@ private:
     FString encodingSettings;
     FString ffmpegPath;
     FString outputFile;
+    FString segmentsDir;
     int32 targetFPS;
     int32 screenWidth;
     int32 screenHeight;
@@ -41,4 +42,6 @@ public:
     void PauseRecording();
     void ResumeRecording();
     void EncodeFrame(TSharedPtr<FBH_Frame> frame);
+
+    FString MergeSegments(int32 MaxSegments);
 };

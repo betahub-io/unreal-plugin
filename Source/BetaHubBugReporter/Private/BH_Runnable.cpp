@@ -110,16 +110,25 @@ void FBH_Runnable::Stop()
 
 bool FBH_Runnable::IsProcessRunning(int32* ExitCode)
 {
-    if (FPlatformProcess::IsProcRunning(ProcessHandle))
-    {
-        return true;
-    }
-    else
+    int32 exitCode;
+    if (FPlatformProcess::GetProcReturnCode(ProcessHandle, &exitCode))
     {
         if (ExitCode)
         {
-            FPlatformProcess::GetProcReturnCode(ProcessHandle, ExitCode);
+            *ExitCode = exitCode;
         }
         return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+void FBH_Runnable::WaitForExit()
+{
+    if (Thread)
+    {
+        Thread->WaitForCompletion();
     }
 }

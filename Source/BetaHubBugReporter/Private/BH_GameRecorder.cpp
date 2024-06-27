@@ -64,15 +64,18 @@ void UBH_GameRecorder::StopRecording()
     if (VideoEncoder.IsValid())
     {
         VideoEncoder->StopRecording();
-        VideoEncoder.Reset();
-        bIsRecording = false;
     }
 }
 
 FString UBH_GameRecorder::SaveRecording()
 {
-    // Implement logic to save the recording to a file or return the output file path
-    return FString();
+    if (!VideoEncoder.IsValid())
+    {
+        UE_LOG(LogTemp, Error, TEXT("VideoEncoder is null."));
+        return FString();
+    }
+
+    return VideoEncoder->MergeSegments(6);
 }
 
 void UBH_GameRecorder::Tick(float DeltaTime)
