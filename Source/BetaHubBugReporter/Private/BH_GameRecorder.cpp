@@ -25,12 +25,6 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS)
         return;
     }
 
-    if (VideoEncoder.IsValid())
-    {
-        UE_LOG(LogTemp, Error, TEXT("VideoEncoder already initialized."));
-        return;
-    }
-    
     FViewport* Viewport = GEngine->GameViewport->Viewport;
     if (!Viewport)
     {
@@ -46,7 +40,12 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS)
     ScreenWidth = (ScreenWidth + 3) & ~3;
     ScreenHeight = (ScreenHeight + 3) & ~3;
 
-    VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, ScreenWidth, ScreenHeight, FrameBuffer));
+    if (!VideoEncoder.IsValid())
+    {
+        VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, ScreenWidth, ScreenHeight, FrameBuffer));
+    }
+
+    
     VideoEncoder->StartRecording();
     bIsRecording = true;
 }
@@ -75,7 +74,7 @@ FString UBH_GameRecorder::SaveRecording()
         return FString();
     }
 
-    return VideoEncoder->MergeSegments(6);
+    return VideoEncoder->MergeSegments(12);
 }
 
 void UBH_GameRecorder::Tick(float DeltaTime)

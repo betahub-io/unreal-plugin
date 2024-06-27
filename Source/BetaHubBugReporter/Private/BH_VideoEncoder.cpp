@@ -34,7 +34,10 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
     }
 
     outputFile = FPaths::Combine(segmentsDir, TEXT("segment_%03d.mp4"));
-    encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") + FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) + TEXT(" -r ") + FString::FromInt(targetFPS) + TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 10 -reset_timestamps 1 ");
+    encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
+        FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
+        TEXT(" -r ") + FString::FromInt(targetFPS) +
+        TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 5 -reset_timestamps 1 ");
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -243,7 +246,9 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath);
 
     // Set the merged file path
-    MergedFilePath = FPaths::Combine(FPaths::ProjectSavedDir(), FString::Printf(TEXT("Gameplay_%s.mp4"), *FDateTime::Now().ToString(TEXT("yyyyMMdd_HHmmss"))));
+    MergedFilePath = FPaths::Combine(FPaths::ProjectSavedDir(), 
+        FString::Printf(TEXT("Gameplay_%s.mp4"), 
+        *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S"))));
 
     // FFmpeg command to merge segments
     FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""), *ConcatFilePath, *MergedFilePath);
