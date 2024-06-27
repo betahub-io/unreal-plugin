@@ -25,10 +25,11 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     }
 }
 
-void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InLogFileContents)
+void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents)
 {
     Settings = InSettings;
     GameRecorder = InGameRecorder;
+    ScreenshotPath = InScreenshotPath;
     LogFileContents = InLogFileContents;
 }
 
@@ -41,7 +42,7 @@ void UBH_ReportFormWidget::SubmitReport()
     UE_LOG(LogTemp, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
 
     UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
-    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, "", LogFileContents,
+    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, ScreenshotPath, LogFileContents,
         [this]()
         {
             ShowPopup("Success", "Report submitted successfully!");

@@ -20,6 +20,7 @@ private:
     UPROPERTY()
     TSubclassOf<UUserWidget> PopupWidgetClass;
 
+    FString ScreenshotPath;
     FString LogFileContents;
     
     UBH_PluginSettings* Settings;
@@ -50,7 +51,7 @@ public:
     UTextBlock* SubmitLabel;
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
-    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString &InLogFileContents);
+    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents);
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     void SubmitReport();

@@ -24,6 +24,8 @@ private:
     UInputComponent* InputComponent;
     FTimerHandle TimerHandle;
 
+    FString ScreenshotPath;
+
     void RetryInitializeService();
     void InitializeService();
     void HandleInput();
@@ -34,7 +36,10 @@ public:
     void Init(UBH_PluginSettings* InSettings);
     void StartService();
     void StopService();
+
+    void CaptureScreenshot();
     void TriggerBugReportForm();
+
     UBH_GameRecorder* GetGameRecorder();
 
     UFUNCTION(BlueprintCallable, Category="BugReport")

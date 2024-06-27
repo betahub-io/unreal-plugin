@@ -130,8 +130,18 @@ void UBH_BackgroundService::StopService()
 void UBH_BackgroundService::HandleInput()
 {
     UE_LOG(LogTemp, Log, TEXT("Shortcut key pressed."));
+    CaptureScreenshot();
     TriggerBugReportForm();
 }
+
+void UBH_BackgroundService::CaptureScreenshot()
+{
+    if (GameRecorder)
+    {
+        ScreenshotPath = GameRecorder->CaptureScreenshotToJPG();
+    }
+}
+
 void UBH_BackgroundService::TriggerBugReportForm()
 {
     if (!GEngine || !GEngine->GameViewport)
@@ -163,7 +173,7 @@ void UBH_BackgroundService::TriggerBugReportForm()
         return;
     }
 
-    ReportForm->Init(Settings, GameRecorder, LogCapture->GetCapturedLogs());
+    ReportForm->Init(Settings, GameRecorder, ScreenshotPath, LogCapture->GetCapturedLogs());
 
     UE_LOG(LogTemp, Log, TEXT("ReportForm widget created successfully."));
 

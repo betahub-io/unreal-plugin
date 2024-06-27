@@ -4,6 +4,11 @@
 #include "Engine/Engine.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Misc/FileHelper.h"
+#include "ImageUtils.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
+#include "Modules/ModuleManager.h"
+#include "Misc/FileHelper.h"
 
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer), bIsRecording(false)
@@ -171,4 +176,48 @@ void UBH_GameRecorder::PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& He
     Bitmap = MoveTemp(PaddedBitmap);
     Width = PaddedWidth;
     Height = PaddedHeight;
+}
+
+FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
+{
+    if (!GEngine)
+    {
+        UE_LOG(LogTemp, Error, TEXT("GEngine is null."));
+        return FString();
+    }
+
+    if (!GEngine->GameViewport)
+    {
+        UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        return FString();
+    }
+
+    FViewport* Viewport = GEngine->GameViewport->Viewport;
+    if (!Viewport)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+        return FString();
+    }
+
+    TArray<FColor> Bitmap;
+    if (!Viewport->ReadPixels(Bitmap))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to read pixels."));
+        return FString();
+    }
+
+    int32 Width = Viewport->GetSizeXY().X;
+    int32 Height = Viewport->GetSizeXY().Y;
+
+    FString ScreenshotFilename = Filename.IsEmpty() ? FPaths::ProjectSavedDir() / TEXT("Screenshot.jpg") : Filename;
+    
+    IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+    TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG);
+
+    ImageWrapper->SetRaw(Bitmap.GetData(), Bitmap.GetAllocatedSize(), Width, Height, ERGBFormat::BGRA, 8);
+    const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
+
+    FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
+
+    return ScreenshotFilename;
 }
