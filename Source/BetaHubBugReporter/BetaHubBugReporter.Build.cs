@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System;
+using System.IO;
 
 public class BetaHubBugReporter : ModuleRules
 {
@@ -55,5 +57,8 @@ public class BetaHubBugReporter : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
+
+		
+		RuntimeDependencies.Add("$(TargetOutputDir)/bh_ffmpeg.exe", Path.Combine(PluginDirectory, "ThirdParty/FFmpeg/Windows/ffmpeg.exe"));
 	}
 }

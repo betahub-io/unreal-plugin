@@ -19,6 +19,9 @@ public:
     bool IsProcessRunning(int32* ExitCode = nullptr);
     void WaitForExit();
 
+    // static method to run a command and return the output
+    static FString RunCommand(const FString& Command, const FString& Params = TEXT(""), const FString& WorkingDirectory = FPaths::ProjectDir());
+
 private:
     FString Command;
     FString Params;

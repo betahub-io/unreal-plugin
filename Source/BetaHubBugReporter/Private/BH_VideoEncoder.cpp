@@ -3,6 +3,7 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "BH_Runnable.h"
+#include "BH_FFmpeg.h"
 
 BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 InScreenHeight, UBH_FrameBuffer* InFrameBuffer)
     :
@@ -14,16 +15,7 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
         bIsRecording(false),
         pipeWrite(nullptr)
 {
-    // Set the ffmpegPath based on the platform
-#if PLATFORM_WINDOWS
-    ffmpegPath = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe"));
-#elif PLATFORM_MAC
-    ffmpegPath = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("BetaHubBugReporter/ThirdParty/FFmpeg/Mac/ffmpeg"));
-#elif PLATFORM_LINUX
-    ffmpegPath = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("BetaHubBugReporter/ThirdParty/FFmpeg/Linux/ffmpeg"));
-#else
-    #error Unsupported platform
-#endif
+    ffmpegPath = BH_FFmpeg::GetFFmpegPath();
 
     // Set up the segments directory in the Saved folder
     segmentsDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments"));
@@ -128,7 +120,7 @@ void BH_VideoEncoder::RunEncoding()
         }
     }
 
-    FString commandLine = encodingSettings + TEXT("\"") + outputFile + TEXT("\"");
+    FString commandLine = encodingSettings + TEXT("\"") + FPaths::ConvertRelativePathToFull(outputFile) + TEXT("\"");
 
     // Create and start the runnable for ffmpeg
     FBH_Runnable* ffmpegRunnable = new FBH_Runnable(*ffmpegPath, commandLine);
@@ -204,6 +196,12 @@ void BH_VideoEncoder::RunEncoding()
         if (!ffmpegRunnable->IsProcessRunning(&ExitCode))
         {
             UE_LOG(LogTemp, Warning, TEXT("FFmpeg exited with code %d"), ExitCode);
+            // print logs
+            FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+            if (!ffmpegOutput.IsEmpty())
+            {
+                UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+            }
             break;
         }
     }
@@ -252,7 +250,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     FString ConcatFileContent;
     for (const FString& SegmentFile : SegmentFiles)
     {
-        FString FullPath = FPaths::Combine(segmentsDir, SegmentFile);
+        FString FullPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(segmentsDir, SegmentFile));
         FullPath.ReplaceInline(TEXT("\\"), TEXT("/"));
         ConcatFileContent.Append(FString::Printf(TEXT("file '%s'\n"), *FullPath));
 
@@ -266,7 +264,9 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S"))));
 
     // FFmpeg command to merge segments
-    FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""), *ConcatFilePath, *MergedFilePath);
+    FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""),
+        *FPaths::ConvertRelativePathToFull(ConcatFilePath),
+        *FPaths::ConvertRelativePathToFull(MergedFilePath));
 
     // Create and start the runnable for merging
     FBH_Runnable* MergeRunnable = new FBH_Runnable(*ffmpegPath, CommandLine);

@@ -20,5 +20,8 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
-	]
+	],
+	"AdditionalFiles": [
+        "ThirdParty/FFmpeg/Windows/ffmpeg.exe"
+    ]
 }

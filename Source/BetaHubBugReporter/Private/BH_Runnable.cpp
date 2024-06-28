@@ -4,6 +4,13 @@
 #include "Misc/FileHelper.h"
 #include "HAL/PlatformFilemanager.h"
 
+FString FBH_Runnable::RunCommand(const FString& Command, const FString& Params, const FString& WorkingDirectory)
+{
+    FBH_Runnable Runnable(Command, Params, WorkingDirectory);
+    Runnable.WaitForExit();
+    return Runnable.GetBufferedOutput();
+}
+
 FBH_Runnable::FBH_Runnable(const FString& Command, const FString& Params, const FString& WorkingDirectory)
     : Command(Command), Params(Params), WorkingDirectory(WorkingDirectory), ProcessHandle(nullptr),
       StdInReadPipe(nullptr), StdInWritePipe(nullptr), StdOutReadPipe(nullptr), StdOutWritePipe(nullptr), StopTaskCounter(0),
