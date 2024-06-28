@@ -31,7 +31,7 @@ void UBH_BackgroundService::StartService()
 {
     GLog->AddOutputDevice(LogCapture);
     
-    if (GEngine && GEngine->GameViewport)
+    if (GEngine && GEngine->GameViewport && GEngine->GameViewport->GetWorld())
     {
         InitializeService();
     }
@@ -44,14 +44,21 @@ void UBH_BackgroundService::StartService()
 
 void UBH_BackgroundService::RetryInitializeService()
 {
-    if (GEngine && GEngine->GameViewport)
+    if (GEngine->GameViewport->GetWorld()) 
     {
-        // Viewport is now available, clear the timer and initialize the service
-        GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
-        InitializeService();
-    } else
+        if (GEngine && GEngine->GameViewport)
+        {
+            // Viewport is now available, clear the timer and initialize the service
+            GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+            InitializeService();
+        } else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("GameViewport is still null."));
+        }
+    }
+    else
     {
-        UE_LOG(LogTemp, Warning, TEXT("GameViewport is still null."));
+        UE_LOG(LogTemp, Warning, TEXT("World is still null."));
     }
 }
 

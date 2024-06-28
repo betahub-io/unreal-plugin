@@ -45,7 +45,9 @@ public class BetaHubBugReporter : ModuleRules
 				"Settings",
 				"Http",
 				"Json",
-				"JsonUtilities"
+				"JsonUtilities",
+				"RenderCore",
+				"RHI",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

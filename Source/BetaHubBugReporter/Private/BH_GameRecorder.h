@@ -5,6 +5,7 @@
 #include "BH_FrameBuffer.h"
 #include "Tickable.h"
 #include "UObject/NoExportTypes.h"
+#include "BH_SceneCaptureActor.h"
 #include "BH_GameRecorder.generated.h"
 
 UCLASS()
@@ -15,6 +16,9 @@ class BETAHUBBUGREPORTER_API UBH_GameRecorder : public UObject, public FTickable
 private:
     UPROPERTY()
     UBH_FrameBuffer* FrameBuffer;
+
+    UPROPERTY()
+    ABH_SceneCaptureActor* SceneCaptureActor;
 
     TSharedPtr<BH_VideoEncoder> VideoEncoder;
     bool bIsRecording;
@@ -34,6 +38,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Recording")
     FString SaveRecording();
 
+    UFUNCTION(BlueprintCallable, Category="Recording")
     FString CaptureScreenshotToJPG(const FString& Filename = "");
 
     virtual void Tick(float DeltaTime) override;
@@ -42,7 +47,8 @@ public:
 
 private:
     void CaptureFrame();
-    void CaptureViewportFrame();
+    void CaptureRenderTargetFrame();
+
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& Height);
 };

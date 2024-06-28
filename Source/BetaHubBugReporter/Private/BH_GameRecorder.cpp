@@ -9,6 +9,10 @@
 #include "IImageWrapperModule.h"
 #include "Modules/ModuleManager.h"
 #include "Misc/FileHelper.h"
+#include "RendererInterface.h"
+#include "RenderCommandFence.h"
+#include "Async/Async.h"
+#include "RenderGraphUtils.h"
 
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer), bIsRecording(false)
@@ -24,37 +28,43 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS)
         return;
     }
 
-    if (!GEngine->GameViewport)
+    UWorld* World = GEngine->GameViewport->GetWorld();
+    if (!World)
     {
-        UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        UE_LOG(LogTemp, Error, TEXT("World context is null."));
         return;
     }
-
-    FViewport* Viewport = GEngine->GameViewport->Viewport;
-    if (!Viewport)
-    {
-        UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
-        return;
-    }
-
-    FIntPoint ViewportSize = Viewport->GetSizeXY();
-    int32 ScreenWidth = ViewportSize.X;
-    int32 ScreenHeight = ViewportSize.Y;
-
-    // Adjust to the nearest multiple of 4
-    ScreenWidth = (ScreenWidth + 3) & ~3;
-    ScreenHeight = (ScreenHeight + 3) & ~3;
 
     if (!VideoEncoder.IsValid())
     {
+        FViewport* Viewport = GEngine->GameViewport->Viewport;
+        if (!Viewport)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+            return;
+        }
+
+        FIntPoint ViewportSize = Viewport->GetSizeXY();
+        int32 ScreenWidth = ViewportSize.X;
+        int32 ScreenHeight = ViewportSize.Y;
+
+        // Adjust to the nearest multiple of 4
+        ScreenWidth = (ScreenWidth + 3) & ~3;
+        ScreenHeight = (ScreenHeight + 3) & ~3;
+
         VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, ScreenWidth, ScreenHeight, FrameBuffer));
     }
 
-    
     if (!bIsRecording)
     {
         VideoEncoder->StartRecording();
         bIsRecording = true;
+
+        // Register delegate to capture frames during the rendering process
+        if (GEngine->GameViewport)
+        {
+            GEngine->GameViewport->OnDrawn().AddUObject(this, &UBH_GameRecorder::CaptureFrame);
+        }
     }
     else
     {
@@ -68,6 +78,12 @@ void UBH_GameRecorder::PauseRecording()
     {
         VideoEncoder->PauseRecording();
         bIsRecording = false;
+
+        // Unregister the delegate
+        if (GEngine && GEngine->GameViewport)
+        {
+            GEngine->GameViewport->OnDrawn().RemoveAll(this);
+        }
     }
 }
 
@@ -77,6 +93,12 @@ void UBH_GameRecorder::StopRecording()
     {
         VideoEncoder->StopRecording();
         bIsRecording = false;
+
+        // Unregister the delegate
+        if (GEngine && GEngine->GameViewport)
+        {
+            GEngine->GameViewport->OnDrawn().RemoveAll(this);
+        }
     }
 }
 
@@ -99,10 +121,7 @@ FString UBH_GameRecorder::SaveRecording()
 
 void UBH_GameRecorder::Tick(float DeltaTime)
 {
-    if (bIsRecording)
-    {
-        CaptureFrame();
-    }
+    // No need to call CaptureFrame here, it's handled by the delegate
 }
 
 bool UBH_GameRecorder::IsTickable() const
@@ -117,28 +136,30 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::CaptureFrame()
 {
-    CaptureViewportFrame();
-}
-
-void UBH_GameRecorder::CaptureViewportFrame()
-{
     if (GEngine && GEngine->GameViewport)
     {
         FViewport* Viewport = GEngine->GameViewport->Viewport;
         if (Viewport)
         {
-            TArray<FColor> Bitmap;
-            if (Viewport->ReadPixels(Bitmap))
-            {
-                int32 Width = Viewport->GetSizeXY().X;
-                int32 Height = Viewport->GetSizeXY().Y;
+            // Ensure ReadPixels is called on the game thread and within the draw cycle
+            // AsyncTask(ENamedThreads::GameThread, [this, Viewport]()
+            // {
+                TArray<FColor> Bitmap;
+                if (Viewport->ReadPixels(Bitmap))
+                {
+                    int32 Width = Viewport->GetSizeXY().X;
+                    int32 Height = Viewport->GetSizeXY().Y;
 
-                PadBitmap(Bitmap, Width, Height);
-                SetFrameData(Width, Height, Bitmap);
+                    TArray<FColor> CapturedBitmap = Bitmap;
+                    PadBitmap(CapturedBitmap, Width, Height);
 
-                // Log each frame capture
-                // UE_LOG(LogTemp, Log, TEXT("Frame captured: %dx%d"), Width, Height);
-            }
+                    SetFrameData(Width, Height, CapturedBitmap);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("Failed to read pixels from Viewport."));
+                }
+            // });
         }
     }
 }
@@ -180,15 +201,9 @@ void UBH_GameRecorder::PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& He
 
 FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
 {
-    if (!GEngine)
+    if (!GEngine || !GEngine->GameViewport)
     {
-        UE_LOG(LogTemp, Error, TEXT("GEngine is null."));
-        return FString();
-    }
-
-    if (!GEngine->GameViewport)
-    {
-        UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        UE_LOG(LogTemp, Error, TEXT("GEngine or GameViewport is null."));
         return FString();
     }
 
@@ -202,7 +217,7 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     TArray<FColor> Bitmap;
     if (!Viewport->ReadPixels(Bitmap))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to read pixels."));
+        UE_LOG(LogTemp, Error, TEXT("Failed to read pixels from Viewport."));
         return FString();
     }
 
@@ -210,7 +225,7 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     int32 Height = Viewport->GetSizeXY().Y;
 
     FString ScreenshotFilename = Filename.IsEmpty() ? FPaths::ProjectSavedDir() / TEXT("Screenshot.jpg") : Filename;
-    
+
     IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
     TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG);
 

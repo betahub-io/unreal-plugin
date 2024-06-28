@@ -103,11 +103,15 @@ void FBH_Runnable::TerminateProcess()
 
 void FBH_Runnable::WriteToPipe(const TArray<uint8>& Data)
 {
-    if (ProcessHandle.IsValid())
+    if (IsProcessRunning())
     {
         int32 BytesWritten;
         FPlatformProcess::WritePipe(StdInWritePipe, Data.GetData(), Data.Num(), &BytesWritten);
         // UE_LOG(LogTemp, Log, TEXT("Written %d bytes to pipe."), BytesWritten); // Added log for debug purposes
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Process is not running, skipping write."));
     }
 }
 

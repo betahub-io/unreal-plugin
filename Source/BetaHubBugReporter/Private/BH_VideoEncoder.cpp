@@ -15,6 +15,18 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
         bIsRecording(false),
         pipeWrite(nullptr)
 {
+    // check if width and height are multiples of 4
+    if (screenWidth % 4 != 0 || screenHeight % 4 != 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Screen width and height must be multiples of 4."));
+    }
+
+    // target fps must be positive
+    if (targetFPS <= 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Target FPS must be positive."));
+    }
+    
     ffmpegPath = BH_FFmpeg::GetFFmpegPath();
 
     // Set up the segments directory in the Saved folder
@@ -68,6 +80,8 @@ uint32 BH_VideoEncoder::Run()
 
 void BH_VideoEncoder::Stop()
 {
+    UE_LOG(LogTemp, Log, TEXT("Stopping video encoding..."));
+    
     stopEvent->Trigger();
     bIsRecording = false;
 }
@@ -125,7 +139,7 @@ void BH_VideoEncoder::RunEncoding()
     // Create and start the runnable for ffmpeg
     FBH_Runnable* ffmpegRunnable = new FBH_Runnable(*ffmpegPath, commandLine);
 
-    FPlatformProcess::Sleep(0.2);
+    FPlatformProcess::Sleep(1);
 
     int exitCode;
     if (!ffmpegRunnable->IsProcessRunning(&exitCode))
@@ -138,6 +152,10 @@ void BH_VideoEncoder::RunEncoding()
         {
             UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
         }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output is empty."));
+        }
 
         delete ffmpegRunnable;
         return;
@@ -149,6 +167,8 @@ void BH_VideoEncoder::RunEncoding()
 
     const float frameInterval = 1.0f / targetFPS;
 
+    TArray<uint8> byteData;
+
     while (!stopEvent->Wait(0))
     {
         if (!pauseEvent->Wait(0))
@@ -159,9 +179,12 @@ void BH_VideoEncoder::RunEncoding()
                 // Log frame retrieval success
                 // UE_LOG(LogTemp, Log, TEXT("Frame retrieved successfully."));
 
+                if (byteData.Num() != frame->Data.Num() * sizeof(FColor))
+                {
+                    byteData.SetNum(frame->Data.Num() * sizeof(FColor));
+                }
+
                 // Convert the TArray<FColor> to a byte array
-                TArray<uint8> byteData;
-                byteData.SetNum(frame->Data.Num() * sizeof(FColor));
                 if (byteData.Num() > 0)
                 {
                     FMemory::Memcpy(byteData.GetData(), frame->Data.GetData(), frame->Data.Num() * sizeof(FColor));
@@ -174,6 +197,7 @@ void BH_VideoEncoder::RunEncoding()
 
                     // Read the buffered output
                     FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+
                     if (!ffmpegOutput.IsEmpty())
                     {
                         UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
@@ -201,6 +225,10 @@ void BH_VideoEncoder::RunEncoding()
             if (!ffmpegOutput.IsEmpty())
             {
                 UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output is empty."));
             }
             break;
         }
