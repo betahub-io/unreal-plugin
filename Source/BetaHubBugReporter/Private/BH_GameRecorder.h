@@ -27,7 +27,7 @@ public:
     UBH_GameRecorder(const FObjectInitializer& ObjectInitializer);
 
     UFUNCTION(BlueprintCallable, Category="Recording")
-    void StartRecording(int32 targetFPS);
+    void StartRecording(int32 targetFPS, const FTimespan& RecordingDuration);
 
     UFUNCTION(BlueprintCallable, Category="Recording")
     void PauseRecording();

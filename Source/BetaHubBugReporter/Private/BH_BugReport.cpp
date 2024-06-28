@@ -102,7 +102,7 @@ void UBH_BugReport::SubmitReportAsync(
         // Restart recording
         if (GameRecorder)
         {
-            GameRecorder->StartRecording(Settings->MaxRecordedFrames);
+            GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
         }
 
         delete InitialRequest;

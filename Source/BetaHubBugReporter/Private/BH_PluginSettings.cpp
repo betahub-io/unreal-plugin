@@ -10,4 +10,5 @@ UBH_PluginSettings::UBH_PluginSettings()
     bEnableShortcut = true;
     ShortcutKey = EKeys::F12;
     MaxRecordedFrames = 30;
+    MaxRecordingDuration = FTimespan::FromSeconds(60);
 }

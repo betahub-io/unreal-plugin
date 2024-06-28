@@ -114,7 +114,7 @@ void UBH_ReportFormWidget::NativeDestruct()
     // Restore cursor state when the widget is destructed (hidden)
     RestoreCursorState();
 
-    GameRecorder->StartRecording(Settings->MaxRecordedFrames);
+    GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
 }
 
 void UBH_ReportFormWidget::OnSubmitButtonClicked()

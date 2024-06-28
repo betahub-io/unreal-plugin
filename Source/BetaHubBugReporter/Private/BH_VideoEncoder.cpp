@@ -5,7 +5,13 @@
 #include "BH_Runnable.h"
 #include "BH_FFmpeg.h"
 
-BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 InScreenHeight, UBH_FrameBuffer* InFrameBuffer)
+const int SEGMENT_DURATION_SECONDS = 10;
+
+BH_VideoEncoder::BH_VideoEncoder(
+    int32 InTargetFPS,
+    const FTimespan &InRecordingDuration,
+    int32 InScreenWidth, int32 InScreenHeight,
+    UBH_FrameBuffer* InFrameBuffer)
     :
         targetFPS(InTargetFPS),
         screenWidth(InScreenWidth),
@@ -13,7 +19,11 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
         frameBuffer(InFrameBuffer),
         thread(nullptr),
         bIsRecording(false),
-        pipeWrite(nullptr)
+        pipeWrite(nullptr),
+        RecordingDuration(InRecordingDuration),
+        MaxSegmentAge(FTimespan::FromMinutes(5)),
+        SegmentCheckInterval(FTimespan::FromMinutes(1)),
+        LastSegmentCheckTime(FDateTime::Now())
 {
     // check if width and height are multiples of 4
     if (screenWidth % 4 != 0 || screenHeight % 4 != 0)
@@ -46,11 +56,11 @@ BH_VideoEncoder::BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 I
         FileManager.Delete(*(segmentsDir / SegmentFile));
     }
 
-    outputFile = FPaths::Combine(segmentsDir, TEXT("segment_%03d.mp4"));
+    outputFile = FPaths::Combine(segmentsDir, TEXT("segment_%06d.mp4"));
     encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
         FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
         TEXT(" -r ") + FString::FromInt(targetFPS) +
-        TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 5 -reset_timestamps 1 ");
+        TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 10 -reset_timestamps 1 ");
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -207,6 +217,13 @@ void BH_VideoEncoder::RunEncoding()
                 {
                     UE_LOG(LogTemp, Warning, TEXT("Byte data size is zero, skipping write."));
                 }
+
+                // Periodic segment removal
+                if ((FDateTime::Now() - LastSegmentCheckTime) >= SegmentCheckInterval)
+                {
+                    RemoveOldSegments();
+                    LastSegmentCheckTime = FDateTime::Now();
+                }
             }
             else
             {
@@ -328,4 +345,36 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         delete MergeRunnable;
         return FString();
     }
+}
+
+void BH_VideoEncoder::RemoveOldSegments()
+{
+    // Removing by count instead of age, because video can be paused and we don't
+    // want to remove paused segments
+    
+    IFileManager& FileManager = IFileManager::Get();
+    TArray<FString> SegmentFiles;
+    FileManager.FindFiles(SegmentFiles, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+
+    // Sort segment files based on their numerical part
+    SegmentFiles.Sort([](const FString& A, const FString& B)
+    {
+        int32 NumberA = FCString::Atoi(*A.Mid(A.Find(TEXT("_")) + 1, A.Find(TEXT(".")) - A.Find(TEXT("_")) - 1));
+        int32 NumberB = FCString::Atoi(*B.Mid(B.Find(TEXT("_")) + 1, B.Find(TEXT(".")) - B.Find(TEXT("_")) - 1));
+        return NumberA < NumberB;
+    });
+
+    // Keep only the 10 most recent segments
+    int32 SegmentsToRemove = SegmentFiles.Num() - GetSegmentCountToKeep();
+    for (int32 i = 0; i < SegmentsToRemove; ++i)
+    {
+        FString SegmentFilePath = segmentsDir / SegmentFiles[i];
+        UE_LOG(LogTemp, Log, TEXT("Removing old segment: %s"), *SegmentFilePath);
+        FileManager.Delete(*SegmentFilePath);
+    }
+}
+
+int32 BH_VideoEncoder::GetSegmentCountToKeep()
+{
+    return RecordingDuration.GetTotalSeconds() / SEGMENT_DURATION_SECONDS;
 }

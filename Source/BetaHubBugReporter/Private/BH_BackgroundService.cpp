@@ -64,7 +64,7 @@ void UBH_BackgroundService::RetryInitializeService()
 
 void UBH_BackgroundService::InitializeService()
 {
-    GameRecorder->StartRecording(Settings->MaxRecordedFrames);
+    GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
 
     if (Settings && Settings->bEnableShortcut)
     {

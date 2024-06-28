@@ -20,7 +20,7 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
 
-void UBH_GameRecorder::StartRecording(int32 targetFPS)
+void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& RecordingDuration)
 {
     if (!GEngine)
     {
@@ -52,7 +52,7 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS)
         ScreenWidth = (ScreenWidth + 3) & ~3;
         ScreenHeight = (ScreenHeight + 3) & ~3;
 
-        VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, ScreenWidth, ScreenHeight, FrameBuffer));
+        VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, RecordingDuration, ScreenWidth, ScreenHeight, FrameBuffer));
     }
 
     if (!bIsRecording)

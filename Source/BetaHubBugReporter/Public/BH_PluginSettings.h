@@ -31,4 +31,8 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The maximum number of frames per second (FPS) to record in the bug report video."))
     int32 MaxRecordedFrames;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The maximum duration of the bug report video."))
+    FTimespan MaxRecordingDuration;
 };

@@ -27,10 +27,21 @@ private:
     bool bIsRecording;
 	void* pipeWrite;
 
+    FTimespan RecordingDuration;
+    FTimespan MaxSegmentAge;
+    FTimespan SegmentCheckInterval;
+    FDateTime LastSegmentCheckTime;
+
     void RunEncoding();
+    void RemoveOldSegments();
+    int32 GetSegmentCountToKeep();
 
 public:
-    BH_VideoEncoder(int32 InTargetFPS, int32 InScreenWidth, int32 InScreenHeight, UBH_FrameBuffer* InFrameBuffer);
+    BH_VideoEncoder(
+        int32 InTargetFPS,
+        const FTimespan &InRecordingDuration,
+        int32 InScreenWidth, int32 InScreenHeight,  
+        UBH_FrameBuffer* InFrameBuffer);
     virtual ~BH_VideoEncoder();
 
     bool Init() override;
