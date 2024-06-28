@@ -28,6 +28,12 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& Recordin
         return;
     }
 
+    if (!GEngine->GameViewport)
+    {
+        UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        return;
+    }
+
     UWorld* World = GEngine->GameViewport->GetWorld();
     if (!World)
     {
@@ -201,35 +207,20 @@ void UBH_GameRecorder::PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& He
 
 FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
 {
-    if (!GEngine || !GEngine->GameViewport)
+    // just read the frame buffer data
+    TSharedPtr<FBH_Frame> Frame = FrameBuffer->GetFrame();
+    if (!Frame.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("GEngine or GameViewport is null."));
+        UE_LOG(LogTemp, Error, TEXT("Frame is null."));
         return FString();
     }
-
-    FViewport* Viewport = GEngine->GameViewport->Viewport;
-    if (!Viewport)
-    {
-        UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
-        return FString();
-    }
-
-    TArray<FColor> Bitmap;
-    if (!Viewport->ReadPixels(Bitmap))
-    {
-        UE_LOG(LogTemp, Error, TEXT("Failed to read pixels from Viewport."));
-        return FString();
-    }
-
-    int32 Width = Viewport->GetSizeXY().X;
-    int32 Height = Viewport->GetSizeXY().Y;
 
     FString ScreenshotFilename = Filename.IsEmpty() ? FPaths::ProjectSavedDir() / TEXT("Screenshot.jpg") : Filename;
 
     IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
     TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG);
 
-    ImageWrapper->SetRaw(Bitmap.GetData(), Bitmap.GetAllocatedSize(), Width, Height, ERGBFormat::BGRA, 8);
+    ImageWrapper->SetRaw(Frame->Data.GetData(), Frame->Data.GetAllocatedSize(), Frame->Width, Frame->Height, ERGBFormat::BGRA, 8);
     const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
 
     FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
