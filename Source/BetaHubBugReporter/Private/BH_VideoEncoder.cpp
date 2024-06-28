@@ -139,7 +139,7 @@ void BH_VideoEncoder::RunEncoding()
     // Create and start the runnable for ffmpeg
     FBH_Runnable* ffmpegRunnable = new FBH_Runnable(*ffmpegPath, commandLine);
 
-    FPlatformProcess::Sleep(1);
+    FPlatformProcess::Sleep(0.2);
 
     int exitCode;
     if (!ffmpegRunnable->IsProcessRunning(&exitCode))
