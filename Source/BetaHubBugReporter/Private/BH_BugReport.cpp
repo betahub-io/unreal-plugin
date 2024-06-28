@@ -50,13 +50,6 @@ void UBH_BugReport::SubmitReportAsync(
         return;
     }
 
-    // Stop the recording and save the video
-    FString VideoPath;
-    if (GameRecorder)
-    {
-        VideoPath = GameRecorder->SaveRecording();
-    }
-
     // Submit the initial bug report without media
     BH_HttpRequest* InitialRequest = new BH_HttpRequest();
     InitialRequest->SetURL(Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues.json"));
@@ -69,22 +62,45 @@ void UBH_BugReport::SubmitReportAsync(
     InitialRequest->FinalizeFormData();
 
     InitialRequest->ProcessRequest(
-        [this, Settings, GameRecorder, VideoPath, ScreenshotPath, LogFileContents, InitialRequest, OnSuccess, OnFailure]
+        [this, Settings, GameRecorder, ScreenshotPath, LogFileContents, InitialRequest, OnSuccess, OnFailure]
         (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bWasSuccessful && Response->GetResponseCode() == 201)
         {
             OnSuccess();
+
+            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+
             FString IssueId = ParseIssueIdFromResponse(Response->GetContentAsString());
             if (!IssueId.IsEmpty())
             {
+                // Save the recording
+                FString VideoPath;
+                if (GameRecorder)
+                {
+                    VideoPath = GameRecorder->SaveRecording();
+                    GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+                }
+                
                 if (!VideoPath.IsEmpty())
                 {
                     SubmitMedia(Settings, IssueId, TEXT("video_clips"), TEXT("video_clip[video]"), VideoPath, "", TEXT("video/mp4"));
+
+                    // cleanup
+                    if (PlatformFile.FileExists(*VideoPath))
+                    {
+                        PlatformFile.DeleteFile(*VideoPath);
+                    }
                 }
                 if (!ScreenshotPath.IsEmpty())
                 {
                     SubmitMedia(Settings, IssueId, TEXT("screenshots"), TEXT("screenshot[image]"), ScreenshotPath, "", TEXT("image/png"));
+
+                    // cleanup
+                    if (PlatformFile.FileExists(*ScreenshotPath))
+                    {
+                        PlatformFile.DeleteFile(*ScreenshotPath);
+                    }
                 }
                 if (!LogFileContents.IsEmpty())
                 {
@@ -97,12 +113,6 @@ void UBH_BugReport::SubmitReportAsync(
             // ShowPopup(TEXT("Failed to submit bug report."));
             UE_LOG(LogTemp, Error, TEXT("Failed to submit bug report: %s"), *Response->GetContentAsString());
             OnFailure(Response->GetContentAsString());
-        }
-
-        // Restart recording
-        if (GameRecorder)
-        {
-            GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
         }
 
         delete InitialRequest;
