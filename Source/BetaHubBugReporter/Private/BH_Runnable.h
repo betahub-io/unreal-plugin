@@ -20,6 +20,7 @@ public:
     void WaitForExit();
 
     // static method to run a command and return the output
+    static FString RunCommand(const FString& Command, const FString& Params, const FString& WorkingDirectory, int32 &ExitCode);
     static FString RunCommand(const FString& Command, const FString& Params = TEXT(""), const FString& WorkingDirectory = FPaths::ProjectDir());
 
 private:

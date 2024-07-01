@@ -18,6 +18,7 @@ private:
     int32 targetFPS;
     int32 screenWidth;
     int32 screenHeight;
+    FString PreferredFfmpegOptions;
 
     UPROPERTY()
     UBH_FrameBuffer* frameBuffer;

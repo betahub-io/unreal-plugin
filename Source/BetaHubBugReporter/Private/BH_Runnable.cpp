@@ -6,8 +6,17 @@
 
 FString FBH_Runnable::RunCommand(const FString& Command, const FString& Params, const FString& WorkingDirectory)
 {
+    int32 ExitCode;
+    return RunCommand(Command, Params, WorkingDirectory, ExitCode);
+}
+
+FString FBH_Runnable::RunCommand(const FString& Command, const FString& Params, const FString& WorkingDirectory, int32& ExitCode)
+{
     FBH_Runnable Runnable(Command, Params, WorkingDirectory);
     Runnable.WaitForExit();
+
+    Runnable.IsProcessRunning(&ExitCode);
+
     return Runnable.GetBufferedOutput();
 }
 

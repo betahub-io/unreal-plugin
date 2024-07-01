@@ -60,7 +60,7 @@ BH_VideoEncoder::BH_VideoEncoder(
     encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
         FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
         TEXT(" -r ") + FString::FromInt(targetFPS) +
-        TEXT(" -i - -c:v libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -f segment -segment_time 10 -reset_timestamps 1 ");
+        TEXT(" -i - {OPTIONS} -pix_fmt yuv420p -f segment -segment_time 10 -reset_timestamps 1 ");
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -101,6 +101,15 @@ void BH_VideoEncoder::StartRecording()
     if (!bIsRecording)
     {
         bIsRecording = true;
+
+        if (PreferredFfmpegOptions.IsEmpty())
+        {
+            BH_FFmpegOptions Options = BH_FFmpeg::GetFFmpegPreferredOptions();
+            PreferredFfmpegOptions = Options.Options;
+
+            UE_LOG(LogTemp, Log, TEXT("Preferred FFmpeg options: %s"), *PreferredFfmpegOptions);
+        }
+
         thread = FRunnableThread::Create(this, TEXT("BH_VideoEncoderThread"), 0, TPri_Normal);
     }
 }
@@ -150,7 +159,8 @@ void BH_VideoEncoder::RunEncoding()
         }
     }
 
-    FString commandLine = encodingSettings + TEXT("\"") + FPaths::ConvertRelativePathToFull(outputFile) + TEXT("\"");
+    FString settings = encodingSettings.Replace(TEXT("{Options}"), *PreferredFfmpegOptions);
+    FString commandLine = settings + TEXT(" \"") + FPaths::ConvertRelativePathToFull(outputFile) + TEXT("\"");
 
     // Create and start the runnable for ffmpeg
     FBH_Runnable* ffmpegRunnable = new FBH_Runnable(*ffmpegPath, commandLine);

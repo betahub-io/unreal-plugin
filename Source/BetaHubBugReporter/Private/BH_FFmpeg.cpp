@@ -2,6 +2,7 @@
 
 
 #include "BH_FFmpeg.h"
+#include "BH_Runnable.h"
 
 FString BH_FFmpeg::GetFFmpegPath()
 {
@@ -44,4 +45,60 @@ FString BH_FFmpeg::GetFFmpegPath()
 
     UE_LOG(LogTemp, Error, TEXT("FFmpeg not found."));
     return FString();
+}
+
+BH_FFmpegOptions BH_FFmpeg::GetFFmpegPreferredOptions()
+{
+    TArray<BH_FFmpegOptions> Options = GetFFmpegAvailableOptions();
+
+    // for each
+    for (const BH_FFmpegOptions& Option : Options)
+    {
+        // execute ffmpeg -f lavfi -i nullsrc=d=1 -c:v h264_nvenc -t 1 -f null - for each encoder on the list,
+        // exit code 0 menas the encoder is available
+
+        int32 ExitCode = 0;
+        FString Output = FBH_Runnable::RunCommand(GetFFmpegPath(), TEXT("-f lavfi -i nullsrc=d=1 ") + Option.Options + TEXT(" -t 1 -f null -"), FPaths::ProjectDir(), ExitCode);
+
+        if (ExitCode == 0)
+        {
+            return Option;
+        }
+    }
+
+    UE_LOG(LogTemp, Error, TEXT("No FFmpeg options found."));
+    return {};
+}
+
+TArray<BH_FFmpegOptions> BH_FFmpeg::GetFFmpegAvailableOptions()
+{
+    TArray<BH_FFmpegOptions> Options;
+    FString Output = FBH_Runnable::RunCommand(GetFFmpegPath(), TEXT("-encoders"));
+
+    if (Output.Contains(TEXT("h264_nvenc")))
+    {
+        Options.Add({TEXT("h264_nvenc"), TEXT("-c:v h264_nvenc -preset p1")});
+    }
+
+    if (Output.Contains(TEXT("h264_amf")))
+    {
+        Options.Add({TEXT("h264_amf"), TEXT("-c:v h264_amf -quality speed")});
+    }
+
+    if (Output.Contains(TEXT("h264_videotoolbox")))
+    {
+        Options.Add({TEXT("h264_videotoolbox"), TEXT("-c:v h264_videotoolbox -preset ultrafast")});
+    }
+
+    if (Output.Contains(TEXT("h264_vaapi")))
+    {
+        Options.Add({TEXT("h264_vaapi"), TEXT("-c:v h264_vaapi")});
+    }
+
+    if (Output.Contains(TEXT("libx264")))
+    {
+        Options.Add({TEXT("libx264"), TEXT("-c:v libx264 -preset ultrafast")});
+    }
+
+    return Options;
 }
