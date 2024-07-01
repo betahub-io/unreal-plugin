@@ -181,6 +181,14 @@ void UBH_GameRecorder::ReadPixels()
     FViewport* Viewport = GEngine->GameViewport->Viewport;
     if (!Viewport) return;
 
+    FIntPoint ViewportSize = Viewport->GetSizeXY();
+    int32 NumPixels = ViewportSize.X * ViewportSize.Y;
+
+    if (PendingPixels.Num() != NumPixels)
+    {
+        PendingPixels.SetNumUninitialized(NumPixels);
+    }
+
     struct FReadSurfaceContext
     {
         FRenderTarget* SrcRenderTarget;
@@ -189,13 +197,15 @@ void UBH_GameRecorder::ReadPixels()
         FReadSurfaceDataFlags Flags;
     };
 
-    PendingPixels.Reset();
+    FReadSurfaceDataFlags ReadSurfaceDataFlags(RCM_UNorm);
+    ReadSurfaceDataFlags.SetLinearToGamma(false); // Adjust based on your requirement.
+
     FReadSurfaceContext ReadSurfaceContext =
     {
         Viewport,
         &PendingPixels,
-        FIntRect(0, 0, Viewport->GetSizeXY().X, Viewport->GetSizeXY().Y),
-        FReadSurfaceDataFlags(RCM_UNorm, CubeFace_MAX)
+        FIntRect(0, 0, ViewportSize.X, ViewportSize.Y),
+        ReadSurfaceDataFlags
     };
 
     ENQUEUE_RENDER_COMMAND(ReadSurfaceCommand)(
@@ -213,11 +223,6 @@ void UBH_GameRecorder::ReadPixels()
     ReadPixelFence.BeginFence();
     bReadPixelsStarted = true;
 }
-
-
-
-
-
 
 void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data)
 {
