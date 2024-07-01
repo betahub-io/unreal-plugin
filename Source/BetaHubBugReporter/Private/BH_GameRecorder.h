@@ -46,8 +46,13 @@ public:
     virtual TStatId GetStatId() const override;
 
 private:
+    bool bReadPixelsStarted;
+    FRenderCommandFence ReadPixelFence;
+    TArray<FColor> PendingPixels;
+
     void CaptureFrame();
     void CaptureRenderTargetFrame();
+    void ReadPixels();
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& Height);

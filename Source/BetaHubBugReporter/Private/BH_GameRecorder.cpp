@@ -15,7 +15,7 @@
 #include "RenderGraphUtils.h"
 
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
-    : Super(ObjectInitializer), bIsRecording(false)
+    : Super(ObjectInitializer), bIsRecording(false), bReadPixelsStarted(false)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -127,8 +127,24 @@ FString UBH_GameRecorder::SaveRecording()
 
 void UBH_GameRecorder::Tick(float DeltaTime)
 {
-    // No need to call CaptureFrame here, it's handled by the delegate
+    if (bReadPixelsStarted && ReadPixelFence.IsFenceComplete())
+    {
+        if (PendingPixels.Num() > 0)
+        {
+            FViewport* Viewport = GEngine->GameViewport->Viewport;
+            int32 Width = Viewport->GetSizeXY().X;
+            int32 Height = Viewport->GetSizeXY().Y;
+
+            TArray<FColor> CapturedBitmap = PendingPixels;
+            PadBitmap(CapturedBitmap, Width, Height);
+
+            SetFrameData(Width, Height, CapturedBitmap);
+        }
+
+        bReadPixelsStarted = false;
+    }
 }
+
 
 bool UBH_GameRecorder::IsTickable() const
 {
@@ -142,33 +158,57 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::CaptureFrame()
 {
-    if (GEngine && GEngine->GameViewport)
+    if (!bReadPixelsStarted)
     {
-        FViewport* Viewport = GEngine->GameViewport->Viewport;
-        if (Viewport)
-        {
-            // Ensure ReadPixels is called on the game thread and within the draw cycle
-            // AsyncTask(ENamedThreads::GameThread, [this, Viewport]()
-            // {
-                TArray<FColor> Bitmap;
-                if (Viewport->ReadPixels(Bitmap))
-                {
-                    int32 Width = Viewport->GetSizeXY().X;
-                    int32 Height = Viewport->GetSizeXY().Y;
-
-                    TArray<FColor> CapturedBitmap = Bitmap;
-                    PadBitmap(CapturedBitmap, Width, Height);
-
-                    SetFrameData(Width, Height, CapturedBitmap);
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Error, TEXT("Failed to read pixels from Viewport."));
-                }
-            // });
-        }
+        ReadPixels();
     }
 }
+
+
+void UBH_GameRecorder::ReadPixels()
+{
+    if (!GEngine || !GEngine->GameViewport) return;
+
+    FViewport* Viewport = GEngine->GameViewport->Viewport;
+    if (!Viewport) return;
+
+    struct FReadSurfaceContext
+    {
+        FRenderTarget* SrcRenderTarget;
+        TArray<FColor>* OutData;
+        FIntRect Rect;
+        FReadSurfaceDataFlags Flags;
+    };
+
+    PendingPixels.Reset();
+    FReadSurfaceContext ReadSurfaceContext =
+    {
+        Viewport,
+        &PendingPixels,
+        FIntRect(0, 0, Viewport->GetSizeXY().X, Viewport->GetSizeXY().Y),
+        FReadSurfaceDataFlags(RCM_UNorm, CubeFace_MAX)
+    };
+
+    ENQUEUE_RENDER_COMMAND(ReadSurfaceCommand)(
+        [ReadSurfaceContext](FRHICommandListImmediate& RHICmdList)
+        {
+            RHICmdList.ReadSurfaceData(
+                ReadSurfaceContext.SrcRenderTarget->GetRenderTargetTexture(),
+                ReadSurfaceContext.Rect,
+                *ReadSurfaceContext.OutData,
+                ReadSurfaceContext.Flags
+            );
+        }
+    );
+
+    ReadPixelFence.BeginFence();
+    bReadPixelsStarted = true;
+}
+
+
+
+
+
 
 void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data)
 {
