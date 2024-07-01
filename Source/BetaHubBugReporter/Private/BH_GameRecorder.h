@@ -50,6 +50,9 @@ private:
     FRenderCommandFence ReadPixelFence;
     TArray<FColor> PendingPixels;
 
+    int32 TargetFPS;
+    FDateTime LastCaptureTime;
+
     void CaptureFrame();
     void CaptureRenderTargetFrame();
     void ReadPixels();

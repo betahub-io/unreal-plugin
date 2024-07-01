@@ -65,6 +65,7 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& Recordin
     {
         VideoEncoder->StartRecording();
         bIsRecording = true;
+        TargetFPS = targetFPS;
 
         // Register delegate to capture frames during the rendering process
         if (GEngine->GameViewport)
@@ -158,12 +159,20 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::CaptureFrame()
 {
+    // Do not capture frames too frequently
+    float TimeSinceLastCapture = (FDateTime::UtcNow() - LastCaptureTime).GetTotalSeconds();
+    if (TimeSinceLastCapture < 1.0f / TargetFPS)
+    {
+        return;
+    }
+
+    LastCaptureTime = FDateTime::UtcNow();
+    
     if (!bReadPixelsStarted)
     {
         ReadPixels();
     }
 }
-
 
 void UBH_GameRecorder::ReadPixels()
 {
