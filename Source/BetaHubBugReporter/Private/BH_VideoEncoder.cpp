@@ -142,6 +142,12 @@ void BH_VideoEncoder::RunEncoding()
             UE_LOG(LogTemp, Log, TEXT("Waiting for the first valid frame..."));
             FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
         }
+
+        if (stopEvent->Wait(0))
+        {
+            // stop event received, do not proceed any further
+            return;
+        }
     }
 
     FString commandLine = encodingSettings + TEXT("\"") + FPaths::ConvertRelativePathToFull(outputFile) + TEXT("\"");

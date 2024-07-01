@@ -18,6 +18,8 @@ private:
     int32 targetFPS;
     int32 screenWidth;
     int32 screenHeight;
+
+    UPROPERTY()
     UBH_FrameBuffer* frameBuffer;
 
     FEvent* stopEvent;
