@@ -144,9 +144,6 @@ void UBH_GameRecorder::StopRecording()
             GEngine->GameViewport->OnDrawn().RemoveAll(this);
         }
 
-        // destroy VideoEncoder
-        VideoEncoder.Reset();
-
         // Remove staging texture
         if (StagingTexture)
         {
@@ -186,6 +183,7 @@ void UBH_GameRecorder::Tick(float DeltaTime)
                 UE_LOG(LogTemp, Warning, TEXT("Viewport size has changed. Restarting recording..."));
                 
                 StopRecording();
+                VideoEncoder.Reset(); // will need to recreate it
                 StartRecording(TargetFPS, FTimespan::FromSeconds(0));
             }
         }
