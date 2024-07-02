@@ -13,16 +13,6 @@ class BETAHUBBUGREPORTER_API UBH_GameRecorder : public UObject, public FTickable
 {
     GENERATED_BODY()
 
-private:
-    UPROPERTY()
-    UBH_FrameBuffer* FrameBuffer;
-
-    UPROPERTY()
-    ABH_SceneCaptureActor* SceneCaptureActor;
-
-    TSharedPtr<BH_VideoEncoder> VideoEncoder;
-    bool bIsRecording;
-
 public:
     UBH_GameRecorder(const FObjectInitializer& ObjectInitializer);
 
@@ -46,6 +36,18 @@ public:
     virtual TStatId GetStatId() const override;
 
 private:
+    UPROPERTY()
+    UBH_FrameBuffer* FrameBuffer;
+
+    UPROPERTY()
+    ABH_SceneCaptureActor* SceneCaptureActor;
+
+    TSharedPtr<BH_VideoEncoder> VideoEncoder;
+    int32 TargetFPS;
+    FTimespan RecordingDuration;
+
+    bool bIsRecording;
+
     bool bCopyTextureStarted;
     FRenderCommandFence CopyTextureFence;
 
@@ -60,7 +62,6 @@ private:
     int32 ViewportHeight;
     int32 FrameWidth;
     int32 FrameHeight;
-    int32 TargetFPS;
     FDateTime LastCaptureTime;
 
     void *RawData;
@@ -72,6 +73,5 @@ private:
     void ReadPixels();
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
-    void PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& Height);
     void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);
 };

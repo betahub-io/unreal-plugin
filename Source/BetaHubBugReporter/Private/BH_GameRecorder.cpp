@@ -21,7 +21,7 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
 
-void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& RecordingDuration)
+void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InRecordingDuration)
 {
     if (!GEngine)
     {
@@ -59,7 +59,7 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& Recordin
         FrameWidth = (FrameWidth + 3) & ~3;
         FrameHeight = (FrameHeight + 3) & ~3;
 
-        VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, RecordingDuration, FrameWidth, FrameHeight, FrameBuffer));
+        VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, InRecordingDuration, FrameWidth, FrameHeight, FrameBuffer));
     }
 
     if (!bIsRecording)
@@ -69,9 +69,8 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& Recordin
         FTexture2DRHIRef GameBuffer = Viewport->GetRenderTargetTexture();
         FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
 
-        // Definicja tekstury stagingowej
         FRHITextureCreateDesc TextureCreateDesc = FRHITextureCreateDesc::Create2D(
-            TEXT("CopiedTexture"),
+            TEXT("StagingTexture"),
             GameBuffer->GetSizeX(),
             GameBuffer->GetSizeY(),
             GameBuffer->GetFormat()
@@ -93,7 +92,8 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& Recordin
 
         VideoEncoder->StartRecording();
         bIsRecording = true;
-        TargetFPS = targetFPS;
+        TargetFPS = InTargetFPS;
+        RecordingDuration = InRecordingDuration;
 
         // Register delegate to capture frames during the rendering process
         if (GEngine->GameViewport)
@@ -134,6 +134,15 @@ void UBH_GameRecorder::StopRecording()
         {
             GEngine->GameViewport->OnDrawn().RemoveAll(this);
         }
+
+        // destroy VideoEncoder
+        VideoEncoder.Reset();
+
+        // Remove staging texture
+        if (StagingTexture)
+        {
+            StagingTexture.SafeRelease();
+        }
     }
 }
 
@@ -156,12 +165,26 @@ FString UBH_GameRecorder::SaveRecording()
 
 void UBH_GameRecorder::Tick(float DeltaTime)
 {
+    if (bIsRecording)
+    {
+        // if viewport size has changed, restart recording
+        FViewport* Viewport = GEngine->GameViewport->Viewport;
+        if (Viewport)
+        {
+            FIntPoint ViewportSize = Viewport->GetSizeXY();
+            if (ViewportSize.X != ViewportWidth || ViewportSize.Y != ViewportHeight)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Viewport size has changed. Restarting recording..."));
+                
+                StopRecording();
+                StartRecording(TargetFPS, FTimespan::FromSeconds(0));
+            }
+        }
+    }
+    
     if (bCopyTextureStarted && CopyTextureFence.IsFenceComplete())
     {
         bCopyTextureStarted = false;
-
-        // Log viewport size and raw data size
-        UE_LOG(LogTemp, Warning, TEXT("Viewport size: %d x %d, Raw data size: %d x %d"), ViewportWidth, ViewportHeight, RawDataWidth, RawDataHeight);
 
         // Make sure that PendingPixels is of the correct size
         int32 NumPixels = RawDataWidth * RawDataHeight;
@@ -261,6 +284,12 @@ void UBH_GameRecorder::ReadPixels()
     FViewport* Viewport = GEngine->GameViewport->Viewport;
     if (!Viewport) return;
 
+    // execute only if viewport sizes are same as registered
+    if (Viewport->GetSizeXY().X != ViewportWidth || Viewport->GetSizeXY().Y != ViewportHeight)
+    {
+        return;
+    }
+
     ENQUEUE_RENDER_COMMAND(CopyTextureCommand)(
         [this](FRHICommandListImmediate& RHICmdList) mutable
         {
@@ -282,34 +311,6 @@ void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FCol
     TSharedPtr<FBH_Frame> Frame = MakeShareable(new FBH_Frame(Width, Height));
     Frame->Data = Data;
     FrameBuffer->SetFrame(Frame);
-}
-
-void UBH_GameRecorder::PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& Height)
-{
-    int32 PaddedWidth = (Width + 3) & ~3;
-    int32 PaddedHeight = (Height + 3) & ~3;
-
-    if (PaddedWidth == Width && PaddedHeight == Height)
-    {
-        // No padding needed
-        return;
-    }
-
-    TArray<FColor> PaddedBitmap;
-    PaddedBitmap.SetNumZeroed(PaddedWidth * PaddedHeight);
-
-    for (int32 Y = 0; Y < Height; ++Y)
-    {
-        FMemory::Memcpy(
-            PaddedBitmap.GetData() + Y * PaddedWidth,
-            Bitmap.GetData() + Y * Width,
-            Width * sizeof(FColor)
-        );
-    }
-
-    Bitmap = MoveTemp(PaddedBitmap);
-    Width = PaddedWidth;
-    Height = PaddedHeight;
 }
 
 FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)

@@ -6,6 +6,7 @@
 #include "BH_FFmpeg.h"
 
 const int SEGMENT_DURATION_SECONDS = 10;
+FString BH_VideoEncoder::PreferredFfmpegOptions;
 
 BH_VideoEncoder::BH_VideoEncoder(
     int32 InTargetFPS,
