@@ -302,6 +302,12 @@ void UBH_GameRecorder::ReadPixels()
     ENQUEUE_RENDER_COMMAND(CopyTextureCommand)(
         [this](FRHICommandListImmediate& RHICmdList) mutable
         {
+            // Check for the second time, because the viewport state can change
+            if (!GEngine || !GEngine->GameViewport) return;
+
+            FViewport* Viewport = GEngine->GameViewport->Viewport;
+            if (!Viewport) return;
+
             FRHICopyTextureInfo CopyInfo;
             RHICmdList.CopyTexture(GEngine->GameViewport->Viewport->GetRenderTargetTexture(), StagingTexture, CopyInfo);
 
