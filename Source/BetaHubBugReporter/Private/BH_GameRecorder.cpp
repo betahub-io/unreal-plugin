@@ -20,7 +20,7 @@ bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint
 #endif
 
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
-    : Super(ObjectInitializer), bIsRecording(false), bCopyTextureStarted(false), RawDataWidth(0), RawDataHeight(0)
+    : Super(ObjectInitializer), bIsRecording(false), bCopyTextureStarted(false), StagingTexture(nullptr), RawDataWidth(0), RawDataHeight(0)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -68,37 +68,6 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InReco
 
     if (!bIsRecording)
     {
-        FViewport* Viewport = GEngine->GameViewport->Viewport;
-        
-        FTexture2DRHIRef GameBuffer = Viewport->GetRenderTargetTexture();
-        FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
-
-        FRHITextureCreateDesc TextureCreateDesc = FRHITextureCreateDesc::Create2D(
-            TEXT("StagingTexture"),
-            GameBuffer->GetSizeX(),
-            GameBuffer->GetSizeY(),
-            GameBuffer->GetFormat()
-        );
-        TextureCreateDesc.SetNumMips(GameBuffer->GetNumMips());
-        TextureCreateDesc.SetNumSamples(GameBuffer->GetNumSamples());
-        TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
-        TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
-
-#if ENGINE_MINOR_VERSION >= 40
-        StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
-#else
-        StagingTexture = RHICreateTexture(TextureCreateDesc);
-#endif
-
-        StagingTextureFormat = StagingTexture->GetFormat();
-
-        // check if the texture was created
-        if (!StagingTexture)
-        {
-            UE_LOG(LogTemp, Error, TEXT("Failed to create staging texture."));
-            return;
-        }
-
         VideoEncoder->StartRecording();
         bIsRecording = true;
         TargetFPS = InTargetFPS;
@@ -277,8 +246,53 @@ void UBH_GameRecorder::CaptureFrame()
     }
 
     LastCaptureTime = FDateTime::UtcNow();
+
+    // Create the staging texture if not already created.
+    // We need to do it here since UE 5.3 does not allow creating textures outside the Draw event.
+    if (StagingTexture == nullptr)
+    {
+        ENQUEUE_RENDER_COMMAND(CaptureFrameCommand)(
+        [this](FRHICommandListImmediate& RHICmdList)
+        {
+            FViewport* Viewport = GEngine->GameViewport->Viewport;
+            
+            FTexture2DRHIRef GameBuffer = Viewport->GetRenderTargetTexture();
+            if (!GameBuffer)
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to get game buffer. Will try next time..."));
+                return;
+            }
+
+            FRHITextureCreateDesc TextureCreateDesc = FRHITextureCreateDesc::Create2D(
+                TEXT("StagingTexture"),
+                GameBuffer->GetSizeX(),
+                GameBuffer->GetSizeY(),
+                GameBuffer->GetFormat()
+            );
+            TextureCreateDesc.SetNumMips(GameBuffer->GetNumMips());
+            TextureCreateDesc.SetNumSamples(GameBuffer->GetNumSamples());
+            TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
+            TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
+
+    #if ENGINE_MINOR_VERSION >= 40
+            FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+            StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
+    #else
+            StagingTexture = RHICreateTexture(TextureCreateDesc);
+    #endif
+
+            StagingTextureFormat = StagingTexture->GetFormat();
+
+            // check if the texture was created
+            if (!StagingTexture)
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to create staging texture."));
+                return;
+            }
+        });
+    }
     
-    if (!bCopyTextureStarted)
+    if (!bCopyTextureStarted && StagingTexture != nullptr)
     {
         ReadPixels();
     }
