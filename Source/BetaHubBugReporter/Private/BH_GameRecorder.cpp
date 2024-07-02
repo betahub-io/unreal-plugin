@@ -15,6 +15,10 @@
 #include "RenderGraphUtils.h"
 #include "RHISurfaceDataConversion.h"
 
+#if ENGINE_MINOR_VERSION < 40
+bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags);
+#endif
+
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer), bIsRecording(false), bCopyTextureStarted(false), RawDataWidth(0), RawDataHeight(0)
 {
@@ -79,7 +83,12 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InReco
         TextureCreateDesc.SetNumSamples(GameBuffer->GetNumSamples());
         TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
         TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
+
+#if ENGINE_MINOR_VERSION >= 40
         StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
+#else
+        StagingTexture = RHICreateTexture(TextureCreateDesc);
+#endif
 
         StagingTextureFormat = StagingTexture->GetFormat();
 
@@ -335,3 +344,115 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
 
     return ScreenshotFilename;
 }
+
+#if ENGINE_MINOR_VERSION < 40
+bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags)
+{
+	// InFlags.GetLinearToGamma() is ignored by the FLinearColor reader
+
+	// Flags RCM_MinMax means pass the values out unchanged
+	//	default flags RCM_UNorm rescales them to [0,1] if they were outside that range
+
+	if (Format == PF_R8G8B8A8)
+	{
+		ConvertRawR8G8B8A8DataToFLinearColor(Width, Height, In, SrcPitch, Out);
+		return true;
+	}
+	else if (Format == PF_B8G8R8A8)
+	{
+		ConvertRawB8G8R8A8DataToFLinearColor(Width, Height, In, SrcPitch, Out);
+		return true;
+	}
+	else if (Format == PF_A2B10G10R10)
+	{
+		ConvertRawA2B10G10R10DataToFLinearColor(Width, Height, In, SrcPitch, Out);
+		return true;
+	}
+	else if (Format == PF_FloatRGBA)
+	{
+		ConvertRawR16G16B16A16FDataToFLinearColor(Width, Height, In, SrcPitch, Out, InFlags);
+		return true;
+	}
+	else if (Format == PF_A32B32G32R32F)
+	{
+		ConvertRawR32G32B32A32DataToFLinearColor(Width, Height, In, SrcPitch, Out, InFlags);
+		return true;
+	}
+	else if ( Format == PF_D24 ||
+		( (Format == PF_X24_G8 || Format == PF_DepthStencil ) && GPixelFormats[Format].BlockBytes == 4 )
+		)
+	{
+		//	see CVarD3D11UseD24/CVarD3D12UseD24
+		ConvertRawR24G8DataToFLinearColor(Width, Height, In, SrcPitch, Out, InFlags);
+		return true;
+	}
+	else if (Format == PF_A16B16G16R16)
+	{
+		ConvertRawR16G16B16A16DataToFLinearColor(Width, Height, In, SrcPitch, Out);
+		return true;
+	}
+	else if (Format == PF_G16R16)
+	{
+		ConvertRawR16G16DataToFLinearColor(Width, Height, In, SrcPitch, Out);
+		return true;
+	}
+	else if (Format == PF_G16R16F)
+	{
+		// Read the data out of the buffer, converting it to FLinearColor.
+		for (uint32 Y = 0; Y < Height; Y++)
+		{
+			FFloat16 * SrcPtr = (FFloat16*)(In + Y * SrcPitch);
+			FLinearColor* DestPtr = Out + Y * Width;
+			for (uint32 X = 0; X < Width; X++)
+			{
+				*DestPtr = FLinearColor( SrcPtr[0].GetFloat(), SrcPtr[1].GetFloat(), 0.f,1.f);
+				SrcPtr += 2;
+				++DestPtr;
+			}
+		}
+		return true;
+	}
+	else if (Format == PF_G32R32F)
+	{
+		// not doing MinMax/Unorm remap here
+	
+		// Read the data out of the buffer, converting it to FLinearColor.
+		for (uint32 Y = 0; Y < Height; Y++)
+		{
+			float * SrcPtr = (float *)(In + Y * SrcPitch);
+			FLinearColor* DestPtr = Out + Y * Width;
+			for (uint32 X = 0; X < Width; X++)
+			{
+				*DestPtr = FLinearColor( SrcPtr[0], SrcPtr[1], 0.f, 1.f );
+				SrcPtr += 2;
+				++DestPtr;
+			}
+		}
+		return true;
+	}
+	else if (Format == PF_R32_FLOAT)
+	{
+		// not doing MinMax/Unorm remap here
+	
+		// Read the data out of the buffer, converting it to FLinearColor.
+		for (uint32 Y = 0; Y < Height; Y++)
+		{
+			float * SrcPtr = (float *)(In + Y * SrcPitch);
+			FLinearColor* DestPtr = Out + Y * Width;
+			for (uint32 X = 0; X < Width; X++)
+			{
+				*DestPtr = FLinearColor( SrcPtr[0], 0.f, 0.f, 1.f );
+				++SrcPtr;
+				++DestPtr;
+			}
+		}
+		return true;
+	}
+	else
+	{
+		// not supported yet
+		check(0);
+		return false;
+	}
+}
+#endif
