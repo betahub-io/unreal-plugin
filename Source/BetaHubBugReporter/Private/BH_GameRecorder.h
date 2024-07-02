@@ -46,12 +46,26 @@ public:
     virtual TStatId GetStatId() const override;
 
 private:
-    bool bReadPixelsStarted;
-    FRenderCommandFence ReadPixelFence;
-    TArray<FColor> PendingPixels;
+    bool bCopyTextureStarted;
+    FRenderCommandFence CopyTextureFence;
 
+    TArray<FLinearColor> PendingLinearPixels;
+    TArray<FColor> PendingPixels;
+    TArray<FColor> ResizedPixels;
+
+    FTexture2DRHIRef StagingTexture;
+    EPixelFormat StagingTextureFormat;
+
+    int32 ViewportWidth;
+    int32 ViewportHeight;
+    int32 FrameWidth;
+    int32 FrameHeight;
     int32 TargetFPS;
     FDateTime LastCaptureTime;
+
+    void *RawData;
+    int32 RawDataWidth;
+    int32 RawDataHeight;
 
     void CaptureFrame();
     void CaptureRenderTargetFrame();
@@ -59,4 +73,5 @@ private:
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void PadBitmap(TArray<FColor>& Bitmap, int32& Width, int32& Height);
+    void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);
 };

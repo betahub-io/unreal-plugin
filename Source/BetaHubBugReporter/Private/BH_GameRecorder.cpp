@@ -13,9 +13,10 @@
 #include "RenderCommandFence.h"
 #include "Async/Async.h"
 #include "RenderGraphUtils.h"
+#include "RHISurfaceDataConversion.h"
 
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
-    : Super(ObjectInitializer), bIsRecording(false), bReadPixelsStarted(false)
+    : Super(ObjectInitializer), bIsRecording(false), bCopyTextureStarted(false), RawDataWidth(0), RawDataHeight(0)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -51,18 +52,45 @@ void UBH_GameRecorder::StartRecording(int32 targetFPS, const FTimespan& Recordin
         }
 
         FIntPoint ViewportSize = Viewport->GetSizeXY();
-        int32 ScreenWidth = ViewportSize.X;
-        int32 ScreenHeight = ViewportSize.Y;
+        ViewportWidth = FrameWidth = ViewportSize.X;
+        ViewportHeight = FrameHeight = ViewportSize.Y;
 
         // Adjust to the nearest multiple of 4
-        ScreenWidth = (ScreenWidth + 3) & ~3;
-        ScreenHeight = (ScreenHeight + 3) & ~3;
+        FrameWidth = (FrameWidth + 3) & ~3;
+        FrameHeight = (FrameHeight + 3) & ~3;
 
-        VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, RecordingDuration, ScreenWidth, ScreenHeight, FrameBuffer));
+        VideoEncoder = MakeShareable(new BH_VideoEncoder(targetFPS, RecordingDuration, FrameWidth, FrameHeight, FrameBuffer));
     }
 
     if (!bIsRecording)
     {
+        FViewport* Viewport = GEngine->GameViewport->Viewport;
+        
+        FTexture2DRHIRef GameBuffer = Viewport->GetRenderTargetTexture();
+        FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+
+        // Definicja tekstury stagingowej
+        FRHITextureCreateDesc TextureCreateDesc = FRHITextureCreateDesc::Create2D(
+            TEXT("CopiedTexture"),
+            GameBuffer->GetSizeX(),
+            GameBuffer->GetSizeY(),
+            GameBuffer->GetFormat()
+        );
+        TextureCreateDesc.SetNumMips(GameBuffer->GetNumMips());
+        TextureCreateDesc.SetNumSamples(GameBuffer->GetNumSamples());
+        TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
+        TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
+        StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
+
+        StagingTextureFormat = StagingTexture->GetFormat();
+
+        // check if the texture was created
+        if (!StagingTexture)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to create staging texture."));
+            return;
+        }
+
         VideoEncoder->StartRecording();
         bIsRecording = true;
         TargetFPS = targetFPS;
@@ -128,21 +156,73 @@ FString UBH_GameRecorder::SaveRecording()
 
 void UBH_GameRecorder::Tick(float DeltaTime)
 {
-    if (bReadPixelsStarted && ReadPixelFence.IsFenceComplete())
+    if (bCopyTextureStarted && CopyTextureFence.IsFenceComplete())
     {
-        if (PendingPixels.Num() > 0)
+        bCopyTextureStarted = false;
+
+        // Log viewport size and raw data size
+        UE_LOG(LogTemp, Warning, TEXT("Viewport size: %d x %d, Raw data size: %d x %d"), ViewportWidth, ViewportHeight, RawDataWidth, RawDataHeight);
+
+        // Make sure that PendingPixels is of the correct size
+        int32 NumPixels = RawDataWidth * RawDataHeight;
+
+        if (PendingLinearPixels.Num() != NumPixels)
         {
-            FViewport* Viewport = GEngine->GameViewport->Viewport;
-            int32 Width = Viewport->GetSizeXY().X;
-            int32 Height = Viewport->GetSizeXY().Y;
-
-            TArray<FColor> CapturedBitmap = PendingPixels;
-            PadBitmap(CapturedBitmap, Width, Height);
-
-            SetFrameData(Width, Height, CapturedBitmap);
+            PendingLinearPixels.SetNumUninitialized(NumPixels);
+            PendingPixels.SetNumUninitialized(NumPixels);
         }
 
-        bReadPixelsStarted = false;
+        uint32 Pitch = GPixelFormats[StagingTextureFormat].BlockBytes * RawDataWidth;
+
+        // Perform the heavy lifting in an asynchronous task
+        AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, NumPixels, Pitch]()
+        {
+            // Convert raw surface data to linear color
+            ConvertRAWSurfaceDataToFLinearColor(StagingTextureFormat, RawDataWidth, RawDataHeight, reinterpret_cast<uint8*>(RawData), Pitch, PendingLinearPixels.GetData(), FReadSurfaceDataFlags({}));
+
+            // Convert linear color to FColor
+            for (int32 i = 0; i < NumPixels; ++i)
+            {
+                PendingPixels[i] = PendingLinearPixels[i].ToFColor(false);
+            }
+
+            // Resize image to frame
+            ResizeImageToFrame(PendingPixels, RawDataWidth, RawDataHeight, FrameWidth, FrameHeight, ResizedPixels);
+
+            // Set frame data on the game thread
+            AsyncTask(ENamedThreads::GameThread, [this]()
+            {
+                SetFrameData(FrameWidth, FrameHeight, ResizedPixels);
+            });
+        });
+    }
+}
+
+void UBH_GameRecorder::ResizeImageToFrame(
+    const TArray<FColor>& ImageData, 
+    uint32 ImageWidth, 
+    uint32 ImageHeight, 
+    uint32 InFrameWidth, 
+    uint32 InFrameHeight,
+    TArray<FColor>& ResizedImage)
+{
+    ResizedImage.SetNum(InFrameWidth * InFrameHeight);
+
+    for (uint32 Y = 0; Y < InFrameHeight; ++Y)
+    {
+        for (uint32 X = 0; X < InFrameWidth; ++X)
+        {
+            if (X < ImageWidth && Y < ImageHeight)
+            {
+                // If within the bounds of the original image, copy the pixel
+                ResizedImage[Y * InFrameWidth + X] = ImageData[Y * ImageWidth + X];
+            }
+            else
+            {
+                // If outside the bounds, set a default color (e.g., black)
+                ResizedImage[Y * InFrameWidth + X] = FColor::Black;
+            }
+        }
     }
 }
 
@@ -168,7 +248,7 @@ void UBH_GameRecorder::CaptureFrame()
 
     LastCaptureTime = FDateTime::UtcNow();
     
-    if (!bReadPixelsStarted)
+    if (!bCopyTextureStarted)
     {
         ReadPixels();
     }
@@ -181,47 +261,20 @@ void UBH_GameRecorder::ReadPixels()
     FViewport* Viewport = GEngine->GameViewport->Viewport;
     if (!Viewport) return;
 
-    FIntPoint ViewportSize = Viewport->GetSizeXY();
-    int32 NumPixels = ViewportSize.X * ViewportSize.Y;
-
-    if (PendingPixels.Num() != NumPixels)
-    {
-        PendingPixels.SetNumUninitialized(NumPixels);
-    }
-
-    struct FReadSurfaceContext
-    {
-        FRenderTarget* SrcRenderTarget;
-        TArray<FColor>* OutData;
-        FIntRect Rect;
-        FReadSurfaceDataFlags Flags;
-    };
-
-    FReadSurfaceDataFlags ReadSurfaceDataFlags(RCM_UNorm);
-    ReadSurfaceDataFlags.SetLinearToGamma(false); // Adjust based on your requirement.
-
-    FReadSurfaceContext ReadSurfaceContext =
-    {
-        Viewport,
-        &PendingPixels,
-        FIntRect(0, 0, ViewportSize.X, ViewportSize.Y),
-        ReadSurfaceDataFlags
-    };
-
-    ENQUEUE_RENDER_COMMAND(ReadSurfaceCommand)(
-        [ReadSurfaceContext](FRHICommandListImmediate& RHICmdList)
+    ENQUEUE_RENDER_COMMAND(CopyTextureCommand)(
+        [this](FRHICommandListImmediate& RHICmdList) mutable
         {
-            RHICmdList.ReadSurfaceData(
-                ReadSurfaceContext.SrcRenderTarget->GetRenderTargetTexture(),
-                ReadSurfaceContext.Rect,
-                *ReadSurfaceContext.OutData,
-                ReadSurfaceContext.Flags
-            );
+            FRHICopyTextureInfo CopyInfo;
+            RHICmdList.CopyTexture(GEngine->GameViewport->Viewport->GetRenderTargetTexture(), StagingTexture, CopyInfo);
+
+            RHICmdList.MapStagingSurface(StagingTexture, this->RawData, this->RawDataWidth, this->RawDataHeight);
+
+            RHICmdList.UnmapStagingSurface(StagingTexture);
         }
     );
 
-    ReadPixelFence.BeginFence();
-    bReadPixelsStarted = true;
+    CopyTextureFence.BeginFence();
+    bCopyTextureStarted = true;
 }
 
 void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data)
