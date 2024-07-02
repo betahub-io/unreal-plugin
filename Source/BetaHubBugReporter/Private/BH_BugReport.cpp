@@ -23,13 +23,22 @@ void UBH_BugReport::SubmitReport(
     const FString& StepsToReproduce,
     const FString& ScreenshotPath,
     const FString& LogFileContents,
+    bool bIncludeVideo,
+    bool bIncludeLogs,
+    bool bIncludeScreenshot,
     TFunction<void()> OnSuccess,
     TFunction<void(const FString&)> OnFailure
 )
 {
-    Async(EAsyncExecution::Thread, [this, Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents, OnSuccess, OnFailure]()
+    Async(EAsyncExecution::Thread,
+        [this,
+        Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
+        bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
+        OnSuccess, OnFailure]()
     {
-        SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents, OnSuccess, OnFailure);
+        SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
+            bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
+            OnSuccess, OnFailure);
     });
 }
 
@@ -40,6 +49,9 @@ void UBH_BugReport::SubmitReportAsync(
     const FString& StepsToReproduce,
     const FString& ScreenshotPath,
     const FString& LogFileContents,
+    bool bIncludeVideo,
+    bool bIncludeLogs,
+    bool bIncludeScreenshot,
     TFunction<void()> OnSuccess,
     TFunction<void(const FString&)> OnFailure
     )
@@ -62,7 +74,9 @@ void UBH_BugReport::SubmitReportAsync(
     InitialRequest->FinalizeFormData();
 
     InitialRequest->ProcessRequest(
-        [this, Settings, GameRecorder, ScreenshotPath, LogFileContents, InitialRequest, OnSuccess, OnFailure]
+        [this, Settings, GameRecorder, ScreenshotPath, LogFileContents, InitialRequest,
+        bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
+        OnSuccess, OnFailure]
         (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bWasSuccessful && Response->GetResponseCode() == 201)
@@ -78,7 +92,10 @@ void UBH_BugReport::SubmitReportAsync(
                 FString VideoPath;
                 if (GameRecorder)
                 {
-                    VideoPath = GameRecorder->SaveRecording();
+                    if (bIncludeVideo)
+                    {
+                        VideoPath = GameRecorder->SaveRecording();
+                    }
                     GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
                 }
                 
@@ -92,7 +109,7 @@ void UBH_BugReport::SubmitReportAsync(
                         PlatformFile.DeleteFile(*VideoPath);
                     }
                 }
-                if (!ScreenshotPath.IsEmpty())
+                if (!ScreenshotPath.IsEmpty() && bIncludeScreenshot)
                 {
                     SubmitMedia(Settings, IssueId, TEXT("screenshots"), TEXT("screenshot[image]"), ScreenshotPath, "", TEXT("image/png"));
 
@@ -102,7 +119,7 @@ void UBH_BugReport::SubmitReportAsync(
                         PlatformFile.DeleteFile(*ScreenshotPath);
                     }
                 }
-                if (!LogFileContents.IsEmpty())
+                if (!LogFileContents.IsEmpty() && bIncludeLogs)
                 {
                     SubmitMedia(Settings, IssueId, TEXT("log_files"), TEXT("log_file[contents]"), "", LogFileContents, TEXT("text/plain"));
                 }
@@ -111,8 +128,9 @@ void UBH_BugReport::SubmitReportAsync(
         else
         {
             // ShowPopup(TEXT("Failed to submit bug report."));
+            FString Error = ParseErrorFromResponse(Response->GetContentAsString());
             UE_LOG(LogTemp, Error, TEXT("Failed to submit bug report: %s"), *Response->GetContentAsString());
-            OnFailure(Response->GetContentAsString());
+            OnFailure(Error);
         }
 
         delete InitialRequest;
@@ -183,6 +201,18 @@ FString UBH_BugReport::ParseIssueIdFromResponse(const FString& Response)
     if (FJsonSerializer::Deserialize(Reader, JsonObject))
     {
         return JsonObject->GetStringField(TEXT("id"));
+    }
+    return FString();
+}
+
+FString UBH_BugReport::ParseErrorFromResponse(const FString& Response)
+{
+    // Parse the error message from the JSON response
+    TSharedPtr<FJsonObject> JsonObject;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response);
+    if (FJsonSerializer::Deserialize(Reader, JsonObject))
+    {
+        return JsonObject->GetStringField(TEXT("error"));
     }
     return FString();
 }

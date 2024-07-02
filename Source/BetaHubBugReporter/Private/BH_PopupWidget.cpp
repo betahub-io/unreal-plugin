@@ -3,6 +3,21 @@
 
 #include "BH_PopupWidget.h"
 
+void UBH_PopupWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    if (this->CloseButton)
+    {
+        this->CloseButton->OnClicked.AddDynamic(this, &UBH_PopupWidget::OnCloseClicked);
+    }
+}
+
+void UBH_PopupWidget::OnCloseClicked()
+{
+    RemoveFromParent();
+}
+
 void UBH_PopupWidget::SetMessage(const FString& InTitle, const FString& InDescription)
 {
     if (this->Title)

@@ -15,12 +15,21 @@ class UBH_PopupWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
+	UFUNCTION()
+	void OnCloseClicked();
+
+	protected:
+		virtual void NativeConstruct() override;
+
 	public:
 		UPROPERTY(meta = (BindWidget))
-		class UTextBlock* Title;
+		UTextBlock* Title;
 
 		UPROPERTY(meta = (BindWidget))
-		class UTextBlock* Description;
+		UTextBlock* Description;
+
+		UPROPERTY(meta = (BindWidget))
+		UButton* CloseButton;
 
 		UFUNCTION(BlueprintCallable, Category="Popup")
 		void SetMessage(const FString& InTitle, const FString& InDescription);

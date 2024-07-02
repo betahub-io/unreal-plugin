@@ -22,6 +22,9 @@ public:
         const FString& StepsToReproduce,
         const FString& ScreenshotPath,
         const FString& LogFileContents,
+        bool bIncludeVideo,
+        bool bIncludeLogs,
+        bool bIncludeScreenshot,
         TFunction<void()> OnSuccess,
         TFunction<void(const FString&)> OnFailure);
 
@@ -33,6 +36,9 @@ private:
         const FString& StepsToReproduce,
         const FString& ScreenshotPath,
         const FString& LogFileContents,
+        bool bIncludeVideo,
+        bool bIncludeLogs,
+        bool bIncludeScreenshot,
         TFunction<void()> OnSuccess,
         TFunction<void(const FString&)> OnFailure);
 
@@ -46,5 +52,6 @@ private:
         const FString& ContentType);
 
     FString ParseIssueIdFromResponse(const FString& Response);
+    FString ParseErrorFromResponse(const FString& Response);
     void ShowPopup(const FString& Message);
 };

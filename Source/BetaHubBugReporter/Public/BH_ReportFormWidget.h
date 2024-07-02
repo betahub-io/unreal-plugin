@@ -6,6 +6,7 @@
 #include "Components/Button.h"
 #include "Components/MultiLineEditableTextBox.h"
 #include "Components/TextBlock.h"
+#include "Components/CheckBox.h"
 #include "BH_ReportFormWidget.generated.h"
 
 UCLASS()
@@ -28,6 +29,9 @@ private:
     bool bWasCursorVisible;
     bool bWasCursorLocked;
 
+    UFUNCTION()
+    void OnCloseClicked();
+
     void ShowPopup(const FString& Title, const FString& Description);
 
 protected:
@@ -39,7 +43,7 @@ public:
     UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer);
 
     UPROPERTY(meta = (BindWidget))
-    UButton* SubmitButton;
+    UButton* CloseButton;
 
     UPROPERTY(meta = (BindWidget))
     UMultiLineEditableTextBox* BugDescriptionEdit;
@@ -48,7 +52,20 @@ public:
     UMultiLineEditableTextBox* StepsToReproduceEdit;
 
     UPROPERTY(meta = (BindWidget))
+    UCheckBox* IncludeVideoCheckbox;
+
+    UPROPERTY(meta = (BindWidget))
+    UCheckBox* IncludeLogsCheckbox;
+
+    UPROPERTY(meta = (BindWidget))
+    UCheckBox* IncludeScreenshotCheckbox;
+
+    UPROPERTY(meta = (BindWidget))
+    UButton* SubmitButton;
+
+    UPROPERTY(meta = (BindWidget))
     UTextBlock* SubmitLabel;
+
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents);

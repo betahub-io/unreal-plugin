@@ -9,7 +9,7 @@
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr), InputComponent(nullptr)
 {
-    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/BugReportingForm"));
+    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/BugReportForm"));
     if (WidgetClassFinder.Succeeded())
     {
         ReportFormWidgetClass = WidgetClassFinder.Class;

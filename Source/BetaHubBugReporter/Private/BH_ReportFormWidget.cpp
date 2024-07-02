@@ -14,7 +14,7 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     , bWasCursorLocked(false)
 {
     // find the widget class
-    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/Popup"));
+    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
     if (WidgetClassFinder.Succeeded())
     {
         PopupWidgetClass = WidgetClassFinder.Class;
@@ -23,6 +23,7 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to find widget class at specified path."));
     }
+
 }
 
 void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents)
@@ -43,6 +44,7 @@ void UBH_ReportFormWidget::SubmitReport()
 
     UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
     BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, ScreenshotPath, LogFileContents,
+        IncludeVideoCheckbox->IsChecked(), IncludeLogsCheckbox->IsChecked(), IncludeScreenshotCheckbox->IsChecked(),
         [this]()
         {
             ShowPopup("Success", "Report submitted successfully!");
@@ -51,7 +53,7 @@ void UBH_ReportFormWidget::SubmitReport()
         [this](const FString& ErrorMessage)
         {
             ShowPopup("Error", ErrorMessage);
-            RemoveFromParent();
+            SubmitLabel->SetText(FText::FromString("Submit"));
         }
     );
 }
@@ -104,6 +106,11 @@ void UBH_ReportFormWidget::NativeConstruct()
         SubmitButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnSubmitButtonClicked);
     }
 
+    if (CloseButton)
+    {
+        CloseButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnCloseClicked);
+    }
+
     GameRecorder->StopRecording();
 }
 
@@ -123,16 +130,24 @@ void UBH_ReportFormWidget::OnSubmitButtonClicked()
     SubmitReport();
 }
 
+void UBH_ReportFormWidget::OnCloseClicked()
+{
+    GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+    RemoveFromParent();
+}
+
 void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Description)
 {
     if (PopupWidgetClass)
     {
-        // UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), UBH_PopupWidget::StaticClass());
-        // if (PopupWidget)
-        // {
-        //     PopupWidget->SetMessage(Title, Description);
-        //     PopupWidget->AddToViewport();
-        // }
+        UE_LOG(LogTemp, Log, TEXT("Widget class: %s"), *PopupWidgetClass->GetName());
+        
+        UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), PopupWidgetClass);
+        if (PopupWidget)
+        {
+            PopupWidget->SetMessage(Title, Description);
+            PopupWidget->AddToViewport();
+        }
     }
     else
     {
