@@ -15,7 +15,7 @@
 #include "RenderGraphUtils.h"
 #include "RHISurfaceDataConversion.h"
 
-#if ENGINE_MINOR_VERSION < 40
+#if ENGINE_MINOR_VERSION < 4
 bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags);
 #endif
 
@@ -275,8 +275,7 @@ void UBH_GameRecorder::CaptureFrame()
             TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
             TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
 
-    #if ENGINE_MINOR_VERSION >= 40
-            FRHICommandListImmediate& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
+    #if ENGINE_MINOR_VERSION >= 4
             StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
     #else
             StagingTexture = RHICreateTexture(TextureCreateDesc);
@@ -364,7 +363,7 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     return ScreenshotFilename;
 }
 
-#if ENGINE_MINOR_VERSION < 40
+#if ENGINE_MINOR_VERSION < 4
 bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags)
 {
 	// InFlags.GetLinearToGamma() is ignored by the FLinearColor reader
