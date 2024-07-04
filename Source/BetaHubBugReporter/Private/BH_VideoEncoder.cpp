@@ -272,7 +272,7 @@ void BH_VideoEncoder::RunEncoding()
 
     // true here tells the runnable to close stdin instead of forcefully terminating the process
     // this is necessary for ffmpeg to properly close the output file
-    ffmpegRunnable->Stop(true);
+    ffmpegRunnable->Terminate(true);
 
     delete ffmpegRunnable;
 }

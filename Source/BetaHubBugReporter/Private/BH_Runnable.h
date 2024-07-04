@@ -15,7 +15,7 @@ public:
     virtual uint32 Run() override;
     void WriteToPipe(const TArray<uint8>& Data);
     FString GetBufferedOutput();
-    void Stop(bool bCloseStdin = false);
+    void Terminate(bool bCloseStdin = false);
     bool IsProcessRunning(int32* ExitCode = nullptr);
     void WaitForExit();
 

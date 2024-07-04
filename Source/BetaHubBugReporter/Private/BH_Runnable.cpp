@@ -36,7 +36,7 @@ FBH_Runnable::FBH_Runnable(const FString& Command, const FString& Params, const 
 
 FBH_Runnable::~FBH_Runnable()
 {
-    Stop();
+    Terminate();
     if (Thread)
     {
         Thread->WaitForCompletion();
@@ -132,7 +132,7 @@ FString FBH_Runnable::GetBufferedOutput()
     return BufferedOutput;
 }
 
-void FBH_Runnable::Stop(bool bCloseStdin)
+void FBH_Runnable::Terminate(bool bCloseStdin)
 {
     if (Thread)
     {
