@@ -11,8 +11,6 @@
 void FBetaHubBugReporterModule::StartupModule()
 {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-	UE_LOG(LogTemp, Warning, TEXT("Hello, BetaHubBugReporter Plugin 2!"));
-
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
     {
         SettingsModule->RegisterSettings("Project", "Plugins", "BetaHub Bug Reporter",

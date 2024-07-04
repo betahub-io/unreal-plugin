@@ -10,28 +10,24 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     : Super(ObjectInitializer)
     , GameRecorder(nullptr)
     , Settings(nullptr)
+    , bCursorStateModified(false)
     , bWasCursorVisible(false)
     , bWasCursorLocked(false)
 {
-    // find the widget class
-    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
-    if (WidgetClassFinder.Succeeded())
-    {
-        PopupWidgetClass = WidgetClassFinder.Class;
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find widget class at specified path."));
-    }
-
 }
 
-void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents)
+void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents,
+bool bTryCaptureMouse)
 {
     Settings = InSettings;
     GameRecorder = InGameRecorder;
     ScreenshotPath = InScreenshotPath;
     LogFileContents = InLogFileContents;
+
+    if (bTryCaptureMouse)
+    {
+        SetCursorState();
+    }
 }
 
 void UBH_ReportFormWidget::SubmitReport()
@@ -63,6 +59,7 @@ void UBH_ReportFormWidget::SetCursorState()
     if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
     {
         // Save the current cursor state
+        bCursorStateModified = true;
         bWasCursorVisible = PlayerController->bShowMouseCursor;
         bWasCursorLocked = PlayerController->IsInputKeyDown(EKeys::LeftMouseButton);
 
@@ -76,6 +73,11 @@ void UBH_ReportFormWidget::SetCursorState()
 
 void UBH_ReportFormWidget::RestoreCursorState()
 {
+    if (!bCursorStateModified)
+    {
+        return;
+    }
+    
     if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
     {
         // Restore the previous cursor state
@@ -90,15 +92,14 @@ void UBH_ReportFormWidget::RestoreCursorState()
         }
         PlayerController->SetIgnoreLookInput(false);
         PlayerController->SetIgnoreMoveInput(false);
+
+        bCursorStateModified = false;
     }
 }
 
 void UBH_ReportFormWidget::NativeConstruct()
 {
     Super::NativeConstruct();
-
-    // Set cursor state when the widget is constructed (shown)
-    SetCursorState();
 
     // Bind the button click event
     if (SubmitButton)
@@ -138,11 +139,9 @@ void UBH_ReportFormWidget::OnCloseClicked()
 
 void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Description)
 {
-    if (PopupWidgetClass)
+    if (Settings->PopupWidgetClass)
     {
-        UE_LOG(LogTemp, Log, TEXT("Widget class: %s"), *PopupWidgetClass->GetName());
-        
-        UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), PopupWidgetClass);
+        UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), Settings->PopupWidgetClass);
         if (PopupWidget)
         {
             PopupWidget->SetMessage(Title, Description);

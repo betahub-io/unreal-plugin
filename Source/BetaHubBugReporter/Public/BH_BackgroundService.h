@@ -4,15 +4,18 @@
 #include "BH_PluginSettings.h"
 #include "BH_GameRecorder.h"
 #include "BH_LogCapture.h"
+#include "BH_ReportFormWidget.h"
 #include "BH_BackgroundService.generated.h"
 
-UCLASS()
+UCLASS(Blueprintable)
 class BETAHUBBUGREPORTER_API UBH_BackgroundService : public UObject
 {
     GENERATED_BODY()
 
 private:
+    UPROPERTY()
     UBH_PluginSettings* Settings;
+
     UPROPERTY()
     UBH_GameRecorder* GameRecorder;
 
@@ -22,6 +25,7 @@ private:
     TSubclassOf<UUserWidget> ReportFormWidgetClass;
 
     UInputComponent* InputComponent;
+
     FTimerHandle TimerHandle;
 
     FString ScreenshotPath;
@@ -33,15 +37,18 @@ private:
 public:
     UBH_BackgroundService();
 
-    void Init(UBH_PluginSettings* InSettings);
+    UFUNCTION(BlueprintCallable, Category="BugReport")
+    UBH_ReportFormWidget* SpawnBugReportWidget(TSubclassOf<UUserWidget> WidgetClass, bool bTryCaptureMouse);
+
     void StartService();
     void StopService();
 
     void CaptureScreenshot();
-    void TriggerBugReportForm();
 
     UBH_GameRecorder* GetGameRecorder();
 
-    UFUNCTION(BlueprintCallable, Category="BugReport")
-    void OpenBugReportForm();
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTriggerFormKeyPressed);
+
+    UPROPERTY(BlueprintAssignable, Category="BugReport")
+    FOnTriggerFormKeyPressed OnTriggerFormKeyPressed;
 };

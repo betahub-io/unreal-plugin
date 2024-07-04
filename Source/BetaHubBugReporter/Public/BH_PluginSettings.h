@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "BH_ReportFormWidget.h"
+#include "BH_PopupWidget.h"
 #include "BH_PluginSettings.generated.h"
 
 UCLASS(Config=Game, defaultconfig)
@@ -20,6 +22,10 @@ public:
         meta=(ToolTip="The Project ID of your project on BetaHub. You can find this on the project settings page on BetaHub."))
     FString ProjectId;
 
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="This will spawn the background service on game startup, which will record the game session in the background. Disable if you're planning to start it manually using the Manager class."))
+    bool bSpawnBackgroundServiceOnStartup;
+
     UPROPERTY(EditAnywhere, Config, Category="Settings",
         meta=(ToolTip="Enable or disable the shortcut key to open the bug report form."))
     bool bEnableShortcut;
@@ -35,4 +41,12 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The maximum duration of the bug report video."))
     FTimespan MaxRecordingDuration;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The path to the widget that will be used to display the bug report form."))
+    TSubclassOf<UBH_ReportFormWidget> ReportFormWidgetClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
+    TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
 };

@@ -18,14 +18,12 @@ private:
     UPROPERTY()
     UBH_GameRecorder* GameRecorder;
 
-    UPROPERTY()
-    TSubclassOf<UUserWidget> PopupWidgetClass;
-
     FString ScreenshotPath;
     FString LogFileContents;
     
     UBH_PluginSettings* Settings;
 
+    bool bCursorStateModified;
     bool bWasCursorVisible;
     bool bWasCursorLocked;
 
@@ -68,7 +66,7 @@ public:
 
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
-    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents);
+    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents, bool bTryCaptureMouse);
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     void SubmitReport();

@@ -2,7 +2,6 @@
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Blueprint/UserWidget.h"
-#include "BH_ReportFormWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CanvasPanelSlot.h"
 
@@ -20,15 +19,12 @@ UBH_BackgroundService::UBH_BackgroundService()
     }
 }
 
-void UBH_BackgroundService::Init(UBH_PluginSettings* InSettings)
-{
-    Settings = InSettings;
-    GameRecorder = NewObject<UBH_GameRecorder>(this);
-    LogCapture = new UBH_LogCapture();
-}
-
 void UBH_BackgroundService::StartService()
 {
+    Settings = GetMutableDefault<UBH_PluginSettings>();
+    GameRecorder = NewObject<UBH_GameRecorder>(this);
+    LogCapture = new UBH_LogCapture();
+    
     GLog->AddOutputDevice(LogCapture);
     
     if (GEngine && GEngine->GameViewport && GEngine->GameViewport->GetWorld())
@@ -37,13 +33,24 @@ void UBH_BackgroundService::StartService()
     }
     else
     {
+        // get world
+        UWorld* World = GetWorld();
+
+        if (!World)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("World is null, cannot initialize service."));
+            return;
+        }
+
         // Set a timer to retry initialization
-        GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UBH_BackgroundService::RetryInitializeService, 0.5f, true);
+        World->GetTimerManager().SetTimer(TimerHandle, this, &UBH_BackgroundService::RetryInitializeService, 0.5f, true);
     }
 }
 
 void UBH_BackgroundService::RetryInitializeService()
 {
+    UE_LOG(LogTemp, Warning, TEXT("Retrying to initialize service."));
+    
     if (GEngine->GameViewport->GetWorld()) 
     {
         if (GEngine && GEngine->GameViewport)
@@ -134,13 +141,6 @@ void UBH_BackgroundService::StopService()
     }
 }
 
-void UBH_BackgroundService::HandleInput()
-{
-    UE_LOG(LogTemp, Log, TEXT("Shortcut key pressed."));
-    CaptureScreenshot();
-    TriggerBugReportForm();
-}
-
 void UBH_BackgroundService::CaptureScreenshot()
 {
     if (GameRecorder)
@@ -149,19 +149,19 @@ void UBH_BackgroundService::CaptureScreenshot()
     }
 }
 
-void UBH_BackgroundService::TriggerBugReportForm()
+UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(TSubclassOf<UUserWidget> WidgetClass, bool bTryCaptureMouse)
 {
     if (!GEngine || !GEngine->GameViewport)
     {
         UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
-        return;
+        return nullptr;
     }
 
     UWorld* World = GEngine->GameViewport->GetWorld();
     if (!World)
     {
         UE_LOG(LogTemp, Error, TEXT("World is null."));
-        return;
+        return nullptr;
     }
 
     UE_LOG(LogTemp, Log, TEXT("World is valid."));
@@ -169,34 +169,27 @@ void UBH_BackgroundService::TriggerBugReportForm()
     if (!ReportFormWidgetClass)
     {
         UE_LOG(LogTemp, Error, TEXT("ReportFormWidgetClass is null."));
-        return;
+        return nullptr;
     }
+
+    CaptureScreenshot();
 
     // Create the widget
     UBH_ReportFormWidget* ReportForm = CreateWidget<UBH_ReportFormWidget>(World, ReportFormWidgetClass);
     if (!ReportForm)
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to create ReportForm widget."));
-        return;
+        return nullptr;
     }
 
-    ReportForm->Init(Settings, GameRecorder, ScreenshotPath, LogCapture->GetCapturedLogs());
+    ReportForm->Init(Settings, GameRecorder, ScreenshotPath, LogCapture->GetCapturedLogs(), bTryCaptureMouse);
 
     UE_LOG(LogTemp, Log, TEXT("ReportForm widget created successfully."));
 
     // Set the widget to be centered in the viewport
     ReportForm->AddToViewport();
 
-    UE_LOG(LogTemp, Log, TEXT("ReportForm visibility: %s"), *UEnum::GetValueAsString(ReportForm->GetVisibility()));
-
-    if (ReportForm->IsInViewport())
-    {
-        UE_LOG(LogTemp, Log, TEXT("ReportForm widget is in the viewport."));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("ReportForm widget is NOT in the viewport."));
-    }
+    return ReportForm;
 }
 
 UBH_GameRecorder* UBH_BackgroundService::GetGameRecorder()
@@ -204,7 +197,8 @@ UBH_GameRecorder* UBH_BackgroundService::GetGameRecorder()
     return GameRecorder;
 }
 
-void UBH_BackgroundService::OpenBugReportForm()
+void UBH_BackgroundService::HandleInput()
 {
-    TriggerBugReportForm();
+    // trigger delegate
+    OnTriggerFormKeyPressed.Broadcast();
 }

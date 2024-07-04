@@ -4,23 +4,19 @@
 #include "Engine/Engine.h"
 #include "UObject/ConstructorHelpers.h"
 
-UBH_GameInstanceSubsystem::UBH_GameInstanceSubsystem()
-    : BackgroundService(nullptr)
-{
-}
-
 void UBH_GameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    UE_LOG(LogTemp, Warning, TEXT("BH_GameInstanceSubsystem initialized."));
+    UE_LOG(LogTemp, Log, TEXT("BH_GameInstanceSubsystem initialized."));
 
-    // Initialize the background service
-    BackgroundService = NewObject<UBH_BackgroundService>(this);
     UBH_PluginSettings* Settings = GetMutableDefault<UBH_PluginSettings>();
-    if (BackgroundService && Settings)
+
+    if (Settings->bSpawnBackgroundServiceOnStartup)
     {
-        BackgroundService->Init(Settings);
-        BackgroundService->StartService();
+        UE_LOG(LogTemp, Log, TEXT("Spawning background service automatically. This can be disabled in the plugin settings."))
+
+        Manager = NewObject<UBH_Manager>(this);
+        Manager->StartService();
     }
 }
