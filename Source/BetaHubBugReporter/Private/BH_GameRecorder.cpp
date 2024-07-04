@@ -160,22 +160,20 @@ void UBH_GameRecorder::Tick(float DeltaTime)
     
     if (bCopyTextureStarted && CopyTextureFence.IsFenceComplete())
     {
-        bCopyTextureStarted = false;
-
-        // Make sure that PendingPixels is of the correct size
-        int32 NumPixels = RawDataWidth * RawDataHeight;
-
-        if (PendingLinearPixels.Num() != NumPixels)
+        AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this]()
         {
-            PendingLinearPixels.SetNumUninitialized(NumPixels);
-            PendingPixels.SetNumUninitialized(NumPixels);
-        }
+            // Make sure that PendingPixels is of the correct size
+            int32 NumPixels = RawDataWidth * RawDataHeight;
 
-        uint32 Pitch = GPixelFormats[StagingTextureFormat].BlockBytes * RawDataWidth;
+            if (PendingLinearPixels.Num() != NumPixels)
+            {
+                PendingLinearPixels.SetNumUninitialized(NumPixels);
+                PendingPixels.SetNumUninitialized(NumPixels);
+            }
 
-        // Perform the heavy lifting in an asynchronous task
-        AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, NumPixels, Pitch]()
-        {
+            uint32 Pitch = GPixelFormats[StagingTextureFormat].BlockBytes * RawDataWidth;
+
+            
             // Convert raw surface data to linear color
             ConvertRAWSurfaceDataToFLinearColor(StagingTextureFormat, RawDataWidth, RawDataHeight, reinterpret_cast<uint8*>(RawData), Pitch, PendingLinearPixels.GetData(), FReadSurfaceDataFlags({}));
 
@@ -193,6 +191,9 @@ void UBH_GameRecorder::Tick(float DeltaTime)
             {
                 SetFrameData(FrameWidth, FrameHeight, ResizedPixels);
             });
+
+            // only when I complete this, allow another read pixels
+            bCopyTextureStarted = false;
         });
     }
 }
