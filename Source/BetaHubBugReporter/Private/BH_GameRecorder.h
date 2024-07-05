@@ -1,11 +1,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Tickable.h"
+#include "HAL/CriticalSection.h"
 #include "BH_VideoEncoder.h"
 #include "BH_FrameBuffer.h"
-#include "Tickable.h"
 #include "UObject/NoExportTypes.h"
 #include "BH_SceneCaptureActor.h"
+#include "BH_DoubleAsyncBuffer.h"
 #include "BH_GameRecorder.generated.h"
 
 UCLASS()
@@ -64,9 +66,11 @@ private:
     int32 FrameHeight;
     FDateTime LastCaptureTime;
 
-    void *RawData;
-    int32 RawDataWidth;
-    int32 RawDataHeight;
+    BH_DoubleAsyncBuffer<uint8> TextureBuffer;
+    int32 BackTextureWidth;
+    int32 BackTextureHeight;
+    FCriticalSection BackTextureLock;
+    FCriticalSection AsyncTextureProcessingLock;
 
     void CaptureFrame();
     void CaptureRenderTargetFrame();

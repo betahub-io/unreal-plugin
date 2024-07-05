@@ -20,7 +20,7 @@ bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint
 #endif
 
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
-    : Super(ObjectInitializer), bIsRecording(false), bCopyTextureStarted(false), StagingTexture(nullptr), RawDataWidth(0), RawDataHeight(0)
+    : Super(ObjectInitializer), bIsRecording(false), bCopyTextureStarted(false), StagingTexture(nullptr), BackTextureWidth(0), BackTextureHeight(0)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -162,6 +162,17 @@ void UBH_GameRecorder::Tick(float DeltaTime)
     {
         AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this]()
         {
+            FScopeLock Lock(&AsyncTextureProcessingLock);
+            
+            BackTextureLock.Lock();
+            TextureBuffer.SwapBuffers(); // swap back with current
+
+            const uint8 *RawData = reinterpret_cast<const uint8*>(TextureBuffer.GetCurrentBuffer());
+            int32 RawDataWidth = BackTextureWidth;
+            int32 RawDataHeight = BackTextureHeight;
+
+            BackTextureLock.Unlock();
+            
             // Make sure that PendingPixels is of the correct size
             int32 NumPixels = RawDataWidth * RawDataHeight;
 
@@ -175,7 +186,8 @@ void UBH_GameRecorder::Tick(float DeltaTime)
 
             
             // Convert raw surface data to linear color
-            ConvertRAWSurfaceDataToFLinearColor(StagingTextureFormat, RawDataWidth, RawDataHeight, reinterpret_cast<uint8*>(RawData), Pitch, PendingLinearPixels.GetData(), FReadSurfaceDataFlags({}));
+            ConvertRAWSurfaceDataToFLinearColor(StagingTextureFormat, RawDataWidth, RawDataHeight, const_cast<uint8*>(RawData),
+                Pitch, PendingLinearPixels.GetData(), FReadSurfaceDataFlags({}));
 
             // Convert linear color to FColor
             for (int32 i = 0; i < NumPixels; ++i)
@@ -323,7 +335,22 @@ void UBH_GameRecorder::ReadPixels()
             FRHICopyTextureInfo CopyInfo;
             RHICmdList.CopyTexture(GEngine->GameViewport->Viewport->GetRenderTargetTexture(), StagingTexture, CopyInfo);
 
-            RHICmdList.MapStagingSurface(StagingTexture, this->RawData, this->RawDataWidth, this->RawDataHeight);
+            void* RawDataTemp = nullptr;
+            int32 RawDataWidthTemp = 0;
+            int32 RawDataHeightTemp = 0;
+
+            RHICmdList.MapStagingSurface(StagingTexture, RawDataTemp, RawDataWidthTemp, RawDataHeightTemp);
+
+            // copy the memory, because RawDataTemp is temporary
+            BackTextureLock.Lock();
+
+            TextureBuffer.MemCopyFrom(
+                reinterpret_cast<uint8*>(RawDataTemp),
+                RawDataWidthTemp * RawDataHeightTemp * GPixelFormats[StagingTextureFormat].BlockBytes);
+            BackTextureWidth = RawDataWidthTemp;
+            BackTextureHeight = RawDataHeightTemp;
+
+            BackTextureLock.Unlock();
 
             RHICmdList.UnmapStagingSurface(StagingTexture);
         }
