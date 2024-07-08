@@ -20,7 +20,11 @@ bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint
 #endif
 
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
-    : Super(ObjectInitializer), bIsRecording(false), bCopyTextureStarted(false), StagingTexture(nullptr), BackTextureWidth(0), BackTextureHeight(0)
+    : Super(ObjectInitializer)
+    , bIsRecording(false)
+    , bCopyTextureStarted(false)
+    , StagingTexture(nullptr)
+    , RawFrameBufferPool(3)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -162,19 +166,15 @@ void UBH_GameRecorder::Tick(float DeltaTime)
     {
         AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this]()
         {
-            FScopeLock Lock(&AsyncTextureProcessingLock);
-            
-            BackTextureLock.Lock();
-            TextureBuffer.SwapBuffers(); // swap back with current
+            BH_RawFrameBuffer<uint8>* TextureBuffer = RawFrameBufferQueue.Dequeue();
+            if (!TextureBuffer)
+            {
+                // no texture buffer in the queue, nothing to process
+                return;
+            }
 
-            const uint8 *RawData = reinterpret_cast<const uint8*>(TextureBuffer.GetCurrentBuffer());
-            int32 RawDataWidth = BackTextureWidth;
-            int32 RawDataHeight = BackTextureHeight;
-
-            BackTextureLock.Unlock();
-            
             // Make sure that PendingPixels is of the correct size
-            int32 NumPixels = RawDataWidth * RawDataHeight;
+            int32 NumPixels = TextureBuffer->GetWidth() * TextureBuffer->GetHeight();
 
             if (PendingLinearPixels.Num() != NumPixels)
             {
@@ -182,12 +182,17 @@ void UBH_GameRecorder::Tick(float DeltaTime)
                 PendingPixels.SetNumUninitialized(NumPixels);
             }
 
-            uint32 Pitch = GPixelFormats[StagingTextureFormat].BlockBytes * RawDataWidth;
+            uint32 Pitch = GPixelFormats[StagingTextureFormat].BlockBytes * TextureBuffer->GetWidth();
 
             
             // Convert raw surface data to linear color
-            ConvertRAWSurfaceDataToFLinearColor(StagingTextureFormat, RawDataWidth, RawDataHeight, const_cast<uint8*>(RawData),
-                Pitch, PendingLinearPixels.GetData(), FReadSurfaceDataFlags({}));
+            ConvertRAWSurfaceDataToFLinearColor(
+                StagingTextureFormat,
+                TextureBuffer->GetWidth(), TextureBuffer->GetHeight(),
+                TextureBuffer->GetData(),
+                Pitch,
+                PendingLinearPixels.GetData(),
+                FReadSurfaceDataFlags({}));
 
             // Convert linear color to FColor
             for (int32 i = 0; i < NumPixels; ++i)
@@ -196,7 +201,7 @@ void UBH_GameRecorder::Tick(float DeltaTime)
             }
 
             // Resize image to frame
-            ResizeImageToFrame(PendingPixels, RawDataWidth, RawDataHeight, FrameWidth, FrameHeight, ResizedPixels);
+            ResizeImageToFrame(PendingPixels, TextureBuffer->GetWidth(), TextureBuffer->GetHeight(), FrameWidth, FrameHeight, ResizedPixels);
 
             // Set frame data on the game thread
             AsyncTask(ENamedThreads::GameThread, [this]()
@@ -206,6 +211,7 @@ void UBH_GameRecorder::Tick(float DeltaTime)
 
             // only when I complete this, allow another read pixels
             bCopyTextureStarted = false;
+            RawFrameBufferPool.ReleaseElement(TextureBuffer);
         });
     }
 }
@@ -332,25 +338,31 @@ void UBH_GameRecorder::ReadPixels()
             FViewport* Viewport = GEngine->GameViewport->Viewport;
             if (!Viewport) return;
 
+            BH_RawFrameBuffer<uint8>* TextureBuffer = RawFrameBufferPool.GetElement();
+            if (!TextureBuffer)
+            {
+                // no texture buffer available at this time
+                // UE_LOG(LogTemp, Error, TEXT("No texture buffer available."));
+                return;
+            }
+
             FRHICopyTextureInfo CopyInfo;
             RHICmdList.CopyTexture(GEngine->GameViewport->Viewport->GetRenderTargetTexture(), StagingTexture, CopyInfo);
 
-            void* RawDataTemp = nullptr;
-            int32 RawDataWidthTemp = 0;
-            int32 RawDataHeightTemp = 0;
+            void* RawData = nullptr;
+            int32 RawDataWidth = 0;
+            int32 RawDataHeight = 0;
 
-            RHICmdList.MapStagingSurface(StagingTexture, RawDataTemp, RawDataWidthTemp, RawDataHeightTemp);
+            RHICmdList.MapStagingSurface(StagingTexture, RawData, RawDataWidth, RawDataHeight);
 
-            // copy the memory, because RawDataTemp is temporary
-            BackTextureLock.Lock();
+            TextureBuffer->CopyFrom(
+                reinterpret_cast<uint8*>(RawData),
+                RawDataWidth,
+                RawDataHeight,
+                GPixelFormats[StagingTextureFormat].BlockBytes);
 
-            TextureBuffer.MemCopyFrom(
-                reinterpret_cast<uint8*>(RawDataTemp),
-                RawDataWidthTemp * RawDataHeightTemp * GPixelFormats[StagingTextureFormat].BlockBytes);
-            BackTextureWidth = RawDataWidthTemp;
-            BackTextureHeight = RawDataHeightTemp;
-
-            BackTextureLock.Unlock();
+            // async queue for processing
+            RawFrameBufferQueue.Enqueue(TextureBuffer);
 
             RHICmdList.UnmapStagingSurface(StagingTexture);
         }

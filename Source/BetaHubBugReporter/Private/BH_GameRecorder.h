@@ -7,7 +7,8 @@
 #include "BH_FrameBuffer.h"
 #include "UObject/NoExportTypes.h"
 #include "BH_SceneCaptureActor.h"
-#include "BH_DoubleAsyncBuffer.h"
+#include "BH_Async.h"
+#include "BH_RawFrameBuffer.h"
 #include "BH_GameRecorder.generated.h"
 
 UCLASS()
@@ -66,11 +67,8 @@ private:
     int32 FrameHeight;
     FDateTime LastCaptureTime;
 
-    BH_DoubleAsyncBuffer<uint8> TextureBuffer;
-    int32 BackTextureWidth;
-    int32 BackTextureHeight;
-    FCriticalSection BackTextureLock;
-    FCriticalSection AsyncTextureProcessingLock;
+    BH_AsyncQueue<BH_RawFrameBuffer<uint8>> RawFrameBufferQueue;
+    BH_AsyncPool<BH_RawFrameBuffer<uint8>> RawFrameBufferPool;
 
     void CaptureFrame();
     void CaptureRenderTargetFrame();

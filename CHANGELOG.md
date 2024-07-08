@@ -5,6 +5,7 @@
 ### Fixes
 
 - Compilation errors on shipping builds
+- Crashes on shipping builds
 
 ## 1.0.2
 
