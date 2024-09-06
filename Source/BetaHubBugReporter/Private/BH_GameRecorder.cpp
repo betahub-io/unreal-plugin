@@ -50,6 +50,12 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InReco
         return;
     }
 
+    if (!GEngine->GameViewport->Viewport)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+        return;
+    }
+
     if (!VideoEncoder.IsValid())
     {
         FViewport* Viewport = GEngine->GameViewport->Viewport;
