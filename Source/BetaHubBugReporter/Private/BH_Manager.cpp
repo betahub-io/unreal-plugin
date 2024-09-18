@@ -70,15 +70,11 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
 
 void UBH_Manager::OnLocalPlayerAdded(ULocalPlayer* Player)
 {
-    UE_LOG(LogTemp, Warning, TEXT("LocalPlayer added!"));
-
     Player->OnPlayerControllerChanged().AddUObject(this, &UBH_Manager::OnPlayerControllerChanged);
 }
 
 void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
 {
-    UE_LOG(LogTemp, Warning, TEXT("Player Controller changed!"));
-
     CurrentPlayerController = PC;
 
     if (PC)

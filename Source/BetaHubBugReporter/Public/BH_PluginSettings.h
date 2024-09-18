@@ -39,7 +39,7 @@ public:
     int32 MaxRecordedFrames;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
-        meta=(ToolTip="The maximum duration of the bug report video(in seconds)."))
+        meta=(ToolTip="The maximum duration of the bug report video (in seconds)."))
     int32 MaxRecordingDuration;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
