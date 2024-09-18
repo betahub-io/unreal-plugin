@@ -39,8 +39,8 @@ public:
     int32 MaxRecordedFrames;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
-        meta=(ToolTip="The maximum duration of the bug report video."))
-    FTimespan MaxRecordingDuration;
+        meta=(ToolTip="The maximum duration of the bug report video(in seconds)."))
+    int32 MaxRecordingDuration;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the bug report form."))

@@ -11,7 +11,7 @@ UBH_PluginSettings::UBH_PluginSettings()
     bEnableShortcut = true;
     ShortcutKey = EKeys::F12;
     MaxRecordedFrames = 30;
-    MaxRecordingDuration = FTimespan::FromSeconds(60);
+    MaxRecordingDuration = 60;
 
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
