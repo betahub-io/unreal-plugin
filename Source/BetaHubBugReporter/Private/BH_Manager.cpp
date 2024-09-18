@@ -1,29 +1,35 @@
 #include "BH_Manager.h"
 
 UBH_Manager::UBH_Manager()
+    : InputComponent(nullptr)
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
 }
 
-void UBH_Manager::StartService()
+void UBH_Manager::StartService(UGameInstance* GI)
 {
     if (BackgroundService)
     {
         UE_LOG(LogTemp, Error, TEXT("Service already started, did you forget to turn it off in the settings?"));
         return;
     }
+
+    GI->OnLocalPlayerAddedEvent.AddUObject(this, &UBH_Manager::OnLocalPlayerAdded);
     
     BackgroundService = NewObject<UBH_BackgroundService>(this);
 
     BackgroundService->StartService();
-    
-    BackgroundService->OnTriggerFormKeyPressed.AddDynamic(this, &UBH_Manager::OnBackgroundServiceRequestWidget);
 }
 
 void UBH_Manager::StopService()
 {
     if (BackgroundService)
     {
+        if (CurrentPlayerController)
+        {
+            CurrentPlayerController->PopInputComponent(InputComponent);
+        }
+
         BackgroundService->StopService();
         BackgroundService = nullptr;
     }
@@ -60,5 +66,22 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
         UE_LOG(LogTemp, Error, TEXT("Cannot spawn bug report widget. No widget class specified or found."));
         return nullptr;
     }
-    
+}
+
+void UBH_Manager::OnLocalPlayerAdded(ULocalPlayer* Player)
+{
+    Player->OnPlayerControllerChanged().AddUObject(this, &UBH_Manager::OnPlayerControllerChanged);
+}
+
+void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
+{
+    CurrentPlayerController = PC;
+
+    if (PC)
+    {
+        InputComponent = NewObject<UInputComponent>(PC);
+        InputComponent->RegisterComponent();
+        InputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
+        PC->PushInputComponent(InputComponent);
+    }
 }

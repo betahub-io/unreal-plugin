@@ -29,7 +29,7 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
 
-void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InRecordingDuration)
+void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDuration)
 {
     if (!GEngine)
     {
@@ -50,6 +50,12 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InReco
         return;
     }
 
+    if (!GEngine->GameViewport->Viewport)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+        return;
+    }
+
     if (!VideoEncoder.IsValid())
     {
         FViewport* Viewport = GEngine->GameViewport->Viewport;
@@ -67,7 +73,7 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InReco
         FrameWidth = (FrameWidth + 3) & ~3;
         FrameHeight = (FrameHeight + 3) & ~3;
 
-        VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, InRecordingDuration, FrameWidth, FrameHeight, FrameBuffer));
+        VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, FTimespan(0, 0, InRecordingDuration), FrameWidth, FrameHeight, FrameBuffer));
     }
 
     if (!bIsRecording)
@@ -75,7 +81,7 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, const FTimespan& InReco
         VideoEncoder->StartRecording();
         bIsRecording = true;
         TargetFPS = InTargetFPS;
-        RecordingDuration = InRecordingDuration;
+        RecordingDuration = FTimespan(0, 0, InRecordingDuration);
 
         // Register delegate to capture frames during the rendering process
         if (GEngine->GameViewport)
@@ -157,7 +163,7 @@ void UBH_GameRecorder::Tick(float DeltaTime)
                 
                 StopRecording();
                 VideoEncoder.Reset(); // will need to recreate it
-                StartRecording(TargetFPS, FTimespan::FromSeconds(0));
+                StartRecording(TargetFPS, 0);
             }
         }
     }

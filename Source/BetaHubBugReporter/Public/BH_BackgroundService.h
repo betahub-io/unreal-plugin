@@ -24,15 +24,12 @@ private:
     UPROPERTY()
     TSubclassOf<UUserWidget> ReportFormWidgetClass;
 
-    UInputComponent* InputComponent;
-
     FTimerHandle TimerHandle;
 
     FString ScreenshotPath;
 
     void RetryInitializeService();
     void InitializeService();
-    void HandleInput();
 
 public:
     UBH_BackgroundService();
@@ -46,9 +43,4 @@ public:
     void CaptureScreenshot();
 
     UBH_GameRecorder* GetGameRecorder();
-
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTriggerFormKeyPressed);
-
-    UPROPERTY(BlueprintAssignable, Category="BugReport")
-    FOnTriggerFormKeyPressed OnTriggerFormKeyPressed;
 };
