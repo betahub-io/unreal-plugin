@@ -43,6 +43,7 @@ FBH_Runnable::~FBH_Runnable()
         delete Thread;
         Thread = nullptr;
     }
+
     FPlatformProcess::ClosePipe(StdInReadPipe, StdInWritePipe);
     FPlatformProcess::ClosePipe(StdOutReadPipe, StdOutWritePipe);
 }
@@ -88,6 +89,8 @@ uint32 FBH_Runnable::Run()
         {
             // close stdin pipe to terminate the process
             FPlatformProcess::ClosePipe(StdInReadPipe, StdInWritePipe);
+            StdInReadPipe = nullptr;
+            StdInWritePipe = nullptr;
         }
         else
         {

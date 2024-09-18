@@ -25,3 +25,11 @@ void UBH_GameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         Manager->StartService(GetGameInstance());
     }
 }
+
+void UBH_GameInstanceSubsystem::Deinitialize()
+{
+    if (Manager)
+    {
+        Manager->StopService();
+    }
+}
