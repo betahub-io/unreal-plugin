@@ -1,4 +1,5 @@
 #include "BH_GameInstanceSubsystem.h"
+#include "BH_Log.h"
 #include "Misc/Paths.h"
 #include "HAL/PlatformProcess.h"
 #include "Engine/Engine.h"
@@ -13,13 +14,13 @@ void UBH_GameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("BH_GameInstanceSubsystem initialized."));
+    UE_LOG(LogBetaHub, Log, TEXT("BH_GameInstanceSubsystem initialized."));
 
     UBH_PluginSettings* Settings = GetMutableDefault<UBH_PluginSettings>();
 
     if (Settings->bSpawnBackgroundServiceOnStartup)
     {
-        UE_LOG(LogTemp, Log, TEXT("Spawning background service automatically. This can be disabled in the plugin settings."))
+        UE_LOG(LogBetaHub, Log, TEXT("Spawning background service automatically. This can be disabled in the plugin settings."))
 
         Manager = NewObject<UBH_Manager>(this);
         Manager->StartService(GetGameInstance());

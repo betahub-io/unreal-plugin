@@ -12,6 +12,7 @@
 
 #define LOCTEXT_NAMESPACE "FBetaHubBugReporterModule"
 
+
 void FBetaHubBugReporterModule::StartupModule()
 {
 #if WITH_EDITOR

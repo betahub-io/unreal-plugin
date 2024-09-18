@@ -1,4 +1,5 @@
 #include "BH_GameRecorder.h"
+#include "BH_Log.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Engine.h"
@@ -33,26 +34,26 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
 {
     if (!GEngine)
     {
-        UE_LOG(LogTemp, Error, TEXT("GEngine is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("GEngine is null."));
         return;
     }
 
     if (!GEngine->GameViewport)
     {
-        UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("GameViewport is null."));
         return;
     }
 
     UWorld* World = GEngine->GameViewport->GetWorld();
     if (!World)
     {
-        UE_LOG(LogTemp, Error, TEXT("World context is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("World context is null."));
         return;
     }
 
     if (!GEngine->GameViewport->Viewport)
     {
-        UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("Viewport is null."));
         return;
     }
 
@@ -61,7 +62,7 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
         FViewport* Viewport = GEngine->GameViewport->Viewport;
         if (!Viewport)
         {
-            UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+            UE_LOG(LogBetaHub, Error, TEXT("Viewport is null."));
             return;
         }
 
@@ -91,7 +92,7 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("Recording is already in progress."));
+        UE_LOG(LogBetaHub, Warning, TEXT("Recording is already in progress."));
     }
 }
 
@@ -135,13 +136,13 @@ FString UBH_GameRecorder::SaveRecording()
 {
     if (!VideoEncoder.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("VideoEncoder is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("VideoEncoder is null."));
         return FString();
     }
 
     if (bIsRecording)
     {
-        UE_LOG(LogTemp, Error, TEXT("Recording is still in progress."));
+        UE_LOG(LogBetaHub, Error, TEXT("Recording is still in progress."));
         return FString();
     }
 
@@ -159,7 +160,7 @@ void UBH_GameRecorder::Tick(float DeltaTime)
             FIntPoint ViewportSize = Viewport->GetSizeXY();
             if (ViewportSize.X != ViewportWidth || ViewportSize.Y != ViewportHeight)
             {
-                UE_LOG(LogTemp, Warning, TEXT("Viewport size has changed. Restarting recording..."));
+                UE_LOG(LogBetaHub, Warning, TEXT("Viewport size has changed. Restarting recording..."));
                 
                 StopRecording();
                 VideoEncoder.Reset(); // will need to recreate it
@@ -284,7 +285,7 @@ void UBH_GameRecorder::CaptureFrame()
             FTexture2DRHIRef GameBuffer = Viewport->GetRenderTargetTexture();
             if (!GameBuffer)
             {
-                UE_LOG(LogTemp, Error, TEXT("Failed to get game buffer. Will try next time..."));
+                UE_LOG(LogBetaHub, Error, TEXT("Failed to get game buffer. Will try next time..."));
                 return;
             }
 
@@ -310,7 +311,7 @@ void UBH_GameRecorder::CaptureFrame()
             // check if the texture was created
             if (!StagingTexture)
             {
-                UE_LOG(LogTemp, Error, TEXT("Failed to create staging texture."));
+                UE_LOG(LogBetaHub, Error, TEXT("Failed to create staging texture."));
                 return;
             }
         });
@@ -348,7 +349,7 @@ void UBH_GameRecorder::ReadPixels()
             if (!TextureBuffer)
             {
                 // no texture buffer available at this time
-                // UE_LOG(LogTemp, Error, TEXT("No texture buffer available."));
+                // UE_LOG(LogBetaHub, Error, TEXT("No texture buffer available."));
                 return;
             }
 
@@ -391,7 +392,7 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     TSharedPtr<FBH_Frame> Frame = FrameBuffer->GetFrame();
     if (!Frame.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("Frame is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("Frame is null."));
         return FString();
     }
 

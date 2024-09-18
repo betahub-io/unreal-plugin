@@ -1,4 +1,5 @@
 #include "BH_Manager.h"
+#include "BH_Log.h"
 
 UBH_Manager::UBH_Manager()
     : InputComponent(nullptr)
@@ -10,7 +11,7 @@ void UBH_Manager::StartService(UGameInstance* GI)
 {
     if (BackgroundService)
     {
-        UE_LOG(LogTemp, Error, TEXT("Service already started, did you forget to turn it off in the settings?"));
+        UE_LOG(LogBetaHub, Error, TEXT("Service already started, did you forget to turn it off in the settings?"));
         return;
     }
 
@@ -39,7 +40,7 @@ void UBH_Manager::OnBackgroundServiceRequestWidget()
 {
     if (!Settings)
     {
-        UE_LOG(LogTemp, Error, TEXT("Settings not initialized. Use StartService() first."));
+        UE_LOG(LogBetaHub, Error, TEXT("Settings not initialized. Use StartService() first."));
         return;
     }
 
@@ -53,7 +54,7 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
 {
     if (!BackgroundService)
     {
-        UE_LOG(LogTemp, Error, TEXT("Background service not initialized. Use StartService() first."));
+        UE_LOG(LogBetaHub, Error, TEXT("Background service not initialized. Use StartService() first."));
         return nullptr;
     }
     
@@ -63,7 +64,7 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Cannot spawn bug report widget. No widget class specified or found."));
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot spawn bug report widget. No widget class specified or found."));
         return nullptr;
     }
 }

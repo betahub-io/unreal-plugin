@@ -1,4 +1,5 @@
 #include "BH_ReportFormWidget.h"
+#include "BH_Log.h"
 #include "Components/Button.h"
 #include "Components/EditableTextBox.h"
 #include "GameFramework/PlayerController.h"
@@ -35,8 +36,8 @@ void UBH_ReportFormWidget::SubmitReport()
     FString BugDescription = BugDescriptionEdit->GetText().ToString();
     FString StepsToReproduce = StepsToReproduceEdit->GetText().ToString();
 
-    UE_LOG(LogTemp, Log, TEXT("Bug Description: %s"), *BugDescription);
-    UE_LOG(LogTemp, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
+    UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s"), *BugDescription);
+    UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
 
     UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
     BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, ScreenshotPath, LogFileContents,
@@ -150,6 +151,6 @@ void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("PopupWidgetClass is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("PopupWidgetClass is null."));
     }
 }
