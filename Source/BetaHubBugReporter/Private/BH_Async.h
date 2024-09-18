@@ -99,10 +99,11 @@ class BH_AsyncQueue
 
     ~BH_AsyncQueue()
     {
-        for (T* Element : Queue)
+        // This has been disabled as BH_AsyncPool deletes this element also and this freezes the game when trying to exit
+        /*for (T* Element : Queue)
         {
             delete Element;
-        }
+        }*/
     }
 
     void Enqueue(T* Element)
