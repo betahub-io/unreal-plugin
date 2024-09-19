@@ -34,3 +34,18 @@ void UBH_GameInstanceSubsystem::Deinitialize()
         Manager->StopService();
     }
 }
+
+void UBH_GameInstanceSubsystem::HideScreenAreaFromReport(FVector4 AreaToHide)
+{
+    Manager->HideScreenAreaFromReport(AreaToHide);
+}
+
+void UBH_GameInstanceSubsystem::HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide)
+{
+    Manager->HideScreenAreaFromReportArray(AreasToHide);
+}
+
+void UBH_GameInstanceSubsystem::SetHiddenAreaColor(FLinearColor NewColor)
+{
+    Manager->SetHiddenAreaColor(NewColor.ToFColor(false));
+}

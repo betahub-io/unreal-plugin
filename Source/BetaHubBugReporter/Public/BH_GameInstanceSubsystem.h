@@ -16,6 +16,15 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
 
+    UFUNCTION(BlueprintCallable, Category = BetaHub, meta = (ToolTip = "Specify rect (top left and bottom right viewport cords) to hide this area when submitting bug"))
+    void HideScreenAreaFromReport(FVector4 AreaToHide);
+
+    UFUNCTION(BlueprintCallable, Category = BetaHub, meta = (ToolTip = "Specify array of rects (top left and bottom right viewport cords) to hide this area when submitting bug"))
+    void HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide);
+
+    UFUNCTION(BlueprintCallable, Category = BetaHub, meta = (ToolTip = "Specify color for the hidden area on the screen\nDefault: Black"))
+    void SetHiddenAreaColor(FLinearColor NewColor);
+
 private:
     UPROPERTY()
     UBH_Manager* Manager;

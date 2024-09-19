@@ -40,4 +40,8 @@ public:
     // Callback function to handle widget spawning
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void OnBackgroundServiceRequestWidget();
+
+    void HideScreenAreaFromReport(FVector4 AreaToHide);
+    void HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide);
+    void SetHiddenAreaColor(FColor NewColor);
 };

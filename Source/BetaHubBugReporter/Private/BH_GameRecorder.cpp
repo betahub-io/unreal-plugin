@@ -26,6 +26,7 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     , bCopyTextureStarted(false)
     , StagingTexture(nullptr)
     , RawFrameBufferPool(3)
+    , HiddenAreaColor(FColor::Black)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -206,6 +207,18 @@ void UBH_GameRecorder::Tick(float DeltaTime)
             {
                 PendingPixels[i] = PendingLinearPixels[i].ToFColor(false);
             }
+            
+            TArray<int32> HiddenIdices;
+
+            for (FVector4 DisabledRect : HiddenAreas)
+            {
+                HiddenIdices.Append(GetPixelIndicesFromViewportRectangle(FVector2D(DisabledRect.X, DisabledRect.Y), FVector2D(DisabledRect.Z, DisabledRect.W), TextureBuffer->GetWidth(), TextureBuffer->GetHeight()));
+            }
+
+            for (int32 Index : HiddenIdices)
+            {
+                PendingPixels[Index] = HiddenAreaColor;
+            }
 
             // Resize image to frame
             ResizeImageToFrame(PendingPixels, TextureBuffer->GetWidth(), TextureBuffer->GetHeight(), FrameWidth, FrameHeight, ResizedPixels);
@@ -251,6 +264,55 @@ void UBH_GameRecorder::ResizeImageToFrame(
     }
 }
 
+TArray<int32> UBH_GameRecorder::GetPixelIndicesFromViewportRectangle(const FVector2D& TopLeftViewportCoords, const FVector2D& BottomRightViewportCoords, int32 TextureWidth, int32 TextureHeight)
+{
+    TArray<int32> PixelIndices;
+
+    // Get viewport size
+    FVector2D ViewportSize;
+    GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+    // Check if viewport size and texture size are valid
+    if (ViewportSize.X <= 0 || ViewportSize.Y <= 0 || TextureWidth <= 0 || TextureHeight <= 0)
+    {
+        return PixelIndices; // Return empty if sizes are invalid
+    }
+
+    // Normalize the viewport coordinates (0 to 1)
+    float NormalizedTopLeftX = TopLeftViewportCoords.X / ViewportSize.X;
+    float NormalizedTopLeftY = TopLeftViewportCoords.Y / ViewportSize.Y;
+    float NormalizedBottomRightX = BottomRightViewportCoords.X / ViewportSize.X;
+    float NormalizedBottomRightY = BottomRightViewportCoords.Y / ViewportSize.Y;
+
+    // Convert normalized coordinates to texture coordinates
+    int32 TextureX1 = FMath::Clamp(static_cast<int32>(NormalizedTopLeftX * TextureWidth), 0, TextureWidth - 1);
+    int32 TextureY1 = FMath::Clamp(static_cast<int32>(NormalizedTopLeftY * TextureHeight), 0, TextureHeight - 1);
+    int32 TextureX2 = FMath::Clamp(static_cast<int32>(NormalizedBottomRightX * TextureWidth), 0, TextureWidth - 1);
+    int32 TextureY2 = FMath::Clamp(static_cast<int32>(NormalizedBottomRightY * TextureHeight), 0, TextureHeight - 1);
+
+    // Ensure coordinates are properly ordered (Top-left and bottom-right)
+    int32 StartX = FMath::Min(TextureX1, TextureX2);
+    int32 EndX = FMath::Max(TextureX1, TextureX2);
+    int32 StartY = FMath::Min(TextureY1, TextureY2);
+    int32 EndY = FMath::Max(TextureY1, TextureY2);
+
+    // Iterate through the rectangle area to collect indices
+    for (int32 Y = StartY; Y <= EndY; ++Y)
+    {
+        for (int32 X = StartX; X <= EndX; ++X)
+        {
+            int32 PixelIndex = Y * TextureWidth + X;
+
+            // Check if the pixel index is within the bounds of the array
+            if (PixelIndex >= 0 && PixelIndex < PendingPixels.Num())
+            {
+                PixelIndices.Add(PixelIndex);
+            }
+        }
+    }
+
+    return PixelIndices;
+}
 
 bool UBH_GameRecorder::IsTickable() const
 {
@@ -407,6 +469,21 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
 
     return ScreenshotFilename;
+}
+
+void UBH_GameRecorder::HideScreenAreaFromReport(FVector4 AreaToHide)
+{
+    HiddenAreas.Add(AreaToHide);
+}
+
+void UBH_GameRecorder::HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide)
+{
+    HiddenAreas.Append(AreasToHide);
+}
+
+void UBH_GameRecorder::SetHiddenAreaColor(FColor NewColor)
+{
+    HiddenAreaColor = NewColor;
 }
 
 #if ENGINE_MINOR_VERSION < 4

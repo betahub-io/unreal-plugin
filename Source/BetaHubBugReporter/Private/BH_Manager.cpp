@@ -86,3 +86,18 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
         PC->PushInputComponent(InputComponent);
     }
 }
+
+void UBH_Manager::HideScreenAreaFromReport(FVector4 AreaToHide)
+{
+    BackgroundService->GetGameRecorder()->HideScreenAreaFromReport(AreaToHide);
+}
+
+void UBH_Manager::HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide)
+{
+    BackgroundService->GetGameRecorder()->HideScreenAreaFromReportArray(AreasToHide);
+}
+
+void UBH_Manager::SetHiddenAreaColor(FColor NewColor)
+{
+    BackgroundService->GetGameRecorder()->SetHiddenAreaColor(NewColor);
+}
