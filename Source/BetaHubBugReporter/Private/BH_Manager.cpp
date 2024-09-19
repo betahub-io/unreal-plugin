@@ -60,7 +60,7 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
     
     if (Settings->ReportFormWidgetClass)
     {
-        return BackgroundService->SpawnBugReportWidget(Settings->ReportFormWidgetClass, bTryCaptureMouse);
+        return BackgroundService->SpawnBugReportWidget(CurrentPlayerController, bTryCaptureMouse);
     }
     else
     {

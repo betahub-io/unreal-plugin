@@ -15,9 +15,26 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     , bWasCursorVisible(false)
     , bWasCursorLocked(false)
 {
+    SetIsFocusable(true);
 }
 
-void UBH_ReportFormWidget::Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents,
+void UBH_ReportFormWidget::NativeOnInitialized()
+{
+    Super::NativeOnInitialized();
+
+    // Bind the button click event
+    if (SubmitButton)
+    {
+        SubmitButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnSubmitButtonClicked);
+    }
+
+    if (CloseButton)
+    {
+        CloseButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnCloseClicked);
+    }
+}
+
+void UBH_ReportFormWidget::Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents,
 bool bTryCaptureMouse)
 {
     Settings = InSettings;
@@ -29,6 +46,8 @@ bool bTryCaptureMouse)
     {
         SetCursorState();
     }
+
+    GameRecorder->StopRecording();
 }
 
 void UBH_ReportFormWidget::SubmitReport()
@@ -62,13 +81,13 @@ void UBH_ReportFormWidget::SetCursorState()
         // Save the current cursor state
         bCursorStateModified = true;
         bWasCursorVisible = PlayerController->bShowMouseCursor;
-        bWasCursorLocked = PlayerController->IsInputKeyDown(EKeys::LeftMouseButton);
+        //bWasCursorLocked = PlayerController->IsInputKeyDown(EKeys::LeftMouseButton);
 
         // Unlock and show the cursor
-        PlayerController->bShowMouseCursor = true;
+        PlayerController->SetShowMouseCursor(true);
         PlayerController->SetInputMode(FInputModeUIOnly());
-        PlayerController->SetIgnoreLookInput(true);
-        PlayerController->SetIgnoreMoveInput(true);
+        //PlayerController->SetIgnoreLookInput(true);
+        //PlayerController->SetIgnoreMoveInput(true);
     }
 }
 
@@ -81,9 +100,12 @@ void UBH_ReportFormWidget::RestoreCursorState()
     
     if (APlayerController* PlayerController = GetOwningPlayer())
     {
+
         // Restore the previous cursor state
-        PlayerController->bShowMouseCursor = bWasCursorVisible;
-        if (bWasCursorLocked)
+        PlayerController->SetShowMouseCursor(bWasCursorVisible);
+        PlayerController->SetInputMode(FInputModeGameOnly());
+
+        /*if (bWasCursorLocked)
         {
             PlayerController->SetInputMode(FInputModeGameOnly());
         }
@@ -92,28 +114,10 @@ void UBH_ReportFormWidget::RestoreCursorState()
             PlayerController->SetInputMode(FInputModeGameAndUI());
         }
         PlayerController->SetIgnoreLookInput(false);
-        PlayerController->SetIgnoreMoveInput(false);
+        PlayerController->SetIgnoreMoveInput(false);*/
 
         bCursorStateModified = false;
     }
-}
-
-void UBH_ReportFormWidget::NativeConstruct()
-{
-    Super::NativeConstruct();
-
-    // Bind the button click event
-    if (SubmitButton)
-    {
-        SubmitButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnSubmitButtonClicked);
-    }
-
-    if (CloseButton)
-    {
-        CloseButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnCloseClicked);
-    }
-
-    GameRecorder->StopRecording();
 }
 
 void UBH_ReportFormWidget::NativeDestruct()

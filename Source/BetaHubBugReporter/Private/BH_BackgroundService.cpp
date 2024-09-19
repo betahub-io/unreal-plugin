@@ -86,7 +86,7 @@ void UBH_BackgroundService::CaptureScreenshot()
     }
 }
 
-UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(TSubclassOf<UUserWidget> WidgetClass, bool bTryCaptureMouse)
+UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse)
 {
     if (!GEngine || !GEngine->GameViewport)
     {
@@ -101,7 +101,11 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(TSubclassOf<UU
         return nullptr;
     }
 
-    UE_LOG(LogBetaHub, Log, TEXT("World is valid."));
+    if (!LocalPlayerController)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("PlayerController is null."));
+        return nullptr;
+    }
 
     if (!ReportFormWidgetClass)
     {
@@ -112,14 +116,14 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(TSubclassOf<UU
     CaptureScreenshot();
 
     // Create the widget
-    UBH_ReportFormWidget* ReportForm = CreateWidget<UBH_ReportFormWidget>(World, ReportFormWidgetClass);
+    UBH_ReportFormWidget* ReportForm = CreateWidget<UBH_ReportFormWidget>(LocalPlayerController, ReportFormWidgetClass);
     if (!ReportForm)
     {
         UE_LOG(LogBetaHub, Error, TEXT("Failed to create ReportForm widget."));
         return nullptr;
     }
 
-    ReportForm->Init(Settings, GameRecorder, ScreenshotPath, LogCapture->GetCapturedLogs(), bTryCaptureMouse);
+    ReportForm->Setup(Settings, GameRecorder, ScreenshotPath, LogCapture->GetCapturedLogs(), bTryCaptureMouse);
 
     UE_LOG(LogBetaHub, Log, TEXT("ReportForm widget created successfully."));
 
