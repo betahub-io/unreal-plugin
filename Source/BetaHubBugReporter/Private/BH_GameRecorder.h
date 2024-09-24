@@ -70,10 +70,15 @@ private:
     BH_AsyncQueue<BH_RawFrameBuffer<uint8>> RawFrameBufferQueue;
     BH_AsyncPool<BH_RawFrameBuffer<uint8>> RawFrameBufferPool;
 
-    void CaptureFrame();
-    void CaptureRenderTargetFrame();
-    void ReadPixels();
+    void ReadPixels(const FTexture2DRHIRef& BackBuffer);
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);
+
+    void OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef& BackBuffer);
+
+    void OnBackBufferResized(const FTexture2DRHIRef& BackBuffer);
+
+    //Hack TODO
+    TSet<FString> CreatedWindows;
 };
