@@ -2,6 +2,7 @@
 
 
 #include "BH_PluginSettings.h"
+#include "BH_Log.h"
 
 UBH_PluginSettings::UBH_PluginSettings()
 {
@@ -22,7 +23,7 @@ UBH_PluginSettings::UBH_PluginSettings()
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find widget class at specified path."));
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to find widget class at specified path."));
     }
 
     if (WidgetClassFinder2.Succeeded())
@@ -31,6 +32,6 @@ UBH_PluginSettings::UBH_PluginSettings()
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find widget class at specified path."));
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to find widget class at specified path."));
     }
 }
