@@ -316,10 +316,10 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& 
             {
                 ReadPixels(BackBuffer);
             });
-    }
 #else
         ReadPixels(BackBuffer);
 #endif
+    }
 }
 
 void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
