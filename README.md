@@ -6,7 +6,13 @@ The plugin will start a *Background Service* that will record gameplay session a
 
 ## Installation
 
-If you're installing from GitHub, you can clone the repository and copy the `BetaHubBugReporter` folder to your `Plugins` folder in your Unreal Engine project.
+### From GitHub
+
+1. Navigate to your Unreal project directory.
+2. Open the `Plugins` directory, or create it if it doesn't exist.
+3. Unpack the contents of the GitHub repository into the `Plugins/BetaHubBugReporter` directory.
+4. Restart Unreal Editor.
+5. Confirm any prompts or warnings that may appear.
 
 ## Configuration
 
