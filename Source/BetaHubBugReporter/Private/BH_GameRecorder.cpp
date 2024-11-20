@@ -311,8 +311,15 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef
 
     if (!bCopyTextureStarted && StagingTexture != nullptr)
     {
-        ReadPixels(BackBuffer);
+#if ENGINE_MINOR_VERSION >= 5
+        AsyncTask(ENamedThreads::GameThread, [this, BackBuffer]()
+            {
+                ReadPixels(BackBuffer);
+            });
     }
+#else
+        ReadPixels(BackBuffer);
+#endif
 }
 
 void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
@@ -364,6 +371,7 @@ void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
             RawFrameBufferQueue.Enqueue(TextureBuffer);
 
             RHICmdList.UnmapStagingSurface(StagingTexture);
+
         }
     );
 
