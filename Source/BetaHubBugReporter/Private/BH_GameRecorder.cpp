@@ -26,11 +26,11 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     , bIsRecording(false)
     , bCopyTextureStarted(false)
     , StagingTexture(nullptr)
-    , RawFrameBufferPool(3)
     , ViewportWidth(0)
     , ViewportHeight(0)
     , FrameWidth(0)
     , FrameHeight(0)
+    , RawFrameBufferPool(3)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -241,7 +241,7 @@ TStatId UBH_GameRecorder::GetStatId() const
     RETURN_QUICK_DECLARE_CYCLE_STAT(UBH_GameRecorder, STATGROUP_Tickables);
 }
 
-void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef& BackBuffer)
+void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer)
 {
 #if WITH_EDITOR
     //Hack for now TODO
@@ -273,7 +273,7 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef
             {
                 FViewport* Viewport = GEngine->GameViewport->GetGameViewport();
 
-                FTexture2DRHIRef GameBuffer = BackBuffer;
+                FTextureRHIRef GameBuffer = BackBuffer;
                 if (!GameBuffer)
                 {
                     UE_LOG(LogBetaHub, Error, TEXT("Failed to get game buffer. Will try next time..."));
@@ -322,7 +322,7 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef
 #endif
 }
 
-void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
+void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 {
     if (!GEngine || !GEngine->GameViewport) return;
 
@@ -349,7 +349,7 @@ void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
                 return;
             }
 
-            FTexture2DRHIRef Texture = BackBuffer;
+            FTextureRHIRef Texture = BackBuffer;
 
             FRHICopyTextureInfo CopyInfo;
             RHICmdList.CopyTexture(Texture, StagingTexture, CopyInfo);
@@ -379,7 +379,7 @@ void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
     bCopyTextureStarted = true;
 }
 
-void UBH_GameRecorder::OnBackBufferResized(const FTexture2DRHIRef& BackBuffer)
+void UBH_GameRecorder::OnBackBufferResized(const FTextureRHIRef& BackBuffer)
 {
     FIntVector ViewportSize = BackBuffer->GetDesc().GetSize();
     ViewportWidth = FrameWidth = ViewportSize.X;
