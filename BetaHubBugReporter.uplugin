@@ -6,7 +6,7 @@
 	"Description": "Bug reporting functionality for BetaHub.io",
 	"Category": "Other",
 	"CreatedBy": "Upsoft sp. z o. o.",
-	"EngineVersion": "5.3.0",
+	"EngineVersion": "5.5.0",
 	"CreatedByURL": "https://betahub.io/",
 	"DocsURL": "https://www.betahub.io/docs/integration-guides/#unreal-plugin-integration",
 	"MarketplaceURL": "",
@@ -23,6 +23,12 @@
 			"PlatformAllowList": [
 				"Win64"
 			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
 		}
 	],
 	"AdditionalFiles": [

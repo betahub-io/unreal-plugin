@@ -1,10 +1,20 @@
 #include "BH_Manager.h"
 #include "BH_Log.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 UBH_Manager::UBH_Manager()
     : InputComponent(nullptr)
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
+
+    IA_ShowReportForm = GetMutableDefault<UInputAction>();
+    IA_ShowReportForm->bTriggerWhenPaused = true;
+    IA_ShowReportForm->bReserveAllMappings = true;
+    BetaHubMappingContext = GetMutableDefault<UInputMappingContext>();
+
+    BetaHubMappingContext->MapKey(IA_ShowReportForm, Settings->ShortcutKey);
 }
 
 void UBH_Manager::StartService(UGameInstance* GI)
@@ -78,12 +88,18 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
 {
     CurrentPlayerController = PC;
 
-    if (PC)
+    //Add Input Mapping Context
+    UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
+
+    if (Subsystem && BetaHubMappingContext)
     {
-        InputComponent = NewObject<UInputComponent>(PC);
-        InputComponent->RegisterComponent();
-        InputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
-        PC->PushInputComponent(InputComponent);
+        Subsystem->AddMappingContext(BetaHubMappingContext, 0);
+    }
+
+    if (PC && IA_ShowReportForm)
+    {
+        InputComponent = Cast<UEnhancedInputComponent>(PC->InputComponent);
+        InputComponent->BindAction(IA_ShowReportForm, ETriggerEvent::Completed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
     }
 }
 

@@ -21,9 +21,12 @@ private:
     void OnLocalPlayerAdded(ULocalPlayer* Player);
     void OnPlayerControllerChanged(APlayerController* PC);
 
-    TObjectPtr<UInputComponent> InputComponent;
+    TObjectPtr<class UEnhancedInputComponent> InputComponent;
 
     TObjectPtr<APlayerController> CurrentPlayerController;
+
+    TObjectPtr<class UInputAction> IA_ShowReportForm;
+    TObjectPtr<class UInputMappingContext> BetaHubMappingContext;
 
 public:
     UBH_Manager();
