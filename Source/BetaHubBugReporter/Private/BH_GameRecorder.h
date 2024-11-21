@@ -65,7 +65,7 @@ private:
     TArray<FColor> PendingPixels;
     TArray<FColor> ResizedPixels;
 
-    FTexture2DRHIRef StagingTexture;
+    FTextureRHIRef StagingTexture;
     EPixelFormat StagingTextureFormat;
 
     int32 ViewportWidth;
@@ -77,12 +77,17 @@ private:
     BH_AsyncQueue<BH_RawFrameBuffer<uint8>> RawFrameBufferQueue;
     BH_AsyncPool<BH_RawFrameBuffer<uint8>> RawFrameBufferPool;
 
-    void CaptureFrame();
-    void CaptureRenderTargetFrame();
-    void ReadPixels();
+    void ReadPixels(const FTextureRHIRef& BackBuffer);
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);
 
     TArray<int32> GetPixelIndicesFromViewportRectangle(const FVector2D& TopLeftViewportCoords, const FVector2D& BottomRightViewportCoords, int32 TextureWidth, int32 TextureHeight);
+
+    void OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer);
+
+    void OnBackBufferResized(const FTextureRHIRef& BackBuffer);
+
+    //Hack TODO
+    TSet<FString> CreatedWindows;
 };
