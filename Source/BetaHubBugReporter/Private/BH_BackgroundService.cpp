@@ -6,22 +6,14 @@
 #include "Components/CanvasPanelSlot.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
-    : Settings(nullptr), GameRecorder(nullptr), InputComponent(nullptr)
+    : Settings(nullptr), GameRecorder(nullptr)
 {
-    static ConstructorHelpers::FClassFinder<UUserWidget> WidgetClassFinder(TEXT("/BetaHubBugReporter/BugReportForm"));
-    if (WidgetClassFinder.Succeeded())
-    {
-        ReportFormWidgetClass = WidgetClassFinder.Class;
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find widget class at specified path."));
-    }
+    Settings = GetMutableDefault<UBH_PluginSettings>();
+    ReportFormWidgetClass = Settings->ReportFormWidgetClass;
 }
 
 void UBH_BackgroundService::StartService()
 {
-    Settings = GetMutableDefault<UBH_PluginSettings>();
     GameRecorder = NewObject<UBH_GameRecorder>(this);
     LogCapture = new UBH_LogCapture();
     
@@ -51,9 +43,9 @@ void UBH_BackgroundService::RetryInitializeService()
 {
     UE_LOG(LogTemp, Warning, TEXT("Retrying to initialize service."));
     
-    if (GEngine->GameViewport->GetWorld()) 
+    if (GetWorld()) 
     {
-        if (GEngine && GEngine->GameViewport)
+        if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport)
         {
             // Viewport is now available, clear the timer and initialize the service
             GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
@@ -72,68 +64,12 @@ void UBH_BackgroundService::RetryInitializeService()
 void UBH_BackgroundService::InitializeService()
 {
     GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
-
-    if (Settings && Settings->bEnableShortcut)
-    {
-        UE_LOG(LogTemp, Log, TEXT("Shortcut is enabled."));
-
-        if (GEngine && GEngine->GameViewport)
-        {
-            UWorld* World = GEngine->GameViewport->GetWorld();
-            if (World)
-            {
-                APlayerController* PlayerController = World->GetFirstPlayerController();
-                if (PlayerController)
-                {
-                    InputComponent = NewObject<UInputComponent>(PlayerController);
-                    InputComponent->RegisterComponent();
-                    InputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_BackgroundService::HandleInput);
-                    PlayerController->PushInputComponent(InputComponent);
-                }
-                else
-                {
-                    UE_LOG(LogTemp, Error, TEXT("PlayerController is null."));
-                }
-            }
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("World is null."));
-            
-            }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Shortcut is disabled."));
-    }
 }
 
 void UBH_BackgroundService::StopService()
 {
     GLog->RemoveOutputDevice(LogCapture);
     delete LogCapture;
-    
-    if (InputComponent)
-    {
-        if (GEngine && GEngine->GameViewport)
-        {
-            UWorld* World = GEngine->GameViewport->GetWorld();
-            if (World)
-            {
-                APlayerController* PlayerController = World->GetFirstPlayerController();
-                if (PlayerController)
-                {
-                    PlayerController->PopInputComponent(InputComponent);
-                }
-            }
-        }
-        InputComponent->DestroyComponent();
-        InputComponent = nullptr;
-    }
 
     if (GameRecorder)
     {
@@ -195,10 +131,4 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(TSubclassOf<UU
 UBH_GameRecorder* UBH_BackgroundService::GetGameRecorder()
 {
     return GameRecorder;
-}
-
-void UBH_BackgroundService::HandleInput()
-{
-    // trigger delegate
-    OnTriggerFormKeyPressed.Broadcast();
 }

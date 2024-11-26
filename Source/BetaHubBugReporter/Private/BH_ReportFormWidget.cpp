@@ -56,7 +56,7 @@ void UBH_ReportFormWidget::SubmitReport()
 
 void UBH_ReportFormWidget::SetCursorState()
 {
-    if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+    if (APlayerController* PlayerController = GetOwningPlayer())
     {
         // Save the current cursor state
         bCursorStateModified = true;
@@ -78,7 +78,7 @@ void UBH_ReportFormWidget::RestoreCursorState()
         return;
     }
     
-    if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+    if (APlayerController* PlayerController = GetOwningPlayer())
     {
         // Restore the previous cursor state
         PlayerController->bShowMouseCursor = bWasCursorVisible;

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.4
+
+### Fixes
+
+- Fix getting proper player reference when in multiplayer session
+- Fix freeze when closing game
+- Fix invalid handle exception when closing pipes
+- Add stopping service when GameInstanceSubsystem is deinitialized
+- Change format for MaxRecordingDuration to integer
+
 ## 1.0.3
 
 ### Fixes

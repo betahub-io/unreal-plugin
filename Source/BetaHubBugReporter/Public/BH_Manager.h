@@ -18,11 +18,18 @@ private:
     UPROPERTY()
     UBH_PluginSettings* Settings;
 
+    void OnLocalPlayerAdded(ULocalPlayer* Player);
+    void OnPlayerControllerChanged(APlayerController* PC);
+
+    TObjectPtr<UInputComponent> InputComponent;
+
+    TObjectPtr<APlayerController> CurrentPlayerController;
+
 public:
     UBH_Manager();
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
-    void StartService();
+    void StartService(UGameInstance* GI);
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void StopService();

@@ -14,6 +14,7 @@ class BETAHUBBUGREPORTER_API UBH_GameInstanceSubsystem : public UGameInstanceSub
 
 public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Deinitialize() override;
 
 private:
     UPROPERTY()
