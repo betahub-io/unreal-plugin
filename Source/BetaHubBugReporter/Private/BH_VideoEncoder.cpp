@@ -2,6 +2,7 @@
 #include "HAL/PlatformProcess.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Guid.h"
 #include "BH_Runnable.h"
 #include "BH_FFmpeg.h"
 
@@ -26,6 +27,9 @@ BH_VideoEncoder::BH_VideoEncoder(
         SegmentCheckInterval(FTimespan::FromMinutes(1)),
         LastSegmentCheckTime(FDateTime::Now())
 {
+    // Generate a random 5-character string for segmentPrefix
+    segmentPrefix = FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(5) + TEXT("_");
+    
     // check if width and height are multiples of 4
     if (screenWidth % 4 != 0 || screenHeight % 4 != 0)
     {
@@ -51,13 +55,13 @@ BH_VideoEncoder::BH_VideoEncoder(
     // Remove all existing segment files
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
     for (const FString& SegmentFile : SegmentFiles)
     {
         FileManager.Delete(*(segmentsDir / SegmentFile));
     }
 
-    outputFile = FPaths::Combine(segmentsDir, TEXT("segment_%06d.mp4"));
+    outputFile = FPaths::Combine(segmentsDir, (segmentPrefix + TEXT("%06d.mp4")));
     encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
         FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
         TEXT(" -r ") + FString::FromInt(targetFPS) +
@@ -291,7 +295,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     // Get the list of segment files
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
 
     // Sort and take the last MaxSegments
     SegmentFiles.Sort();
@@ -371,7 +375,7 @@ void BH_VideoEncoder::RemoveOldSegments()
     
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
 
     // Sort segment files based on their numerical part
     SegmentFiles.Sort([](const FString& A, const FString& B)
