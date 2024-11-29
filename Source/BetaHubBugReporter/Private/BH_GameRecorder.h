@@ -70,6 +70,9 @@ private:
     BH_AsyncQueue<BH_RawFrameBuffer<uint8>> RawFrameBufferQueue;
     BH_AsyncPool<BH_RawFrameBuffer<uint8>> RawFrameBufferPool;
 
+    SWindow* MainEditorWindow;
+    FVector2D LargestSize;
+
     void ReadPixels(const FTexture2DRHIRef& BackBuffer);
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);

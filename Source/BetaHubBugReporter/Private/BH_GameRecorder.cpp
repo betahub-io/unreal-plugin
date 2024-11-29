@@ -31,6 +31,8 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     , ViewportHeight(0)
     , FrameWidth(0)
     , FrameHeight(0)
+    , MainEditorWindow(nullptr)
+    , LargestSize(0, 0)
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -243,16 +245,32 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef& BackBuffer)
 {
-#if WITH_EDITOR
-    //Hack for now TODO
-    CreatedWindows.Add(Window.GetTitle().ToString());
+    #if WITH_EDITOR
+    // Log window title and size for debugging
+    FString WindowTitle = Window.GetTitle().ToString();
+    FVector2D WindowSize = Window.GetSizeInScreen();
+    // UE_LOG(LogBetaHub, Log, TEXT("OnBackBufferReady - Window Title: %s, Size: %dx%d"), *WindowTitle, (int32)WindowSize.X, (int32)WindowSize.Y);
 
-    if (CreatedWindows.Num() > 1 && Window.GetTitle().ToString().Contains("editor"))
+    // Select the main editor window by finding the largest window with "Unreal Editor" in the title
+    if (WindowTitle.Contains("Unreal Editor"))
     {
-        return;
-    }
+        float CurrentArea = WindowSize.X * WindowSize.Y;
+        float LargestArea = LargestSize.X * LargestSize.Y;
 
-#endif
+        if (CurrentArea > LargestArea)
+        {
+            LargestSize = WindowSize;
+            MainEditorWindow = &Window;
+        }
+
+        if (&Window != MainEditorWindow)
+        {
+            return;
+        }
+    } else {
+        return; // do not capture frames from other windows
+    }
+    #endif
 
     // Do not capture frames too frequently
     float TimeSinceLastCapture = (FDateTime::UtcNow() - LastCaptureTime).GetTotalSeconds();
@@ -323,6 +341,8 @@ void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
     if (BackBuffer->GetDesc().GetSize().X != ViewportWidth 
         || BackBuffer->GetDesc().GetSize().Y != ViewportHeight)
     {
+        UE_LOG(LogBetaHub, Warning, TEXT("Viewport size has changed. Restarting recording. Was: %dx%d, Now: %dx%d"),
+            ViewportWidth, ViewportHeight, BackBuffer->GetDesc().GetSize().X, BackBuffer->GetDesc().GetSize().Y);
         OnBackBufferResized(BackBuffer);
         return;
     }
@@ -381,7 +401,6 @@ void UBH_GameRecorder::OnBackBufferResized(const FTexture2DRHIRef& BackBuffer)
     FrameWidth = (FrameWidth + 3) & ~3;
     FrameHeight = (FrameHeight + 3) & ~3;
 
-    UE_LOG(LogBetaHub, Warning, TEXT("Viewport size has changed. Restarting recording..."));
     StopRecording();
     VideoEncoder.Reset(); // will need to recreate it
     StartRecording(TargetFPS, 0);
