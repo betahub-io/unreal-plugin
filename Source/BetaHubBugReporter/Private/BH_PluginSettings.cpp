@@ -36,4 +36,25 @@ UBH_PluginSettings::UBH_PluginSettings()
     {
         UE_LOG(LogBetaHub, Error, TEXT("Failed to find widget class at specified path."));
     }
+
+    ValidateSettings();
+}
+
+void UBH_PluginSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+    Super::PostEditChangeProperty(PropertyChangedEvent);
+    ValidateSettings();
+}
+
+void UBH_PluginSettings::ValidateSettings()
+{
+    if (MaxVideoWidth < 512)
+    {
+        MaxVideoWidth = 512;
+    }
+
+    if (MaxVideoHeight < 512)
+    {
+        MaxVideoHeight = 512;
+    }
 }

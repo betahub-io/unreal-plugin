@@ -57,4 +57,9 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
     TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
+
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
+private:
+    void ValidateSettings();
 };
