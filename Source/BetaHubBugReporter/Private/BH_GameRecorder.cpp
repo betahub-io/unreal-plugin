@@ -428,12 +428,20 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
     TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG);
 
-    ImageWrapper->SetRaw(Frame->Data.GetData(), Frame->Data.GetAllocatedSize(), Frame->Width, Frame->Height, ERGBFormat::BGRA, 8);
-    const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
+    if (Frame->Data.GetData() != NULL)
+    {
+        ImageWrapper->SetRaw(Frame->Data.GetData(), Frame->Data.GetAllocatedSize(), Frame->Width, Frame->Height, ERGBFormat::BGRA, 8);
+        const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
 
-    FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
+        FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
 
-    return ScreenshotFilename;
+        return ScreenshotFilename;
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Frame data is null."));
+        return FString();
+    }
 }
 
 #if ENGINE_MINOR_VERSION < 4

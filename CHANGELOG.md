@@ -6,6 +6,7 @@
 
 - Fix ocasional freezes on Windows when viewport is being destroed, as write pipe could freeze the game.
 - Fix video recorder recording non-main windows when multiple windows are present.
+- Fix occasional crash when capturing a screenshot.
 
 ## 1.0.4
 
