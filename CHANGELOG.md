@@ -2,7 +2,7 @@
 
 ## UNRELEASED
 
-###
+### Fixes
 
 - Fix ocasional freezes on Windows when viewport is being destroed, as write pipe could freeze the game.
 
