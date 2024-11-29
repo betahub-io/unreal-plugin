@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+###
+
+- Fix ocasional freezes on Windows when viewport is being destroed, as write pipe could freeze the game.
+
 ## 1.0.4
 
 ### Fixes
