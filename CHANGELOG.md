@@ -2,6 +2,9 @@
 
 ## UNRELEASED
 
+### Added
+- Can now set maximum recording width and height, will is scaled down if the viewport is larger.
+
 ### Fixes
 
 - Fix ocasional freezes on Windows when viewport is being destroed, as write pipe could freeze the game.

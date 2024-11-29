@@ -38,6 +38,9 @@ public:
     virtual bool IsTickable() const override;
     virtual TStatId GetStatId() const override;
 
+    // Sets the maximum video dimensions while maintaining aspect ratio
+    void SetMaxVideoDimensions(int32 InMaxWidth, int32 InMaxHeight);
+
 private:
     UPROPERTY()
     UBH_FrameBuffer* FrameBuffer;
@@ -72,6 +75,10 @@ private:
 
     SWindow* MainEditorWindow;
     FVector2D LargestSize;
+
+    // Maximum video dimensions
+    int32 MaxVideoWidth;
+    int32 MaxVideoHeight;
 
     void ReadPixels(const FTexture2DRHIRef& BackBuffer);
 
