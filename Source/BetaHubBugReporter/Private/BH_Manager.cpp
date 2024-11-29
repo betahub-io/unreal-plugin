@@ -15,6 +15,21 @@ void UBH_Manager::StartService(UGameInstance* GI)
         return;
     }
 
+    // print log GI pointer value
+    UE_LOG(LogBetaHub, Log, TEXT("GI pointer value: %p"), GI);
+
+    if (GI == nullptr)
+    {
+        // try to get the game instance from the world
+        GI = GetWorld()->GetGameInstance();
+
+        if (GI == nullptr)
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Game instance not found."));
+            return;
+        }
+    }
+
     GI->OnLocalPlayerAddedEvent.AddUObject(this, &UBH_Manager::OnLocalPlayerAdded);
     
     BackgroundService = NewObject<UBH_BackgroundService>(this);
