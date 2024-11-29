@@ -46,7 +46,7 @@ BH_VideoEncoder::BH_VideoEncoder(
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     if (!PlatformFile.DirectoryExists(*segmentsDir))
     {
-        PlatformFile.CreateDirectory(*segmentsDir);
+        PlatformFile.CreateDirectoryTree(*segmentsDir);
     }
 
     // Remove all existing segment files

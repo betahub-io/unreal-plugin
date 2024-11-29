@@ -26,15 +26,17 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     , bIsRecording(false)
     , bCopyTextureStarted(false)
     , StagingTexture(nullptr)
-    , RawFrameBufferPool(3)
     , ViewportWidth(0)
     , ViewportHeight(0)
     , FrameWidth(0)
     , FrameHeight(0)
-    , MaxVideoWidth(512) // Initialize with minimum value
-    , MaxVideoHeight(512) // Initialize with minimum value
+    , LastCaptureTime(0)
+    , RawFrameBufferQueue()
+    , RawFrameBufferPool(3)
     , MainEditorWindow(nullptr)
     , LargestSize(0, 0)
+    , MaxVideoWidth(512) // Initialize with minimum value
+    , MaxVideoHeight(512) // Initialize with minimum value
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
