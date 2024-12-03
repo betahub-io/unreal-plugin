@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Engine.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Misc/FileHelper.h"
 #include "ImageUtils.h"
@@ -16,6 +17,7 @@
 #include "RenderGraphUtils.h"
 #include "RHISurfaceDataConversion.h"
 #include "Slate/SceneViewport.h"
+#include "Framework/Application/SlateApplication.h"
 
 #if ENGINE_MINOR_VERSION < 4
 bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags);

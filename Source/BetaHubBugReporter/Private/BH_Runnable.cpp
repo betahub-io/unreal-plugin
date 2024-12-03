@@ -1,9 +1,9 @@
+#include "BH_Runnable.h"
+
 #include <windows.h>
 
-#include "BH_Runnable.h"
 #include "BH_Log.h"
 #include "Misc/Paths.h"
-#include "HAL/PlatformProcess.h"
 #include "Misc/FileHelper.h"
 #include "HAL/PlatformFilemanager.h"
 

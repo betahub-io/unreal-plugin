@@ -2,6 +2,7 @@
 
 
 #include "BH_FFmpeg.h"
+#include "Misc/Paths.h"
 #include "BH_Log.h"
 #include "BH_Runnable.h"
 

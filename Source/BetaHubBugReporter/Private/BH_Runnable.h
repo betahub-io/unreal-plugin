@@ -1,8 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/Paths.h"
 #include "HAL/Runnable.h"
 #include "HAL/RunnableThread.h"
+#include "HAL/PlatformProcess.h"
+#include "GenericPlatform/GenericPlatformProcess.h"
+#include "HAL/ThreadSafeBool.h"
 #include <string>
 #include <mutex>
 

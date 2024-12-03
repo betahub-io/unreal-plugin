@@ -3,6 +3,7 @@
 
 #include "BH_PluginSettings.h"
 #include "BH_Log.h"
+#include "UObject/ConstructorHelpers.h"
 
 UBH_PluginSettings::UBH_PluginSettings()
 {
@@ -42,7 +43,6 @@ UBH_PluginSettings::UBH_PluginSettings()
 
 void UBH_PluginSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
-    Super::PostEditChangeProperty(PropertyChangedEvent);
     ValidateSettings();
 }
 

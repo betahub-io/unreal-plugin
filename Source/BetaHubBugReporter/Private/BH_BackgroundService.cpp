@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CanvasPanelSlot.h"
+#include "TimerManager.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)

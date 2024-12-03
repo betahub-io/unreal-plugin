@@ -1,8 +1,10 @@
 #include "BH_Manager.h"
 #include "BH_Log.h"
 #include "HttpModule.h"
+#include "Engine/GameInstance.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Components/InputComponent.h"
 #include "Json.h"
 #include "JsonUtilities.h"
 
