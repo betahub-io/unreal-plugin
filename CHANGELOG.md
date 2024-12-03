@@ -3,14 +3,15 @@
 ## UNRELEASED
 
 ### Added
-- Can now set maximum recording width and height, will is scaled down if the viewport is larger.
-- Video segments are now using random names to avoid file conflicts on multiple game instances.
 
-### Fixes
+- Added the ability to set maximum recording width and height; recordings are scaled down if the viewport exceeds these dimensions.
+- Video segments now use random names to avoid file conflicts when multiple game instances are running.
 
-- Fix ocasional freezes on Windows when viewport is being destroed, as write pipe could freeze the game.
-- Fix video recorder recording non-main windows when multiple windows are present.
-- Fix occasional crash when capturing a screenshot.
+### Fixed
+
+- Fixed occasional freezes on Windows when the viewport is destroyed, caused by the write pipe freezing the game.
+- Fixed the video recorder incorrectly capturing non-main windows when multiple windows are open.
+- Fixed occasional crashes when capturing screenshots.
 
 ## 1.0.4
 
