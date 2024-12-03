@@ -440,7 +440,16 @@ void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FCol
 {
     TSharedPtr<FBH_Frame> Frame = MakeShareable(new FBH_Frame(Width, Height));
     Frame->Data = Data;
-    FrameBuffer->SetFrame(Frame);
+
+    // While this is called from an async task, FrameBuffer may or may not be valid
+    if (FrameBuffer)
+    {
+        FrameBuffer->SetFrame(Frame);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("FrameBuffer is null."));
+    }
 }
 
 FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
