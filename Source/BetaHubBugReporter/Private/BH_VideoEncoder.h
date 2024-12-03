@@ -15,6 +15,7 @@ private:
     FString ffmpegPath;
     FString outputFile;
     FString segmentsDir;
+    FString segmentPrefix;
     int32 targetFPS;
     int32 screenWidth;
     int32 screenHeight;
