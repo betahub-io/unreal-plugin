@@ -24,7 +24,7 @@ BH_VideoEncoder::BH_VideoEncoder(
         pipeWrite(nullptr),
         RecordingDuration(InRecordingDuration),
         MaxSegmentAge(FTimespan::FromMinutes(5)),
-        SegmentCheckInterval(FTimespan::FromMinutes(1)),
+        SegmentCheckInterval(FTimespan::FromSeconds(15)),
         LastSegmentCheckTime(FDateTime::Now())
 {
     // check if width and height are multiples of 4
