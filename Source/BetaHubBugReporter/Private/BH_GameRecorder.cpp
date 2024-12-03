@@ -399,25 +399,15 @@ void UBH_GameRecorder::OnBackBufferResized(const FTexture2DRHIRef& BackBuffer)
     int32 OriginalWidth = ViewportWidth = OriginalSize.X;
     int32 OriginalHeight = ViewportHeight = OriginalSize.Y;
 
-    // Calculate scaling factor while maintaining aspect ratio
+    // Calculate scaling factor based on the maximum dimension
     float WidthRatio = static_cast<float>(OriginalWidth) / MaxVideoWidth;
     float HeightRatio = static_cast<float>(OriginalHeight) / MaxVideoHeight;
     float ScalingFactor = FMath::Max(WidthRatio, HeightRatio);
 
     if (ScalingFactor > 1.0f)
     {
-        // Scale down by powers of two
-        int32 ScaledWidth = OriginalWidth;
-        int32 ScaledHeight = OriginalHeight;
-
-        while (ScaledWidth >= MaxVideoWidth || ScaledHeight >= MaxVideoHeight)
-        {
-            ScaledWidth /= 2;
-            ScaledHeight /= 2;
-        }
-
-        FrameWidth = ScaledWidth;
-        FrameHeight = ScaledHeight;
+        FrameWidth = FMath::RoundToInt(OriginalWidth / ScalingFactor);
+        FrameHeight = FMath::RoundToInt(OriginalHeight / ScalingFactor);
 
         UE_LOG(LogBetaHub, Log, TEXT("Resizing frame to %dx%d"), FrameWidth, FrameHeight);
     }
