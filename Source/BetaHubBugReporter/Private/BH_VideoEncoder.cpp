@@ -70,6 +70,8 @@ BH_VideoEncoder::BH_VideoEncoder(
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
+
+    RemoveOldFiles();
 }
 
 BH_VideoEncoder::~BH_VideoEncoder()
@@ -399,4 +401,29 @@ void BH_VideoEncoder::RemoveOldSegments()
 int32 BH_VideoEncoder::GetSegmentCountToKeep()
 {
     return RecordingDuration.GetTotalSeconds() / SEGMENT_DURATION_SECONDS;
+}
+
+void BH_VideoEncoder::RemoveOldFiles()
+{
+    IFileManager& FileManager = IFileManager::Get();
+    TArray<FString> Files;
+    FileManager.FindFiles(Files, *(segmentsDir / TEXT("*.mp4")), true, false);
+
+    FDateTime CurrentTime = FDateTime::UtcNow();
+    FTimespan MaxAge = FTimespan::FromHours(24);
+
+    for (const FString& File : Files)
+    {
+        FString FilePath = FPaths::Combine(segmentsDir, File);
+        FFileStatData StatData = FileManager.GetStatData(*FilePath);
+        if (StatData.bIsValid)
+        {
+            FDateTime LastWriteTime = StatData.ModificationTime;
+            if ((CurrentTime - LastWriteTime) > MaxAge)
+            {
+                UE_LOG(LogBetaHub, Log, TEXT("Removing old file: %s"), *FilePath);
+                FileManager.Delete(*FilePath);
+            }
+        }
+    }
 }

@@ -59,4 +59,5 @@ public:
     void EncodeFrame(TSharedPtr<FBH_Frame> frame);
 
     FString MergeSegments(int32 MaxSegments);
+    void RemoveOldFiles(); // New function declaration
 };

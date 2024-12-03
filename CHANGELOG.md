@@ -4,6 +4,7 @@
 
 ### Added
 - Can now set maximum recording width and height, will is scaled down if the viewport is larger.
+- Video segments are now using random names to avoid file conflicts on multiple game instances.
 
 ### Fixes
 
