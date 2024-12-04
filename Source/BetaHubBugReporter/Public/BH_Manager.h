@@ -23,6 +23,9 @@ struct FReleaseInfo
     FString Label;
 
     UPROPERTY(BlueprintReadOnly, Category="Release")
+    FString Summary;
+
+    UPROPERTY(BlueprintReadOnly, Category="Release")
     FString Description;
 
     UPROPERTY(BlueprintReadOnly, Category="Release")

@@ -199,6 +199,7 @@ void UBH_Manager::OnFetchAllReleasesResponse(FHttpRequestPtr Request, FHttpRespo
 
                 // Safely retrieve string fields
                 JsonObject->TryGetStringField("label", Release.Label);
+                JsonObject->TryGetStringField("summary", Release.Summary);
                 JsonObject->TryGetStringField("description", Release.Description);
                 JsonObject->TryGetStringField("created_at", Release.CreatedAt);
                 JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
@@ -244,6 +245,7 @@ void UBH_Manager::OnFetchLatestReleaseResponse(FHttpRequestPtr Request, FHttpRes
 
                     // Safely retrieve string fields
                     JsonObject->TryGetStringField("label", Release.Label);
+                    JsonObject->TryGetStringField("summary", Release.Summary);
                     JsonObject->TryGetStringField("description", Release.Description);
                     JsonObject->TryGetStringField("created_at", Release.CreatedAt);
                     JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
@@ -288,6 +290,7 @@ void UBH_Manager::OnFetchReleaseByIdResponse(FHttpRequestPtr Request, FHttpRespo
 
         // Safely retrieve string fields
         JsonObject->TryGetStringField("label", Release.Label);
+        JsonObject->TryGetStringField("summary", Release.Summary);
         JsonObject->TryGetStringField("description", Release.Description);
         JsonObject->TryGetStringField("created_at", Release.CreatedAt);
         JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
