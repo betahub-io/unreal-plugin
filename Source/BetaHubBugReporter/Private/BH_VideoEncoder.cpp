@@ -52,7 +52,6 @@ BH_VideoEncoder::BH_VideoEncoder(
     if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
     {
         UE_LOG(LogBetaHub, Error, TEXT("FFmpeg executable not found at path: %s"), *ffmpegPath);
-        return;
     }
 
     // Set up the segments directory in the Saved folder
