@@ -48,6 +48,13 @@ BH_VideoEncoder::BH_VideoEncoder(
     
     ffmpegPath = BH_FFmpeg::GetFFmpegPath();
 
+    // Check if ffmpeg is available
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("FFmpeg executable not found at path: %s"), *ffmpegPath);
+        return;
+    }
+
     // Set up the segments directory in the Saved folder
     segmentsDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments"));
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -109,6 +116,12 @@ void BH_VideoEncoder::Stop()
 
 void BH_VideoEncoder::StartRecording()
 {
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot start recording. FFmpeg executable not found."));
+        return;
+    }
+
     if (!bIsRecording)
     {
         bIsRecording = true;
@@ -152,10 +165,22 @@ void BH_VideoEncoder::ResumeRecording()
 
 void BH_VideoEncoder::RunEncoding()
 {
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot run encoding. FFmpeg executable not found."));
+        return;
+    }
+
     // Wait for the first valid frame
     TSharedPtr<FBH_Frame> firstFrame = nullptr;
     while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
     {
+        if (!frameBuffer)
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+            return;
+        }
+
         firstFrame = frameBuffer->GetFrame();
         if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
@@ -210,6 +235,12 @@ void BH_VideoEncoder::RunEncoding()
     {
         if (!pauseEvent->Wait(0))
         {
+            if (!frameBuffer)
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+                break;
+            }
+
             TSharedPtr<FBH_Frame> frame = frameBuffer->GetFrame();
             if (frame.IsValid())
             {
@@ -290,6 +321,12 @@ void BH_VideoEncoder::RunEncoding()
 FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
 {
     FString MergedFilePath;
+
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot merge segments. FFmpeg executable not found."));
+        return MergedFilePath;
+    }
 
     // Ensure ffmpeg path is set
     if (ffmpegPath.IsEmpty())
