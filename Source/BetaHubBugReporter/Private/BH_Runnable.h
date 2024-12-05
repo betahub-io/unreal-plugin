@@ -1,8 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/Paths.h"
 #include "HAL/Runnable.h"
 #include "HAL/RunnableThread.h"
+#include "HAL/PlatformProcess.h"
+#include "GenericPlatform/GenericPlatformProcess.h"
+#include "HAL/ThreadSafeBool.h"
 #include <string>
 #include <mutex>
 
@@ -38,6 +42,11 @@ private:
     FThreadSafeBool bTerminateByStdinFlag;
     FString OutputBuffer;
     std::mutex BufferMutex;
+
+    // Reimplementation of Unreal's CreatePipe with the BufferSize parameter.
+    // We needed it to increase the buffer size for the stdin pipe and workaround the freezing pipe issue.
+    // More details in the implementation.
+    bool CreatePipe(void*& ReadPipe, void*& WritePipe, bool bWritePipeLocal, uint32 BufferSize = 0);
 
     void TerminateProcess();
 };

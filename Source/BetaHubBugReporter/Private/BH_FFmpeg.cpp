@@ -2,6 +2,8 @@
 
 
 #include "BH_FFmpeg.h"
+#include "Misc/Paths.h"
+#include "BH_Log.h"
 #include "BH_Runnable.h"
 
 FString BH_FFmpeg::GetFFmpegPath()
@@ -43,7 +45,7 @@ FString BH_FFmpeg::GetFFmpegPath()
     }
 
 
-    UE_LOG(LogTemp, Error, TEXT("FFmpeg not found."));
+    UE_LOG(LogBetaHub, Error, TEXT("FFmpeg not found."));
     return FString();
 }
 
@@ -66,7 +68,7 @@ BH_FFmpegOptions BH_FFmpeg::GetFFmpegPreferredOptions()
         }
     }
 
-    UE_LOG(LogTemp, Error, TEXT("No FFmpeg options found."));
+    UE_LOG(LogBetaHub, Error, TEXT("No FFmpeg options found."));
     return {};
 }
 

@@ -33,7 +33,7 @@ private:
     void ShowPopup(const FString& Title, const FString& Description);
 
 protected:
-    virtual void NativeConstruct() override;
+    virtual void NativeOnInitialized() override;
     virtual void NativeDestruct() override;
 
 public:
@@ -66,7 +66,7 @@ public:
 
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
-    void Init(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents, bool bTryCaptureMouse);
+    void Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents, bool bTryCaptureMouse);
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     void SubmitReport();

@@ -1,5 +1,6 @@
 #include "BH_HttpRequest.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 
 BH_HttpRequest::BH_HttpRequest()

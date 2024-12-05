@@ -1,7 +1,9 @@
 #include "BH_GameRecorder.h"
+#include "BH_Log.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Engine.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Misc/FileHelper.h"
 #include "ImageUtils.h"
@@ -14,6 +16,8 @@
 #include "Async/Async.h"
 #include "RenderGraphUtils.h"
 #include "RHISurfaceDataConversion.h"
+#include "Slate/SceneViewport.h"
+#include "Framework/Application/SlateApplication.h"
 
 #if ENGINE_MINOR_VERSION < 4
 bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags);
@@ -24,7 +28,17 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     , bIsRecording(false)
     , bCopyTextureStarted(false)
     , StagingTexture(nullptr)
+    , ViewportWidth(0)
+    , ViewportHeight(0)
+    , FrameWidth(0)
+    , FrameHeight(0)
+    , LastCaptureTime(0)
+    , RawFrameBufferQueue()
     , RawFrameBufferPool(3)
+    , MainEditorWindow(nullptr)
+    , LargestSize(0, 0)
+    , MaxVideoWidth(512) // Initialize with minimum value
+    , MaxVideoHeight(512) // Initialize with minimum value
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -33,45 +47,37 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
 {
     if (!GEngine)
     {
-        UE_LOG(LogTemp, Error, TEXT("GEngine is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("GEngine is null."));
         return;
     }
 
     if (!GEngine->GameViewport)
     {
-        UE_LOG(LogTemp, Error, TEXT("GameViewport is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("GameViewport is null."));
         return;
     }
 
     UWorld* World = GEngine->GameViewport->GetWorld();
     if (!World)
     {
-        UE_LOG(LogTemp, Error, TEXT("World context is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("World context is null."));
         return;
     }
 
-    if (!GEngine->GameViewport->Viewport)
+    if (!GEngine->GameViewport->GetGameViewport())
     {
-        UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("Viewport is null."));
         return;
     }
 
     if (!VideoEncoder.IsValid())
     {
-        FViewport* Viewport = GEngine->GameViewport->Viewport;
+        FViewport* Viewport = GEngine->GameViewport->GetGameViewport();
         if (!Viewport)
         {
-            UE_LOG(LogTemp, Error, TEXT("Viewport is null."));
+            UE_LOG(LogBetaHub, Error, TEXT("Viewport is null."));
             return;
         }
-
-        FIntPoint ViewportSize = Viewport->GetSizeXY();
-        ViewportWidth = FrameWidth = ViewportSize.X;
-        ViewportHeight = FrameHeight = ViewportSize.Y;
-
-        // Adjust to the nearest multiple of 4
-        FrameWidth = (FrameWidth + 3) & ~3;
-        FrameHeight = (FrameHeight + 3) & ~3;
 
         VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, FTimespan(0, 0, InRecordingDuration), FrameWidth, FrameHeight, FrameBuffer));
     }
@@ -83,15 +89,15 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
         TargetFPS = InTargetFPS;
         RecordingDuration = FTimespan(0, 0, InRecordingDuration);
 
-        // Register delegate to capture frames during the rendering process
-        if (GEngine->GameViewport)
+        // Register delegate to capture frames after Slate generated UI on game frame
+        if (FSlateApplication::IsInitialized())
         {
-            GEngine->GameViewport->OnDrawn().AddUObject(this, &UBH_GameRecorder::CaptureFrame);
+            FSlateApplicationBase::Get().GetRenderer()->OnBackBufferReadyToPresent().AddUObject(this, &UBH_GameRecorder::OnBackBufferReady);
         }
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("Recording is already in progress."));
+        UE_LOG(LogBetaHub, Warning, TEXT("Recording is already in progress."));
     }
 }
 
@@ -103,9 +109,9 @@ void UBH_GameRecorder::PauseRecording()
         bIsRecording = false;
 
         // Unregister the delegate
-        if (GEngine && GEngine->GameViewport)
+        if (FSlateApplication::IsInitialized())
         {
-            GEngine->GameViewport->OnDrawn().RemoveAll(this);
+            FSlateApplicationBase::Get().GetRenderer()->OnBackBufferReadyToPresent().RemoveAll(this);
         }
     }
 }
@@ -118,9 +124,9 @@ void UBH_GameRecorder::StopRecording()
         bIsRecording = false;
 
         // Unregister the delegate
-        if (GEngine && GEngine->GameViewport)
+        if (FSlateApplication::IsInitialized())
         {
-            GEngine->GameViewport->OnDrawn().RemoveAll(this);
+            FSlateApplicationBase::Get().GetRenderer()->OnBackBufferReadyToPresent().RemoveAll(this);
         }
 
         // Remove staging texture
@@ -135,13 +141,13 @@ FString UBH_GameRecorder::SaveRecording()
 {
     if (!VideoEncoder.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("VideoEncoder is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("VideoEncoder is null."));
         return FString();
     }
 
     if (bIsRecording)
     {
-        UE_LOG(LogTemp, Error, TEXT("Recording is still in progress."));
+        UE_LOG(LogBetaHub, Error, TEXT("Recording is still in progress."));
         return FString();
     }
 
@@ -149,25 +155,7 @@ FString UBH_GameRecorder::SaveRecording()
 }
 
 void UBH_GameRecorder::Tick(float DeltaTime)
-{
-    if (bIsRecording)
-    {
-        // if viewport size has changed, restart recording
-        FViewport* Viewport = GEngine->GameViewport->Viewport;
-        if (Viewport)
-        {
-            FIntPoint ViewportSize = Viewport->GetSizeXY();
-            if (ViewportSize.X != ViewportWidth || ViewportSize.Y != ViewportHeight)
-            {
-                UE_LOG(LogTemp, Warning, TEXT("Viewport size has changed. Restarting recording..."));
-                
-                StopRecording();
-                VideoEncoder.Reset(); // will need to recreate it
-                StartRecording(TargetFPS, 0);
-            }
-        }
-    }
-    
+{    
     if (bCopyTextureStarted && CopyTextureFence.IsFenceComplete())
     {
         AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this]()
@@ -232,24 +220,20 @@ void UBH_GameRecorder::ResizeImageToFrame(
 {
     ResizedImage.SetNum(InFrameWidth * InFrameHeight);
 
+    float ScaleX = static_cast<float>(ImageWidth) / InFrameWidth;
+    float ScaleY = static_cast<float>(ImageHeight) / InFrameHeight;
+
     for (uint32 Y = 0; Y < InFrameHeight; ++Y)
     {
         for (uint32 X = 0; X < InFrameWidth; ++X)
         {
-            if (X < ImageWidth && Y < ImageHeight)
-            {
-                // If within the bounds of the original image, copy the pixel
-                ResizedImage[Y * InFrameWidth + X] = ImageData[Y * ImageWidth + X];
-            }
-            else
-            {
-                // If outside the bounds, set a default color (e.g., black)
-                ResizedImage[Y * InFrameWidth + X] = FColor::Black;
-            }
+            uint32 SourceX = FMath::Clamp(static_cast<uint32>(X * ScaleX), 0u, ImageWidth - 1);
+            uint32 SourceY = FMath::Clamp(static_cast<uint32>(Y * ScaleY), 0u, ImageHeight - 1);
+
+            ResizedImage[Y * InFrameWidth + X] = ImageData[SourceY * ImageWidth + SourceX];
         }
     }
 }
-
 
 bool UBH_GameRecorder::IsTickable() const
 {
@@ -261,8 +245,35 @@ TStatId UBH_GameRecorder::GetStatId() const
     RETURN_QUICK_DECLARE_CYCLE_STAT(UBH_GameRecorder, STATGROUP_Tickables);
 }
 
-void UBH_GameRecorder::CaptureFrame()
+void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef& BackBuffer)
 {
+    #if WITH_EDITOR
+    // Log window title and size for debugging
+    FString WindowTitle = Window.GetTitle().ToString();
+    FVector2D WindowSize = Window.GetSizeInScreen();
+    // UE_LOG(LogBetaHub, Log, TEXT("OnBackBufferReady - Window Title: %s, Size: %dx%d"), *WindowTitle, (int32)WindowSize.X, (int32)WindowSize.Y);
+
+    // Select the main editor window by finding the largest window with "Unreal Editor" in the title
+    if (WindowTitle.Contains("Unreal Editor"))
+    {
+        float CurrentArea = WindowSize.X * WindowSize.Y;
+        float LargestArea = LargestSize.X * LargestSize.Y;
+
+        if (CurrentArea > LargestArea)
+        {
+            LargestSize = WindowSize;
+            MainEditorWindow = &Window;
+        }
+
+        if (&Window != MainEditorWindow)
+        {
+            return;
+        }
+    } else {
+        return; // do not capture frames from other windows
+    }
+    #endif
+
     // Do not capture frames too frequently
     float TimeSinceLastCapture = (FDateTime::UtcNow() - LastCaptureTime).GetTotalSeconds();
     if (TimeSinceLastCapture < 1.0f / TargetFPS)
@@ -276,90 +287,94 @@ void UBH_GameRecorder::CaptureFrame()
     // We need to do it here since UE 5.3 does not allow creating textures outside the Draw event.
     if (StagingTexture == nullptr)
     {
+
         ENQUEUE_RENDER_COMMAND(CaptureFrameCommand)(
-        [this](FRHICommandListImmediate& RHICmdList)
-        {
-            FViewport* Viewport = GEngine->GameViewport->Viewport;
-            
-            FTexture2DRHIRef GameBuffer = Viewport->GetRenderTargetTexture();
-            if (!GameBuffer)
+            [this, BackBuffer](FRHICommandListImmediate& RHICmdList)
             {
-                UE_LOG(LogTemp, Error, TEXT("Failed to get game buffer. Will try next time..."));
-                return;
-            }
+                FViewport* Viewport = GEngine->GameViewport->GetGameViewport();
 
-            FRHITextureCreateDesc TextureCreateDesc = FRHITextureCreateDesc::Create2D(
-                TEXT("StagingTexture"),
-                GameBuffer->GetSizeX(),
-                GameBuffer->GetSizeY(),
-                GameBuffer->GetFormat()
-            );
-            TextureCreateDesc.SetNumMips(GameBuffer->GetNumMips());
-            TextureCreateDesc.SetNumSamples(GameBuffer->GetNumSamples());
-            TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
-            TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
+                FTexture2DRHIRef GameBuffer = BackBuffer;
+                if (!GameBuffer)
+                {
+                    UE_LOG(LogBetaHub, Error, TEXT("Failed to get game buffer. Will try next time..."));
+                    return;
+                }
 
-    #if ENGINE_MINOR_VERSION >= 4
-            StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
-    #else
-            StagingTexture = RHICreateTexture(TextureCreateDesc);
-    #endif
 
-            StagingTextureFormat = StagingTexture->GetFormat();
+                FRHITextureCreateDesc TextureCreateDesc = FRHITextureCreateDesc::Create2D(
+                    TEXT("StagingTexture"),
+                    GameBuffer->GetSizeX(),
+                    GameBuffer->GetSizeY(),
+                    GameBuffer->GetFormat()
+                );
+                TextureCreateDesc.SetNumMips(GameBuffer->GetNumMips());
+                TextureCreateDesc.SetNumSamples(GameBuffer->GetNumSamples());
+                TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
+                TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
 
-            // check if the texture was created
-            if (!StagingTexture)
-            {
-                UE_LOG(LogTemp, Error, TEXT("Failed to create staging texture."));
-                return;
-            }
-        });
+#if ENGINE_MINOR_VERSION >= 4
+                StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
+#else
+                StagingTexture = RHICreateTexture(TextureCreateDesc);
+#endif
+
+                StagingTextureFormat = StagingTexture->GetFormat();
+
+                // check if the texture was created
+                if (!StagingTexture)
+                {
+                    UE_LOG(LogBetaHub, Error, TEXT("Failed to create staging texture."));
+                    return;
+                }
+            });
     }
-    
+
     if (!bCopyTextureStarted && StagingTexture != nullptr)
     {
-        ReadPixels();
+        ReadPixels(BackBuffer);
     }
 }
 
-void UBH_GameRecorder::ReadPixels()
+void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
 {
     if (!GEngine || !GEngine->GameViewport) return;
 
-    FViewport* Viewport = GEngine->GameViewport->Viewport;
-    if (!Viewport) return;
-
     // execute only if viewport sizes are same as registered
-    if (Viewport->GetSizeXY().X != ViewportWidth || Viewport->GetSizeXY().Y != ViewportHeight)
+    if (BackBuffer->GetDesc().GetSize().X != ViewportWidth 
+        || BackBuffer->GetDesc().GetSize().Y != ViewportHeight)
     {
+        UE_LOG(LogBetaHub, Warning, TEXT("Viewport size has changed. Restarting recording. Was: %dx%d, Now: %dx%d"),
+            ViewportWidth, ViewportHeight, BackBuffer->GetDesc().GetSize().X, BackBuffer->GetDesc().GetSize().Y);
+        OnBackBufferResized(BackBuffer);
         return;
     }
 
+
     ENQUEUE_RENDER_COMMAND(CopyTextureCommand)(
-        [this](FRHICommandListImmediate& RHICmdList) mutable
+        [this, BackBuffer](FRHICommandListImmediate& RHICmdList) mutable
         {
             // Check for the second time, because the viewport state can change
             if (!GEngine || !GEngine->GameViewport) return;
-
-            FViewport* Viewport = GEngine->GameViewport->Viewport;
-            if (!Viewport) return;
 
             BH_RawFrameBuffer<uint8>* TextureBuffer = RawFrameBufferPool.GetElement();
             if (!TextureBuffer)
             {
                 // no texture buffer available at this time
-                // UE_LOG(LogTemp, Error, TEXT("No texture buffer available."));
+                // UE_LOG(LogBetaHub, Error, TEXT("No texture buffer available."));
                 return;
             }
 
+            FTexture2DRHIRef Texture = BackBuffer;
+
             FRHICopyTextureInfo CopyInfo;
-            RHICmdList.CopyTexture(GEngine->GameViewport->Viewport->GetRenderTargetTexture(), StagingTexture, CopyInfo);
+            RHICmdList.CopyTexture(Texture, StagingTexture, CopyInfo);
 
             void* RawData = nullptr;
             int32 RawDataWidth = 0;
             int32 RawDataHeight = 0;
 
             RHICmdList.MapStagingSurface(StagingTexture, RawData, RawDataWidth, RawDataHeight);
+
 
             TextureBuffer->CopyFrom(
                 reinterpret_cast<uint8*>(RawData),
@@ -378,11 +393,55 @@ void UBH_GameRecorder::ReadPixels()
     bCopyTextureStarted = true;
 }
 
+void UBH_GameRecorder::OnBackBufferResized(const FTexture2DRHIRef& BackBuffer)
+{
+    FIntVector OriginalSize = BackBuffer->GetDesc().GetSize();
+
+    // need ViewportWidth and ViewportHeight to have it saved for later viewport size change comparison
+    int32 OriginalWidth = ViewportWidth = OriginalSize.X;
+    int32 OriginalHeight = ViewportHeight = OriginalSize.Y;
+
+    // Calculate scaling factor based on the maximum dimension
+    float WidthRatio = static_cast<float>(OriginalWidth) / MaxVideoWidth;
+    float HeightRatio = static_cast<float>(OriginalHeight) / MaxVideoHeight;
+    float ScalingFactor = FMath::Max(WidthRatio, HeightRatio);
+
+    if (ScalingFactor > 1.0f)
+    {
+        FrameWidth = FMath::RoundToInt(OriginalWidth / ScalingFactor);
+        FrameHeight = FMath::RoundToInt(OriginalHeight / ScalingFactor);
+
+        UE_LOG(LogBetaHub, Log, TEXT("Resizing frame to %dx%d"), FrameWidth, FrameHeight);
+    }
+    else
+    {
+        FrameWidth = OriginalWidth;
+        FrameHeight = OriginalHeight;
+    }
+
+    // Adjust to the nearest multiple of 4
+    FrameWidth = (FrameWidth + 3) & ~3;
+    FrameHeight = (FrameHeight + 3) & ~3;
+
+    StopRecording();
+    VideoEncoder.Reset(); // will need to recreate it
+    StartRecording(TargetFPS, RecordingDuration.GetTotalSeconds());
+}
+
 void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data)
 {
     TSharedPtr<FBH_Frame> Frame = MakeShareable(new FBH_Frame(Width, Height));
     Frame->Data = Data;
-    FrameBuffer->SetFrame(Frame);
+
+    // While this is called from an async task, FrameBuffer may or may not be valid
+    if (FrameBuffer)
+    {
+        FrameBuffer->SetFrame(Frame);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("FrameBuffer is null."));
+    }
 }
 
 FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
@@ -391,7 +450,7 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     TSharedPtr<FBH_Frame> Frame = FrameBuffer->GetFrame();
     if (!Frame.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("Frame is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("Frame is null."));
         return FString();
     }
 
@@ -400,12 +459,26 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
     TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG);
 
-    ImageWrapper->SetRaw(Frame->Data.GetData(), Frame->Data.GetAllocatedSize(), Frame->Width, Frame->Height, ERGBFormat::BGRA, 8);
-    const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
+    if (Frame->Data.GetData() != NULL)
+    {
+        ImageWrapper->SetRaw(Frame->Data.GetData(), Frame->Data.GetAllocatedSize(), Frame->Width, Frame->Height, ERGBFormat::BGRA, 8);
+        const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
 
-    FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
+        FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
 
-    return ScreenshotFilename;
+        return ScreenshotFilename;
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Frame data is null."));
+        return FString();
+    }
+}
+
+void UBH_GameRecorder::SetMaxVideoDimensions(int32 InMaxWidth, int32 InMaxHeight)
+{
+    MaxVideoWidth = FMath::Max(InMaxWidth, 512);
+    MaxVideoHeight = FMath::Max(InMaxHeight, 512);
 }
 
 #if ENGINE_MINOR_VERSION < 4

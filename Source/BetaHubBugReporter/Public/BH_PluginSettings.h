@@ -43,10 +43,23 @@ public:
     int32 MaxRecordingDuration;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The maximum width of the recorded bug report video. The video will be scaled down if the viewport width exceeds this value."))
+    int32 MaxVideoWidth;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The maximum height of the recorded bug report video. The video will be scaled down if the viewport height exceeds this value."))
+    int32 MaxVideoHeight;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the bug report form."))
     TSubclassOf<UBH_ReportFormWidget> ReportFormWidgetClass;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
     TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
+
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);
+
+private:
+    void ValidateSettings();
 };

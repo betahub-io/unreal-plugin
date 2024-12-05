@@ -1,6 +1,9 @@
 #include "BH_Runnable.h"
+
+#include <windows.h>
+
+#include "BH_Log.h"
 #include "Misc/Paths.h"
-#include "HAL/PlatformProcess.h"
 #include "Misc/FileHelper.h"
 #include "HAL/PlatformFilemanager.h"
 
@@ -26,12 +29,41 @@ FBH_Runnable::FBH_Runnable(const FString& Command, const FString& Params, const 
       bTerminateByStdinFlag(false)
 {
     FPlatformProcess::CreatePipe(StdOutReadPipe, StdOutWritePipe);
-    FPlatformProcess::CreatePipe(StdInReadPipe, StdInWritePipe, true);
+
+    // We need a lot of buffer for the stdout pipe as Windows can freeze the pipe if it's full.
+    // It can happen when the process is about to exit, but we're still trying to write the pipe.
+    CreatePipe(StdInReadPipe, StdInWritePipe, true, 64 * 1024 * 1024); // 64MB buffer for stdin
+
     Thread = FRunnableThread::Create(this, TEXT("FBH_RunnableThread"), 0, TPri_Normal);
+
     if (!Thread)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to create runnable thread."));
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to create runnable thread."));
     }
+}
+
+bool FBH_Runnable::CreatePipe(void*& ReadPipe, void*& WritePipe, bool bWritePipeLocal, uint32 BufferSize)
+{
+#if PLATFORM_WINDOWS
+    SECURITY_ATTRIBUTES Attr = { sizeof(SECURITY_ATTRIBUTES), NULL, true };
+    
+    if (!::CreatePipe(&ReadPipe, &WritePipe, &Attr, BufferSize))
+    {
+        return false;
+    }
+
+    if (!::SetHandleInformation(bWritePipeLocal ? WritePipe : ReadPipe, HANDLE_FLAG_INHERIT, 0))
+    {
+        return false;
+    }
+
+    return true;
+#else
+    // Really sorry if you've got into this error. I've been fighting those $%^& pipes for so long now,
+    // I will leave a TODO here to implement this for other platforms as my head cools down (and the priorities).
+    // Feel free to contribute if you're in the same boat.
+    #error CreatePipe is only supported on Windows platform.
+#endif
 }
 
 FBH_Runnable::~FBH_Runnable()
@@ -50,12 +82,12 @@ FBH_Runnable::~FBH_Runnable()
 
 uint32 FBH_Runnable::Run()
 {
-    UE_LOG(LogTemp, Log, TEXT("Starting process %s %s."), *Command, *Params);
-    
-    ProcessHandle = FPlatformProcess::CreateProc(*Command, *Params, true, false, false, nullptr, 0, *WorkingDirectory, StdOutWritePipe, StdInReadPipe);
+    UE_LOG(LogBetaHub, Log, TEXT("Starting process %s %s."), *Command, *Params);
+
+    ProcessHandle = FPlatformProcess::CreateProc(*Command, *Params, false, false, true, nullptr, 0, *WorkingDirectory, StdOutWritePipe, StdInReadPipe);
     if (!ProcessHandle.IsValid())
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to start process."));
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to start process."));
         return 1;
     }
 
@@ -77,7 +109,7 @@ uint32 FBH_Runnable::Run()
         }
         else
         {
-            UE_LOG(LogTemp, Log, TEXT("Process exited with code %d."), exitCode);
+            UE_LOG(LogBetaHub, Log, TEXT("Process exited with code %d."), exitCode);
             bExitedGracefully = true;
             StopTaskCounter.Increment();
         }
@@ -87,7 +119,7 @@ uint32 FBH_Runnable::Run()
     {
         if (bTerminateByStdinFlag)
         {
-            // close stdin pipe to terminate the process
+            // Close stdin pipe to terminate the process
             FPlatformProcess::ClosePipe(StdInReadPipe, StdInWritePipe);
             StdInReadPipe = nullptr;
             StdInWritePipe = nullptr;
@@ -97,7 +129,7 @@ uint32 FBH_Runnable::Run()
             TerminateProcess();
         }
 
-        UE_LOG(LogTemp, Log, TEXT("Process stopped."));
+        UE_LOG(LogBetaHub, Log, TEXT("Process stopped."));
     }
 
     return 0;
@@ -119,11 +151,11 @@ void FBH_Runnable::WriteToPipe(const TArray<uint8>& Data)
     {
         int32 BytesWritten;
         FPlatformProcess::WritePipe(StdInWritePipe, Data.GetData(), Data.Num(), &BytesWritten);
-        // UE_LOG(LogTemp, Log, TEXT("Written %d bytes to pipe."), BytesWritten); // Added log for debug purposes
+        // UE_LOG(LogBetaHub, Log, TEXT("Written %d bytes to pipe."), BytesWritten); // Added log for debug purposes
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("Process is not running, skipping write."));
+        UE_LOG(LogBetaHub, Warning, TEXT("Process is not running, skipping write."));
     }
 }
 
@@ -139,7 +171,7 @@ void FBH_Runnable::Terminate(bool bCloseStdin)
 {
     if (Thread)
     {
-        UE_LOG(LogTemp, Log, TEXT("Stopping process %s %s."), *Command, *Params);
+        UE_LOG(LogBetaHub, Log, TEXT("Stopping process %s %s."), *Command, *Params);
 
         if (bCloseStdin)
         {

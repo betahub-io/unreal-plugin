@@ -1,5 +1,9 @@
 #include "BH_VideoEncoder.h"
+#include "CoreTypes.h"
+#include "BH_Log.h"
 #include "HAL/PlatformProcess.h"
+#include "HAL/PlatformFileManager.h"
+#include "HAL/Event.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Guid.h"
@@ -24,7 +28,7 @@ BH_VideoEncoder::BH_VideoEncoder(
         pipeWrite(nullptr),
         RecordingDuration(InRecordingDuration),
         MaxSegmentAge(FTimespan::FromMinutes(5)),
-        SegmentCheckInterval(FTimespan::FromMinutes(1)),
+        SegmentCheckInterval(FTimespan::FromSeconds(15)),
         LastSegmentCheckTime(FDateTime::Now())
 {
     // Generate a random 5-character string for segmentPrefix
@@ -33,23 +37,29 @@ BH_VideoEncoder::BH_VideoEncoder(
     // check if width and height are multiples of 4
     if (screenWidth % 4 != 0 || screenHeight % 4 != 0)
     {
-        UE_LOG(LogTemp, Error, TEXT("Screen width and height must be multiples of 4."));
+        UE_LOG(LogBetaHub, Error, TEXT("Screen width and height must be multiples of 4."));
     }
 
     // target fps must be positive
     if (targetFPS <= 0)
     {
-        UE_LOG(LogTemp, Error, TEXT("Target FPS must be positive."));
+        UE_LOG(LogBetaHub, Error, TEXT("Target FPS must be positive."));
     }
     
     ffmpegPath = BH_FFmpeg::GetFFmpegPath();
+
+    // Check if ffmpeg is available
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("FFmpeg executable not found at path: %s"), *ffmpegPath);
+    }
 
     // Set up the segments directory in the Saved folder
     segmentsDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments"));
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     if (!PlatformFile.DirectoryExists(*segmentsDir))
     {
-        PlatformFile.CreateDirectory(*segmentsDir);
+        PlatformFile.CreateDirectoryTree(*segmentsDir);
     }
 
     // Remove all existing segment files
@@ -69,6 +79,8 @@ BH_VideoEncoder::BH_VideoEncoder(
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
+
+    RemoveOldFiles();
 }
 
 BH_VideoEncoder::~BH_VideoEncoder()
@@ -95,7 +107,7 @@ uint32 BH_VideoEncoder::Run()
 
 void BH_VideoEncoder::Stop()
 {
-    UE_LOG(LogTemp, Log, TEXT("Stopping video encoding..."));
+    UE_LOG(LogBetaHub, Log, TEXT("Stopping video encoding..."));
     
     stopEvent->Trigger();
     bIsRecording = false;
@@ -103,6 +115,12 @@ void BH_VideoEncoder::Stop()
 
 void BH_VideoEncoder::StartRecording()
 {
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot start recording. FFmpeg executable not found."));
+        return;
+    }
+
     if (!bIsRecording)
     {
         bIsRecording = true;
@@ -112,7 +130,7 @@ void BH_VideoEncoder::StartRecording()
             BH_FFmpegOptions Options = BH_FFmpeg::GetFFmpegPreferredOptions();
             PreferredFfmpegOptions = Options.Options;
 
-            UE_LOG(LogTemp, Log, TEXT("Preferred FFmpeg options: %s"), *PreferredFfmpegOptions);
+            UE_LOG(LogBetaHub, Log, TEXT("Preferred FFmpeg options: %s"), *PreferredFfmpegOptions);
         }
 
         thread = FRunnableThread::Create(this, TEXT("BH_VideoEncoderThread"), 0, TPri_Normal);
@@ -146,14 +164,26 @@ void BH_VideoEncoder::ResumeRecording()
 
 void BH_VideoEncoder::RunEncoding()
 {
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot run encoding. FFmpeg executable not found."));
+        return;
+    }
+
     // Wait for the first valid frame
     TSharedPtr<FBH_Frame> firstFrame = nullptr;
     while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
     {
+        if (!frameBuffer)
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+            return;
+        }
+
         firstFrame = frameBuffer->GetFrame();
         if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
-            UE_LOG(LogTemp, Log, TEXT("Waiting for the first valid frame..."));
+            UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame..."));
             FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
         }
 
@@ -175,17 +205,17 @@ void BH_VideoEncoder::RunEncoding()
     int exitCode;
     if (!ffmpegRunnable->IsProcessRunning(&exitCode))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to start ffmpeg process. Exit code: %d"), exitCode);
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to start ffmpeg process. Exit code: %d"), exitCode);
 
         // Print output
         FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
         if (!ffmpegOutput.IsEmpty())
         {
-            UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+            UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
         }
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output is empty."));
+            UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output is empty."));
         }
 
         delete ffmpegRunnable;
@@ -193,7 +223,7 @@ void BH_VideoEncoder::RunEncoding()
     }
     else
     {
-        UE_LOG(LogTemp, Log, TEXT("FFmpeg process started successfully."));
+        UE_LOG(LogBetaHub, Log, TEXT("FFmpeg process started successfully."));
     }
 
     const float frameInterval = 1.0f / targetFPS;
@@ -204,11 +234,17 @@ void BH_VideoEncoder::RunEncoding()
     {
         if (!pauseEvent->Wait(0))
         {
+            if (!frameBuffer)
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+                break;
+            }
+
             TSharedPtr<FBH_Frame> frame = frameBuffer->GetFrame();
             if (frame.IsValid())
             {
                 // Log frame retrieval success
-                // UE_LOG(LogTemp, Log, TEXT("Frame retrieved successfully."));
+                // UE_LOG(LogBetaHub, Log, TEXT("Frame retrieved successfully."));
 
                 if (byteData.Num() != frame->Data.Num() * sizeof(FColor))
                 {
@@ -221,7 +257,7 @@ void BH_VideoEncoder::RunEncoding()
                     FMemory::Memcpy(byteData.GetData(), frame->Data.GetData(), frame->Data.Num() * sizeof(FColor));
 
                     // Log the data size
-                    // UE_LOG(LogTemp, Log, TEXT("Byte data size: %d"), byteData.Num());
+                    // UE_LOG(LogBetaHub, Log, TEXT("Byte data size: %d"), byteData.Num());
 
                     // Write data to the pipe all at once
                     ffmpegRunnable->WriteToPipe(byteData);
@@ -231,12 +267,12 @@ void BH_VideoEncoder::RunEncoding()
 
                     if (!ffmpegOutput.IsEmpty())
                     {
-                        UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+                        UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
                     }
                 }
                 else
                 {
-                    UE_LOG(LogTemp, Warning, TEXT("Byte data size is zero, skipping write."));
+                    UE_LOG(LogBetaHub, Warning, TEXT("Byte data size is zero, skipping write."));
                 }
 
                 // Periodic segment removal
@@ -248,7 +284,7 @@ void BH_VideoEncoder::RunEncoding()
             }
             else
             {
-                UE_LOG(LogTemp, Warning, TEXT("Failed to retrieve frame from frame buffer."));
+                UE_LOG(LogBetaHub, Warning, TEXT("Failed to retrieve frame from frame buffer."));
             }
             FPlatformProcess::Sleep(frameInterval);
         }
@@ -257,16 +293,16 @@ void BH_VideoEncoder::RunEncoding()
         int32 ExitCode = 0;
         if (!ffmpegRunnable->IsProcessRunning(&ExitCode))
         {
-            UE_LOG(LogTemp, Warning, TEXT("FFmpeg exited with code %d"), ExitCode);
+            UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg exited with code %d"), ExitCode);
             // print logs
             FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
             if (!ffmpegOutput.IsEmpty())
             {
-                UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+                UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
             }
             else
             {
-                UE_LOG(LogTemp, Warning, TEXT("FFmpeg Output is empty."));
+                UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output is empty."));
             }
             break;
         }
@@ -285,10 +321,16 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
 {
     FString MergedFilePath;
 
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot merge segments. FFmpeg executable not found."));
+        return MergedFilePath;
+    }
+
     // Ensure ffmpeg path is set
     if (ffmpegPath.IsEmpty())
     {
-        UE_LOG(LogTemp, Error, TEXT("FFmpeg path is not set."));
+        UE_LOG(LogBetaHub, Error, TEXT("FFmpeg path is not set."));
         return MergedFilePath;
     }
 
@@ -307,7 +349,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     // Check if there are any segments to merge
     if (SegmentFiles.Num() == 0)
     {
-        UE_LOG(LogTemp, Warning, TEXT("No segments found to merge."));
+        UE_LOG(LogBetaHub, Warning, TEXT("No segments found to merge."));
         return MergedFilePath;
     }
 
@@ -320,7 +362,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         FullPath.ReplaceInline(TEXT("\\"), TEXT("/"));
         ConcatFileContent.Append(FString::Printf(TEXT("file '%s'\n"), *FullPath));
 
-        UE_LOG(LogTemp, Log, TEXT("Segment file: %s"), *FullPath);
+        UE_LOG(LogBetaHub, Log, TEXT("Segment file: %s"), *FullPath);
     }
     FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath);
 
@@ -348,7 +390,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
 
     if (exitCode == 0)
     {
-        UE_LOG(LogTemp, Log, TEXT("Segments merged successfully."));
+        UE_LOG(LogBetaHub, Log, TEXT("Segments merged successfully."));
         
         // Clean up segment files
         for (const FString& SegmentFile : SegmentFiles)
@@ -361,8 +403,8 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to merge segments. Exit code: %d"), exitCode);
-        UE_LOG(LogTemp, Error, TEXT("FFmpeg Output: %s"), *MergeRunnable->GetBufferedOutput());
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to merge segments. Exit code: %d"), exitCode);
+        UE_LOG(LogBetaHub, Error, TEXT("FFmpeg Output: %s"), *MergeRunnable->GetBufferedOutput());
         delete MergeRunnable;
         return FString();
     }
@@ -390,7 +432,7 @@ void BH_VideoEncoder::RemoveOldSegments()
     for (int32 i = 0; i < SegmentsToRemove; ++i)
     {
         FString SegmentFilePath = segmentsDir / SegmentFiles[i];
-        UE_LOG(LogTemp, Log, TEXT("Removing old segment: %s"), *SegmentFilePath);
+        UE_LOG(LogBetaHub, Log, TEXT("Removing old segment: %s"), *SegmentFilePath);
         FileManager.Delete(*SegmentFilePath);
     }
 }
@@ -398,4 +440,29 @@ void BH_VideoEncoder::RemoveOldSegments()
 int32 BH_VideoEncoder::GetSegmentCountToKeep()
 {
     return RecordingDuration.GetTotalSeconds() / SEGMENT_DURATION_SECONDS;
+}
+
+void BH_VideoEncoder::RemoveOldFiles()
+{
+    IFileManager& FileManager = IFileManager::Get();
+    TArray<FString> Files;
+    FileManager.FindFiles(Files, *(segmentsDir / TEXT("*.mp4")), true, false);
+
+    FDateTime CurrentTime = FDateTime::UtcNow();
+    FTimespan MaxAge = FTimespan::FromHours(24);
+
+    for (const FString& File : Files)
+    {
+        FString FilePath = FPaths::Combine(segmentsDir, File);
+        FFileStatData StatData = FileManager.GetStatData(*FilePath);
+        if (StatData.bIsValid)
+        {
+            FDateTime LastWriteTime = StatData.ModificationTime;
+            if ((CurrentTime - LastWriteTime) > MaxAge)
+            {
+                UE_LOG(LogBetaHub, Log, TEXT("Removing old file: %s"), *FilePath);
+                FileManager.Delete(*FilePath);
+            }
+        }
+    }
 }

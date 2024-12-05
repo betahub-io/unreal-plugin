@@ -1,4 +1,5 @@
 #include "BH_BugReport.h"
+#include "BH_Log.h"
 #include "BH_HttpRequest.h"
 #include "BH_PopupWidget.h"
 #include "BH_PluginSettings.h"
@@ -10,6 +11,8 @@
 #include "Misc/FileHelper.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
+#include "EngineGlobals.h"
+#include "Engine/Engine.h"
 #include "Interfaces/IHttpResponse.h"
 
 UBH_BugReport::UBH_BugReport()
@@ -58,7 +61,7 @@ void UBH_BugReport::SubmitReportAsync(
 {
     if (!Settings)
     {
-        UE_LOG(LogTemp, Error, TEXT("Settings is null"));
+        UE_LOG(LogBetaHub, Error, TEXT("Settings is null"));
         return;
     }
 
@@ -129,7 +132,7 @@ void UBH_BugReport::SubmitReportAsync(
         {
             // ShowPopup(TEXT("Failed to submit bug report."));
             FString Error = ParseErrorFromResponse(Response->GetContentAsString());
-            UE_LOG(LogTemp, Error, TEXT("Failed to submit bug report: %s"), *Response->GetContentAsString());
+            UE_LOG(LogBetaHub, Error, TEXT("Failed to submit bug report: %s"), *Response->GetContentAsString());
             OnFailure(Error);
         }
 
@@ -148,7 +151,7 @@ void UBH_BugReport::SubmitMedia(
 {
     if (!Settings)
     {
-        UE_LOG(LogTemp, Error, TEXT("Settings is null"));
+        UE_LOG(LogBetaHub, Error, TEXT("Settings is null"));
         return;
     }
 
@@ -171,23 +174,23 @@ void UBH_BugReport::SubmitMedia(
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("Both FilePath and Contents are empty."));
+        UE_LOG(LogBetaHub, Error, TEXT("Both FilePath and Contents are empty."));
         return;
     }
 
     MediaRequest->FinalizeFormData();
 
-    UE_LOG(LogTemp, Log, TEXT("Submitting media to %s"), *url);
+    UE_LOG(LogBetaHub, Log, TEXT("Submitting media to %s"), *url);
 
     MediaRequest->ProcessRequest([MediaRequest](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bWasSuccessful && (Response->GetResponseCode() == 200 || Response->GetResponseCode() == 201))
         {
-            UE_LOG(LogTemp, Log, TEXT("Media submitted successfully."));
+            UE_LOG(LogBetaHub, Log, TEXT("Media submitted successfully."));
         }
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("Failed to submit media: %s"), *Response->GetContentAsString());
+            UE_LOG(LogBetaHub, Error, TEXT("Failed to submit media: %s"), *Response->GetContentAsString());
         }
         delete MediaRequest;
     });
