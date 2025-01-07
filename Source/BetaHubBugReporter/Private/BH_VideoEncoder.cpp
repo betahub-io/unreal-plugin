@@ -293,7 +293,11 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     SegmentFiles.Sort();
     if (SegmentFiles.Num() > MaxSegments)
     {
+#if ENGINE_MINOR_VERSION >= 5
         SegmentFiles.RemoveAt(0, SegmentFiles.Num() - MaxSegments, EAllowShrinking::Yes);
+#else
+        SegmentFiles.RemoveAt(0, SegmentFiles.Num() - MaxSegments, true);
+#endif
     }
 
     // Check if there are any segments to merge
