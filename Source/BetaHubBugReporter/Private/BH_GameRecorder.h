@@ -42,6 +42,9 @@ public:
     void HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide);
     void SetHiddenAreaColor(FColor NewColor);
 
+    // Sets the maximum video dimensions while maintaining aspect ratio
+    void SetMaxVideoDimensions(int32 InMaxWidth, int32 InMaxHeight);
+
 private:
     UPROPERTY()
     UBH_FrameBuffer* FrameBuffer;
@@ -77,7 +80,14 @@ private:
     BH_AsyncQueue<BH_RawFrameBuffer<uint8>> RawFrameBufferQueue;
     BH_AsyncPool<BH_RawFrameBuffer<uint8>> RawFrameBufferPool;
 
-    void ReadPixels(const FTextureRHIRef& BackBuffer);
+    SWindow* MainEditorWindow;
+    FVector2D LargestSize;
+
+    // Maximum video dimensions
+    int32 MaxVideoWidth;
+    int32 MaxVideoHeight;
+
+    void ReadPixels(const FTexture2DRHIRef& BackBuffer);
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);

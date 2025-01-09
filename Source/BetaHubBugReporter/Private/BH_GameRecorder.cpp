@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Engine.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Misc/FileHelper.h"
 #include "ImageUtils.h"
@@ -16,6 +17,7 @@
 #include "RenderGraphUtils.h"
 #include "RHISurfaceDataConversion.h"
 #include "Slate/SceneViewport.h"
+#include "Framework/Application/SlateApplication.h"
 
 #if ENGINE_MINOR_VERSION < 4
 bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags);
@@ -32,6 +34,12 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     , FrameHeight(0)
     , RawFrameBufferPool(3)
     , HiddenAreaColor(FColor::Black)
+    , LastCaptureTime(0)
+    , RawFrameBufferQueue()
+    , MainEditorWindow(nullptr)
+    , LargestSize(0, 0)
+    , MaxVideoWidth(512) // Initialize with minimum value
+    , MaxVideoHeight(512) // Initialize with minimum value
 {
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
@@ -225,20 +233,17 @@ void UBH_GameRecorder::ResizeImageToFrame(
 {
     ResizedImage.SetNum(InFrameWidth * InFrameHeight);
 
+    float ScaleX = static_cast<float>(ImageWidth) / InFrameWidth;
+    float ScaleY = static_cast<float>(ImageHeight) / InFrameHeight;
+
     for (uint32 Y = 0; Y < InFrameHeight; ++Y)
     {
         for (uint32 X = 0; X < InFrameWidth; ++X)
         {
-            if (X < ImageWidth && Y < ImageHeight)
-            {
-                // If within the bounds of the original image, copy the pixel
-                ResizedImage[Y * InFrameWidth + X] = ImageData[Y * ImageWidth + X];
-            }
-            else
-            {
-                // If outside the bounds, set a default color (e.g., black)
-                ResizedImage[Y * InFrameWidth + X] = FColor::Black;
-            }
+            uint32 SourceX = FMath::Clamp(static_cast<uint32>(X * ScaleX), 0u, ImageWidth - 1);
+            uint32 SourceY = FMath::Clamp(static_cast<uint32>(Y * ScaleY), 0u, ImageHeight - 1);
+
+            ResizedImage[Y * InFrameWidth + X] = ImageData[SourceY * ImageWidth + SourceX];
         }
     }
 }
@@ -305,16 +310,32 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer)
 {
-#if WITH_EDITOR
-    //Hack for now TODO
-    CreatedWindows.Add(Window.GetTitle().ToString());
+    #if WITH_EDITOR
+    // Log window title and size for debugging
+    FString WindowTitle = Window.GetTitle().ToString();
+    FVector2D WindowSize = Window.GetSizeInScreen();
+    // UE_LOG(LogBetaHub, Log, TEXT("OnBackBufferReady - Window Title: %s, Size: %dx%d"), *WindowTitle, (int32)WindowSize.X, (int32)WindowSize.Y);
 
-    if (CreatedWindows.Num() > 1 && Window.GetTitle().ToString().Contains("editor"))
+    // Select the main editor window by finding the largest window with "Unreal Editor" in the title
+    if (WindowTitle.Contains("Unreal Editor"))
     {
-        return;
-    }
+        float CurrentArea = WindowSize.X * WindowSize.Y;
+        float LargestArea = LargestSize.X * LargestSize.Y;
 
-#endif
+        if (CurrentArea > LargestArea)
+        {
+            LargestSize = WindowSize;
+            MainEditorWindow = &Window;
+        }
+
+        if (&Window != MainEditorWindow)
+        {
+            return;
+        }
+    } else {
+        return; // do not capture frames from other windows
+    }
+    #endif
 
     // Do not capture frames too frequently
     float TimeSinceLastCapture = (FDateTime::UtcNow() - LastCaptureTime).GetTotalSeconds();
@@ -392,6 +413,8 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
     if (BackBuffer->GetDesc().GetSize().X != ViewportWidth 
         || BackBuffer->GetDesc().GetSize().Y != ViewportHeight)
     {
+        UE_LOG(LogBetaHub, Warning, TEXT("Viewport size has changed. Restarting recording. Was: %dx%d, Now: %dx%d"),
+            ViewportWidth, ViewportHeight, BackBuffer->GetDesc().GetSize().X, BackBuffer->GetDesc().GetSize().Y);
         OnBackBufferResized(BackBuffer);
         return;
     }
@@ -443,25 +466,53 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 
 void UBH_GameRecorder::OnBackBufferResized(const FTextureRHIRef& BackBuffer)
 {
-    FIntVector ViewportSize = BackBuffer->GetDesc().GetSize();
-    ViewportWidth = FrameWidth = ViewportSize.X;
-    ViewportHeight = FrameHeight = ViewportSize.Y;
+    FIntVector OriginalSize = BackBuffer->GetDesc().GetSize();
+
+    // need ViewportWidth and ViewportHeight to have it saved for later viewport size change comparison
+    int32 OriginalWidth = ViewportWidth = OriginalSize.X;
+    int32 OriginalHeight = ViewportHeight = OriginalSize.Y;
+
+    // Calculate scaling factor based on the maximum dimension
+    float WidthRatio = static_cast<float>(OriginalWidth) / MaxVideoWidth;
+    float HeightRatio = static_cast<float>(OriginalHeight) / MaxVideoHeight;
+    float ScalingFactor = FMath::Max(WidthRatio, HeightRatio);
+
+    if (ScalingFactor > 1.0f)
+    {
+        FrameWidth = FMath::RoundToInt(OriginalWidth / ScalingFactor);
+        FrameHeight = FMath::RoundToInt(OriginalHeight / ScalingFactor);
+
+        UE_LOG(LogBetaHub, Log, TEXT("Resizing frame to %dx%d"), FrameWidth, FrameHeight);
+    }
+    else
+    {
+        FrameWidth = OriginalWidth;
+        FrameHeight = OriginalHeight;
+    }
 
     // Adjust to the nearest multiple of 4
     FrameWidth = (FrameWidth + 3) & ~3;
     FrameHeight = (FrameHeight + 3) & ~3;
 
-    UE_LOG(LogBetaHub, Warning, TEXT("Viewport size has changed. Restarting recording..."));
     StopRecording();
     VideoEncoder.Reset(); // will need to recreate it
-    StartRecording(TargetFPS, 0);
+    StartRecording(TargetFPS, RecordingDuration.GetTotalSeconds());
 }
 
 void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data)
 {
     TSharedPtr<FBH_Frame> Frame = MakeShareable(new FBH_Frame(Width, Height));
     Frame->Data = Data;
-    FrameBuffer->SetFrame(Frame);
+
+    // While this is called from an async task, FrameBuffer may or may not be valid
+    if (FrameBuffer)
+    {
+        FrameBuffer->SetFrame(Frame);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("FrameBuffer is null."));
+    }
 }
 
 FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
@@ -479,12 +530,26 @@ FString UBH_GameRecorder::CaptureScreenshotToJPG(const FString& Filename)
     IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
     TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG);
 
-    ImageWrapper->SetRaw(Frame->Data.GetData(), Frame->Data.GetAllocatedSize(), Frame->Width, Frame->Height, ERGBFormat::BGRA, 8);
-    const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
+    if (Frame->Data.GetData() != NULL)
+    {
+        ImageWrapper->SetRaw(Frame->Data.GetData(), Frame->Data.GetAllocatedSize(), Frame->Width, Frame->Height, ERGBFormat::BGRA, 8);
+        const TArray64<uint8>& JPEGData = ImageWrapper->GetCompressed(90);
 
-    FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
+        FFileHelper::SaveArrayToFile(JPEGData, *ScreenshotFilename);
 
-    return ScreenshotFilename;
+        return ScreenshotFilename;
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Frame data is null."));
+        return FString();
+    }
+}
+
+void UBH_GameRecorder::SetMaxVideoDimensions(int32 InMaxWidth, int32 InMaxHeight)
+{
+    MaxVideoWidth = FMath::Max(InMaxWidth, 512);
+    MaxVideoHeight = FMath::Max(InMaxHeight, 512);
 }
 
 void UBH_GameRecorder::HideScreenAreaFromReport(FVector4 AreaToHide)

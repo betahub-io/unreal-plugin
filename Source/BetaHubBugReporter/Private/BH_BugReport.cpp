@@ -11,6 +11,8 @@
 #include "Misc/FileHelper.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
+#include "EngineGlobals.h"
+#include "Engine/Engine.h"
 #include "Interfaces/IHttpResponse.h"
 
 UBH_BugReport::UBH_BugReport()

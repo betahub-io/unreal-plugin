@@ -1,8 +1,12 @@
 #include "BH_VideoEncoder.h"
+#include "CoreTypes.h"
 #include "BH_Log.h"
 #include "HAL/PlatformProcess.h"
+#include "HAL/PlatformFileManager.h"
+#include "HAL/Event.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Guid.h"
 #include "BH_Runnable.h"
 #include "BH_FFmpeg.h"
 
@@ -24,9 +28,12 @@ BH_VideoEncoder::BH_VideoEncoder(
         pipeWrite(nullptr),
         RecordingDuration(InRecordingDuration),
         MaxSegmentAge(FTimespan::FromMinutes(5)),
-        SegmentCheckInterval(FTimespan::FromMinutes(1)),
+        SegmentCheckInterval(FTimespan::FromSeconds(15)),
         LastSegmentCheckTime(FDateTime::Now())
 {
+    // Generate a random 5-character string for segmentPrefix
+    segmentPrefix = FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(5) + TEXT("_");
+    
     // check if width and height are multiples of 4
     if (screenWidth % 4 != 0 || screenHeight % 4 != 0)
     {
@@ -41,17 +48,23 @@ BH_VideoEncoder::BH_VideoEncoder(
     
     ffmpegPath = BH_FFmpeg::GetFFmpegPath();
 
+    // Check if ffmpeg is available
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("FFmpeg executable not found at path: %s"), *ffmpegPath);
+    }
+
     // Set up the segments directory in the Saved folder
     segmentsDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments"));
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     if (!PlatformFile.DirectoryExists(*segmentsDir))
     {
-        PlatformFile.CreateDirectory(*segmentsDir);
+        PlatformFile.CreateDirectoryTree(*segmentsDir);
     }
 
     RemoveAllSegments();
 
-    outputFile = FPaths::Combine(segmentsDir, TEXT("segment_%06d.mp4"));
+    outputFile = FPaths::Combine(segmentsDir, (segmentPrefix + TEXT("%06d.mp4")));
     encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
         FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
         TEXT(" -r ") + FString::FromInt(targetFPS) +
@@ -59,6 +72,8 @@ BH_VideoEncoder::BH_VideoEncoder(
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
+
+    RemoveOldFiles();
 }
 
 BH_VideoEncoder::~BH_VideoEncoder()
@@ -93,6 +108,12 @@ void BH_VideoEncoder::Stop()
 
 void BH_VideoEncoder::StartRecording()
 {
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot start recording. FFmpeg executable not found."));
+        return;
+    }
+
     if (!bIsRecording)
     {
         bIsRecording = true;
@@ -138,10 +159,22 @@ void BH_VideoEncoder::ResumeRecording()
 
 void BH_VideoEncoder::RunEncoding()
 {
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot run encoding. FFmpeg executable not found."));
+        return;
+    }
+
     // Wait for the first valid frame
     TSharedPtr<FBH_Frame> firstFrame = nullptr;
     while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
     {
+        if (!frameBuffer)
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+            return;
+        }
+
         firstFrame = frameBuffer->GetFrame();
         if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
@@ -196,6 +229,12 @@ void BH_VideoEncoder::RunEncoding()
     {
         if (!pauseEvent->Wait(0))
         {
+            if (!frameBuffer)
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+                break;
+            }
+
             TSharedPtr<FBH_Frame> frame = frameBuffer->GetFrame();
             if (frame.IsValid())
             {
@@ -277,6 +316,12 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
 {
     FString MergedFilePath;
 
+    if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot merge segments. FFmpeg executable not found."));
+        return MergedFilePath;
+    }
+
     // Ensure ffmpeg path is set
     if (ffmpegPath.IsEmpty())
     {
@@ -287,7 +332,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     // Get the list of segment files
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
 
     // Sort and take the last MaxSegments
     SegmentFiles.Sort();
@@ -372,7 +417,7 @@ void BH_VideoEncoder::FindAllSegments(TArray<FString>& FileNames)
 
 void BH_VideoEncoder::RemoveAllSegments()
 {
-    UE_LOG(LogBetaHub, Error, TEXT("Removing all segments!"));
+    UE_LOG(LogBetaHub, Log, TEXT("Removing all segments!"));
 
     // Remove all existing segment files
     IFileManager& FileManager = IFileManager::Get();
@@ -415,4 +460,29 @@ void BH_VideoEncoder::RemoveOldSegments()
 int32 BH_VideoEncoder::GetSegmentCountToKeep()
 {
     return RecordingDuration.GetTotalSeconds() / SEGMENT_DURATION_SECONDS;
+}
+
+void BH_VideoEncoder::RemoveOldFiles()
+{
+    IFileManager& FileManager = IFileManager::Get();
+    TArray<FString> Files;
+    FileManager.FindFiles(Files, *(segmentsDir / TEXT("*.mp4")), true, false);
+
+    FDateTime CurrentTime = FDateTime::UtcNow();
+    FTimespan MaxAge = FTimespan::FromHours(24);
+
+    for (const FString& File : Files)
+    {
+        FString FilePath = FPaths::Combine(segmentsDir, File);
+        FFileStatData StatData = FileManager.GetStatData(*FilePath);
+        if (StatData.bIsValid)
+        {
+            FDateTime LastWriteTime = StatData.ModificationTime;
+            if ((CurrentTime - LastWriteTime) > MaxAge)
+            {
+                UE_LOG(LogBetaHub, Log, TEXT("Removing old file: %s"), *FilePath);
+                FileManager.Delete(*FilePath);
+            }
+        }
+    }
 }

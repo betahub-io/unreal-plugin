@@ -15,6 +15,7 @@ private:
     FString ffmpegPath;
     FString outputFile;
     FString segmentsDir;
+    FString segmentPrefix;
     int32 targetFPS;
     int32 screenWidth;
     int32 screenHeight;
@@ -60,4 +61,5 @@ public:
     void EncodeFrame(TSharedPtr<FBH_Frame> frame);
 
     FString MergeSegments(int32 MaxSegments);
+    void RemoveOldFiles(); // New function declaration
 };

@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.0",
+	"VersionName": "1.1",
 	"FriendlyName": "BetaHub Bug Reporter",
 	"Description": "Bug reporting functionality for BetaHub.io",
 	"Category": "Other",
@@ -12,7 +12,7 @@
 	"MarketplaceURL": "",
 	"SupportURL": "https://www.betahub.io/docs/support/#support-resources",
 	"CanContainContent": true,
-	"IsBetaVersion": true,
+	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
 	"Modules": [

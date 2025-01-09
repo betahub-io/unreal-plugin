@@ -1,5 +1,22 @@
 # Changelog
 
+## UNRELEASED
+
+### Added
+
+- Added the ability to set maximum recording width and height; recordings are scaled down if the viewport exceeds these dimensions.
+- Video segments now use random names to avoid file conflicts when multiple game instances are running.
+- Added blueprint callable functions to fetch release information from the project releases endpoint:
+  - `FetchAllReleases`: Fetches all releases.
+  - `FetchLatestRelease`: Fetches the latest release.
+  - `FetchReleaseById`: Fetches release information by release ID.
+
+### Fixed
+
+- Fixed occasional freezes on Windows when the viewport is destroyed, caused by the write pipe freezing the game.
+- Fixed the video recorder incorrectly capturing non-main windows when multiple windows are open.
+- Fixed occasional crashes when capturing screenshots.
+
 ## 1.0.4
 
 ### Fixes

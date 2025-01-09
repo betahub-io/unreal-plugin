@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CanvasPanelSlot.h"
+#include "TimerManager.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)
@@ -64,7 +65,12 @@ void UBH_BackgroundService::RetryInitializeService()
 
 void UBH_BackgroundService::InitializeService()
 {
-    GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+    if (GameRecorder && Settings)
+    {
+        // Set maximum video dimensions while maintaining aspect ratio
+        GameRecorder->SetMaxVideoDimensions(Settings->MaxVideoWidth, Settings->MaxVideoHeight);
+        GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+    }
 }
 
 void UBH_BackgroundService::StopService()
