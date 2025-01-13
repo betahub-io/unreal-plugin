@@ -7,6 +7,7 @@
 #include "Components/MultiLineEditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "Components/CheckBox.h"
+#include "Components/EditableTextBox.h"
 #include "BH_ReportFormWidget.generated.h"
 
 UCLASS()
@@ -36,6 +37,8 @@ protected:
     virtual void NativeOnInitialized() override;
     virtual void NativeDestruct() override;
 
+    virtual TFunction<void(const FString&)> OnFailure();
+
 public:
     // constructor
     UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer);
@@ -58,11 +61,17 @@ public:
     UPROPERTY(meta = (BindWidget))
     UCheckBox* IncludeScreenshotCheckbox;
 
+    UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional))
+    UEditableTextBox* UserEmailEdit;
+
     UPROPERTY(meta = (BindWidget))
     UButton* SubmitButton;
 
     UPROPERTY(meta = (BindWidget))
     UTextBlock* SubmitLabel;
+
+    UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Settings")
+    bool bRequireUserEmail;
 
 
     UFUNCTION(BlueprintCallable, Category="BugReport")

@@ -14,6 +14,7 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     , bCursorStateModified(false)
     , bWasCursorVisible(false)
     , bWasCursorLocked(false)
+    , bRequireUserEmail(false)
 {
     SetIsFocusable(true);
 }
@@ -54,23 +55,27 @@ void UBH_ReportFormWidget::SubmitReport()
 { 
     FString BugDescription = BugDescriptionEdit->GetText().ToString();
     FString StepsToReproduce = StepsToReproduceEdit->GetText().ToString();
+    FString UserEmail = UserEmailEdit->GetText().ToString();
 
-    UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s"), *BugDescription);
-    UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
+    UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s\n"), *BugDescription);
+    UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s\n"), *StepsToReproduce);
+    UE_LOG(LogBetaHub, Log, TEXT("User e-mail: %s\n"), *UserEmail);
+
+    if (bRequireUserEmail && UserEmail.IsEmpty())
+    {
+        OnFailure()("Please input your e-mail!");
+        return;
+    }
 
     UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
-    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, ScreenshotPath, LogFileContents,
+    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, UserEmail, ScreenshotPath, LogFileContents,
         IncludeVideoCheckbox->IsChecked(), IncludeLogsCheckbox->IsChecked(), IncludeScreenshotCheckbox->IsChecked(),
         [this]()
         {
             ShowPopup("Success", "Report submitted successfully!");
             RemoveFromParent();
         },
-        [this](const FString& ErrorMessage)
-        {
-            ShowPopup("Error", ErrorMessage);
-            SubmitLabel->SetText(FText::FromString("Submit"));
-        }
+        OnFailure()
     );
 }
 
@@ -158,4 +163,14 @@ void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
     {
         UE_LOG(LogBetaHub, Error, TEXT("PopupWidgetClass is null."));
     }
+}
+
+TFunction<void(const FString&)> UBH_ReportFormWidget::OnFailure()
+{
+    return [this](const FString& ErrorMessage)
+        {
+            ShowPopup("Error", ErrorMessage);
+            SubmitLabel->SetText(FText::FromString("Submit"));
+        };
+
 }

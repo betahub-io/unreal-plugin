@@ -24,6 +24,7 @@ void UBH_BugReport::SubmitReport(
     UBH_GameRecorder* GameRecorder,
     const FString& Description,
     const FString& StepsToReproduce,
+    const FString& UserEmail,
     const FString& ScreenshotPath,
     const FString& LogFileContents,
     bool bIncludeVideo,
@@ -35,11 +36,11 @@ void UBH_BugReport::SubmitReport(
 {
     Async(EAsyncExecution::Thread,
         [this,
-        Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
+        Settings, GameRecorder, Description, StepsToReproduce, UserEmail, ScreenshotPath, LogFileContents,
         bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
         OnSuccess, OnFailure]()
     {
-        SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
+        SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, UserEmail, ScreenshotPath, LogFileContents,
             bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
             OnSuccess, OnFailure);
     });
@@ -50,6 +51,7 @@ void UBH_BugReport::SubmitReportAsync(
     UBH_GameRecorder* GameRecorder,
     const FString& Description,
     const FString& StepsToReproduce,
+    const FString& UserEmail,
     const FString& ScreenshotPath,
     const FString& LogFileContents,
     bool bIncludeVideo,
@@ -74,6 +76,8 @@ void UBH_BugReport::SubmitReportAsync(
     InitialRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
     InitialRequest->AddField(TEXT("issue[description]"), Description);
     InitialRequest->AddField(TEXT("issue[unformatted_steps_to_reproduce]"), StepsToReproduce);
+    //TODO enable adding user email as field when endpoint allows it
+    //InitialRequest->AddField(TEXT("issue[user_email]"), UserEmail);
     InitialRequest->FinalizeFormData();
 
     InitialRequest->ProcessRequest(
