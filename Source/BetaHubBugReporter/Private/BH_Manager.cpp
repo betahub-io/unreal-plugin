@@ -18,10 +18,14 @@ UBH_Manager::UBH_Manager()
 
     IA_ShowReportForm = GetMutableDefault<UInputAction>();
     IA_ShowReportForm->bTriggerWhenPaused = true;
-    IA_ShowReportForm->bReserveAllMappings = true;
+
+    IA_DrawScreenAreaToHide = GetMutableDefault<UInputAction>();
+    IA_DrawScreenAreaToHide->bTriggerWhenPaused = true;
+
     BetaHubMappingContext = GetMutableDefault<UInputMappingContext>();
 
     BetaHubMappingContext->MapKey(IA_ShowReportForm, Settings->ShortcutKey);
+    BetaHubMappingContext->MapKey(IA_DrawScreenAreaToHide, Settings->DrawAreasKey);
 }
 
 void UBH_Manager::StartService(UGameInstance* GI)
@@ -79,6 +83,20 @@ void UBH_Manager::OnBackgroundServiceRequestWidget()
     }
 }
 
+void UBH_Manager::StartDrawingAreasToHide()
+{
+    auto NewWidget = CreateWidget(CurrentPlayerController, Settings->DrawingAreasToHideWidgetClass);
+
+    if (NewWidget)
+    {
+        NewWidget->AddToViewport(99999);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Drawing areas widget cannot be created!"));
+    }
+}
+
 UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
 {
     if (!BackgroundService)
@@ -115,10 +133,11 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
         Subsystem->AddMappingContext(BetaHubMappingContext, 0);
     }
 
-    if (PC && IA_ShowReportForm)
+    if (PC && IA_ShowReportForm && IA_DrawScreenAreaToHide)
     {
         InputComponent = Cast<UEnhancedInputComponent>(PC->InputComponent);
         InputComponent->BindAction(IA_ShowReportForm, ETriggerEvent::Completed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
+        InputComponent->BindAction(IA_DrawScreenAreaToHide, ETriggerEvent::Completed, this, &UBH_Manager::StartDrawingAreasToHide);
     }
 }
 

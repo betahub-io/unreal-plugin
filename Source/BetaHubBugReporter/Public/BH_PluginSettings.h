@@ -35,6 +35,10 @@ public:
         meta=(ToolTip="The shortcut key to open the bug report form."))
     FKey ShortcutKey;
 
+    UPROPERTY(EditAnywhere, Config, Category = "Settings",
+        meta = (ToolTip = "The shortcut key to draw screen areas to hide."))
+    FKey DrawAreasKey;
+
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The maximum number of frames per second (FPS) to record in the bug report video."))
     int32 MaxRecordedFrames;
@@ -58,6 +62,10 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
     TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
+        meta = (ToolTip = "The path to the widget to draw areas to hide screen from recording."))
+    TSubclassOf<UUserWidget> DrawingAreasToHideWidgetClass;
 
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);
 

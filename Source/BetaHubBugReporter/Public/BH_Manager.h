@@ -55,6 +55,7 @@ private:
     TObjectPtr<APlayerController> CurrentPlayerController;
 
     TObjectPtr<class UInputAction> IA_ShowReportForm;
+    TObjectPtr<class UInputAction> IA_DrawScreenAreaToHide;
     TObjectPtr<class UInputMappingContext> BetaHubMappingContext;
 
 public:
@@ -72,6 +73,9 @@ public:
     // Callback function to handle widget spawning
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void OnBackgroundServiceRequestWidget();
+
+    UFUNCTION(BlueprintCallable, Category = "Bug Report")
+    void StartDrawingAreasToHide();
 
     void HideScreenAreaFromReport(FVector4 AreaToHide);
     void HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide);
