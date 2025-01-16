@@ -54,8 +54,6 @@ private:
 
     TObjectPtr<APlayerController> CurrentPlayerController;
 
-    TObjectPtr<class UInputAction> IA_ShowReportForm;
-    TObjectPtr<class UInputAction> IA_DrawScreenAreaToHide;
     TObjectPtr<class UInputMappingContext> BetaHubMappingContext;
 
 public:

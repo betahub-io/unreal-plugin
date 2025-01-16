@@ -3,6 +3,7 @@
 
 #include "BH_PluginSettings.h"
 #include "BH_Log.h"
+#include "InputMappingContext.h"
 #include "UObject/ConstructorHelpers.h"
 
 UBH_PluginSettings::UBH_PluginSettings()
@@ -11,7 +12,6 @@ UBH_PluginSettings::UBH_PluginSettings()
     ApiEndpoint = TEXT("https://app.betahub.io");
     bSpawnBackgroundServiceOnStartup = true;
     bEnableShortcut = true;
-    ShortcutKey = EKeys::F12;
     MaxRecordedFrames = 30;
     MaxRecordingDuration = 60;
     MaxVideoWidth = 2000;
@@ -19,6 +19,8 @@ UBH_PluginSettings::UBH_PluginSettings()
 
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
+
+    static ConstructorHelpers::FObjectFinder<UInputMappingContext> MappingContextFinder(TEXT("/BetaHubBugReporter/IMC_BetaHub"));
 
     if (WidgetClassFinder1.Succeeded())
     {
@@ -36,6 +38,15 @@ UBH_PluginSettings::UBH_PluginSettings()
     else
     {
         UE_LOG(LogBetaHub, Error, TEXT("Failed to find widget class at specified path."));
+    }
+
+    if (MappingContextFinder.Succeeded())
+    {
+        BetaHubMappingContext = MappingContextFinder.Object;
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to find Input Mapping Context."));
     }
 
     ValidateSettings();

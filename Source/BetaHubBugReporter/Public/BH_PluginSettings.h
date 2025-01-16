@@ -31,13 +31,9 @@ public:
         meta=(ToolTip="Enable or disable the shortcut key to open the bug report form."))
     bool bEnableShortcut;
 
-    UPROPERTY(EditAnywhere, Config, Category="Settings", 
-        meta=(ToolTip="The shortcut key to open the bug report form."))
-    FKey ShortcutKey;
-
-    UPROPERTY(EditAnywhere, Config, Category = "Settings",
-        meta = (ToolTip = "The shortcut key to draw screen areas to hide."))
-    FKey DrawAreasKey;
+    UPROPERTY(EditAnywhere, Category = "Settings",
+        meta = (ToolTip = "Input mapping context for BetaHub interactions."))
+    TObjectPtr <class UInputMappingContext> BetaHubMappingContext;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The maximum number of frames per second (FPS) to record in the bug report video."))

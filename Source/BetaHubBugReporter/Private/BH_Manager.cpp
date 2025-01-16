@@ -16,16 +16,7 @@ UBH_Manager::UBH_Manager()
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
 
-    IA_ShowReportForm = GetMutableDefault<UInputAction>();
-    IA_ShowReportForm->bTriggerWhenPaused = true;
-
-    IA_DrawScreenAreaToHide = GetMutableDefault<UInputAction>();
-    IA_DrawScreenAreaToHide->bTriggerWhenPaused = true;
-
-    BetaHubMappingContext = GetMutableDefault<UInputMappingContext>();
-
-    BetaHubMappingContext->MapKey(IA_ShowReportForm, Settings->ShortcutKey);
-    BetaHubMappingContext->MapKey(IA_DrawScreenAreaToHide, Settings->DrawAreasKey);
+    BetaHubMappingContext = Settings->BetaHubMappingContext;
 }
 
 void UBH_Manager::StartService(UGameInstance* GI)
@@ -89,7 +80,7 @@ void UBH_Manager::StartDrawingAreasToHide()
 
     if (NewWidget)
     {
-        NewWidget->AddToViewport(99999);
+        NewWidget->AddToViewport();
     }
     else
     {
@@ -133,11 +124,14 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
         Subsystem->AddMappingContext(BetaHubMappingContext, 0);
     }
 
-    if (PC && IA_ShowReportForm && IA_DrawScreenAreaToHide)
+    TObjectPtr<const UInputAction> IA_ShowReportForm = BetaHubMappingContext->GetMapping(0).Action;
+    TObjectPtr<const UInputAction> IA_ShowDrawArea = BetaHubMappingContext->GetMapping(1).Action;
+
+    if (PC && IA_ShowReportForm && IA_ShowDrawArea)
     {
         InputComponent = Cast<UEnhancedInputComponent>(PC->InputComponent);
         InputComponent->BindAction(IA_ShowReportForm, ETriggerEvent::Completed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
-        InputComponent->BindAction(IA_DrawScreenAreaToHide, ETriggerEvent::Completed, this, &UBH_Manager::StartDrawingAreasToHide);
+        InputComponent->BindAction(IA_ShowDrawArea, ETriggerEvent::Completed, this, &UBH_Manager::StartDrawingAreasToHide);
     }
 }
 
