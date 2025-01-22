@@ -9,13 +9,13 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class BETAHUBBUGREPORTER_API UBH_BlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 	
 public:
-	UFUNCTION(BlueprintCallable, Category = "BetaHub | HiddenArea", meta = (ToolTip = "Specify rect (top left and bottom right viewport cords) to hide this area when submitting bug"), meta = (WorldContext = DefaultWorldContext)
+	UFUNCTION(BlueprintCallable, Category = "BetaHub | HiddenArea", meta = (ToolTip = "Specify rect (top left and bottom right viewport cords) to hide this area when submitting bug"))
 	static void HideScreenAreaFromReport(FVector4 AreaToHide);
 
 	UFUNCTION(BlueprintCallable, Category = "BetaHub | HiddenArea", meta = (ToolTip = "Specify array of rects (top left and bottom right viewport cords) to hide this area when submitting bug"))
@@ -23,6 +23,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "BetaHub | HiddenArea", meta = (ToolTip = "Specify color for the hidden area on the screen\nDefault: Black"))
 	static void SetHiddenAreaColor(FLinearColor NewColor);
+
+	UFUNCTION(BlueprintCallable, Category = "BetaHub | HiddenArea", meta = (ToolTip = "BetaHub"))
+	static void SaveHiddenAreas(TArray<FVector4> HiddenAreas);
 
 	UFUNCTION(BlueprintCallable, Category = "BetaHub | HiddenArea", meta = (ToolTip = "BetaHub"))
 	static TArray<FVector4> GetSavedHiddenAreas();
