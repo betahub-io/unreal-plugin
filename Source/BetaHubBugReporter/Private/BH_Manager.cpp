@@ -76,6 +76,7 @@ void UBH_Manager::OnBackgroundServiceRequestWidget()
 
 void UBH_Manager::StartDrawingAreasToHide()
 {
+#if WITH_EDITOR || !UE_BUILD_SHIPPING
     auto NewWidget = CreateWidget(CurrentPlayerController, Settings->DrawingAreasToHideWidgetClass);
 
     if (NewWidget)
@@ -86,6 +87,7 @@ void UBH_Manager::StartDrawingAreasToHide()
     {
         UE_LOG(LogBetaHub, Error, TEXT("Drawing areas widget cannot be created!"));
     }
+#endif
 }
 
 UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
@@ -125,14 +127,21 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
     }
 
     TObjectPtr<const UInputAction> IA_ShowReportForm = BetaHubMappingContext->GetMapping(0).Action;
-    TObjectPtr<const UInputAction> IA_ShowDrawArea = BetaHubMappingContext->GetMapping(1).Action;
 
-    if (PC && IA_ShowReportForm && IA_ShowDrawArea)
+    if (PC && IA_ShowReportForm)
     {
         InputComponent = Cast<UEnhancedInputComponent>(PC->InputComponent);
         InputComponent->BindAction(IA_ShowReportForm, ETriggerEvent::Completed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
+    }
+
+#if WITH_EDITOR || !UE_BUILD_SHIPPING
+    TObjectPtr<const UInputAction> IA_ShowDrawArea = BetaHubMappingContext->GetMapping(1).Action;
+
+    if (InputComponent && IA_ShowDrawArea)
+    {
         InputComponent->BindAction(IA_ShowDrawArea, ETriggerEvent::Completed, this, &UBH_Manager::StartDrawingAreasToHide);
     }
+#endif
 }
 
 void UBH_Manager::HideScreenAreaFromReport(FVector4 AreaToHide)

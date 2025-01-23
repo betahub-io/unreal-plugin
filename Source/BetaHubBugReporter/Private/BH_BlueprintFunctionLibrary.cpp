@@ -27,7 +27,7 @@ void UBH_BlueprintFunctionLibrary::SaveHiddenAreas(TArray<FVector4> HiddenAreas)
 
     //UGameplayStatics::SaveGameToMemory(SaveObject, SaveData);
 
-    FFileHelper::SaveArrayToFile(SaveData, *(FPaths::ProjectPluginsDir() + "\\" + "save.bh"));
+    FFileHelper::SaveArrayToFile(SaveData, *(FPaths::ProjectPluginsDir() + "\\BetaHubBugReporter\\save.bh"));
 }
 
 TArray<FVector4> UBH_BlueprintFunctionLibrary::GetSavedHiddenAreas()
