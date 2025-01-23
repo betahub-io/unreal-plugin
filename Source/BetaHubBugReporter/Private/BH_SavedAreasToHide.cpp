@@ -17,3 +17,8 @@ void UBH_SavedAreasToHide::AddAreasToHide(TArray<FVector4>& AreaToHide)
 {
 	AreasToHide.Append(AreaToHide);
 }
+
+void UBH_SavedAreasToHide::SetHiddenAreaColor(FLinearColor NewColor)
+{
+	HiddenPixelsColor = NewColor.ToFColor(false);
+}

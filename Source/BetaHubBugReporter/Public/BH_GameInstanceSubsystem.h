@@ -5,6 +5,7 @@
 #include "BH_ReportFormWidget.h"
 #include "BH_Manager.h"
 #include "BH_PluginSettings.h"
+#include "BH_SavedAreasToHide.h"
 #include "BH_GameInstanceSubsystem.generated.h"
 
 UCLASS()
@@ -25,7 +26,17 @@ public:
     UFUNCTION(BlueprintCallable, Category = BetaHub, meta = (ToolTip = "Specify color for the hidden area on the screen\nDefault: Black"))
     void SetHiddenAreaColor(FLinearColor NewColor);
 
+    UFUNCTION(BlueprintCallable, Category = BetaHub, meta = (ToolTip = "BetaHub"))
+    UBH_SavedAreasToHide* GetSavedHiddenAreasObject();
+
 private:
     UPROPERTY()
     UBH_Manager* Manager;
+
+    UPROPERTY()
+    UBH_SavedAreasToHide* SavedHiddenAreasObject;
+
+    void SaveHiddenAreas();
+
+    void LoadHiddenAreas();
 };

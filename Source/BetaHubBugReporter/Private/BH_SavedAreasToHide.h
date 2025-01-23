@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class UBH_SavedAreasToHide : public USaveGame
 {
 	GENERATED_BODY()
@@ -23,7 +23,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BetaHub | SaveGame")
 	void AddAreasToHide(TArray<FVector4>& AreaToHide);
 
+	UFUNCTION(BlueprintCallable, Category = "BetaHub | SaveGame")
+	void SetHiddenAreaColor(FLinearColor NewColor);
+
+	UFUNCTION(BlueprintCallable, Category = "BetaHub | SaveGame")
+	inline TArray<FVector4> GetSavedAreasToHideArray()
+	{
+		return AreasToHide;
+	}
+
+	UFUNCTION(BlueprintCallable, Category = "BetaHub | SaveGame")
+	inline FColor GetSavedAreasColor()
+	{
+		return HiddenPixelsColor;
+	}
+
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "BetaHub | SaveGame")
 	TArray<FVector4> AreasToHide;
+
+	UPROPERTY(VisibleAnywhere, Category = "BetaHub | SaveGame")
+	FColor HiddenPixelsColor;
 };

@@ -76,7 +76,7 @@ void UBH_Manager::OnBackgroundServiceRequestWidget()
 
 void UBH_Manager::StartDrawingAreasToHide()
 {
-#if WITH_EDITOR || !UE_BUILD_SHIPPING
+#if WITH_EDITOR
     auto NewWidget = CreateWidget(CurrentPlayerController, Settings->DrawingAreasToHideWidgetClass);
 
     if (NewWidget)
@@ -134,7 +134,7 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
         InputComponent->BindAction(IA_ShowReportForm, ETriggerEvent::Completed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
     }
 
-#if WITH_EDITOR || !UE_BUILD_SHIPPING
+#if WITH_EDITOR
     TObjectPtr<const UInputAction> IA_ShowDrawArea = BetaHubMappingContext->GetMapping(1).Action;
 
     if (InputComponent && IA_ShowDrawArea)

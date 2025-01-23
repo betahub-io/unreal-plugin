@@ -3,34 +3,40 @@
 
 #include "BH_BlueprintFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "BH_GameInstanceSubsystem.h"
+#include "BH_SavedAreasToHide.h"
 
-void UBH_BlueprintFunctionLibrary::HideScreenAreaFromReport(FVector4 AreaToHide)
+void UBH_BlueprintFunctionLibrary::HideScreenAreaFromReport(const UObject* WorldContextObject, FVector4 AreaToHide)
 {
-    //Manager->HideScreenAreaFromReport(AreaToHide);
+    UBH_GameInstanceSubsystem* BetaHubSubsystem = GetBetaHubGameInstanceSubsystem(WorldContextObject);
+
+    BetaHubSubsystem->HideScreenAreaFromReport(AreaToHide);
 }
 
-void UBH_BlueprintFunctionLibrary::HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide)
+void UBH_BlueprintFunctionLibrary::HideScreenAreaFromReportArray(const UObject* WorldContextObject, TArray<FVector4> AreasToHide)
 {
-    //Manager->HideScreenAreaFromReportArray(AreasToHide);
+    UBH_GameInstanceSubsystem* BetaHubSubsystem = GetBetaHubGameInstanceSubsystem(WorldContextObject);
+
+    BetaHubSubsystem->HideScreenAreaFromReportArray(AreasToHide);
 }
 
-void UBH_BlueprintFunctionLibrary::SetHiddenAreaColor(FLinearColor NewColor)
+void UBH_BlueprintFunctionLibrary::SetHiddenAreaColor(const UObject* WorldContextObject, FLinearColor NewColor)
 {
-    //Manager->SetHiddenAreaColor(NewColor.ToFColor(false));
+    UBH_GameInstanceSubsystem* BetaHubSubsystem = GetBetaHubGameInstanceSubsystem(WorldContextObject);
+
+    BetaHubSubsystem->SetHiddenAreaColor(NewColor.ToFColor(false));
 }
 
-void UBH_BlueprintFunctionLibrary::SaveHiddenAreas(TArray<FVector4> HiddenAreas)
+TArray<FVector4> UBH_BlueprintFunctionLibrary::GetSavedHiddenAreas(const UObject* WorldContextObject)
 {
-    TArray<uint8> SaveData{ 1,1,1,1,1,1 };
+    UBH_GameInstanceSubsystem* BetaHubSubsystem = GetBetaHubGameInstanceSubsystem(WorldContextObject);
 
-    //UBH_SaveObject SaveObject = UGameplayStatics::CreateSaveGameObject();
+    BetaHubSubsystem->GetSavedHiddenAreasObject();
 
-    //UGameplayStatics::SaveGameToMemory(SaveObject, SaveData);
-
-    FFileHelper::SaveArrayToFile(SaveData, *(FPaths::ProjectPluginsDir() + "\\BetaHubBugReporter\\save.bh"));
-}
-
-TArray<FVector4> UBH_BlueprintFunctionLibrary::GetSavedHiddenAreas()
-{
     return TArray<FVector4>();
+}
+
+UBH_GameInstanceSubsystem* UBH_BlueprintFunctionLibrary::GetBetaHubGameInstanceSubsystem(const UObject* WorldContextObject)
+{
+    return WorldContextObject->GetWorld()->GetGameInstance()->GetSubsystem<UBH_GameInstanceSubsystem>();
 }
