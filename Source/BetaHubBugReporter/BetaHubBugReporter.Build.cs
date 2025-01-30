@@ -62,6 +62,9 @@ public class BetaHubBugReporter : ModuleRules
 
         RuntimeDependencies.Add("$(TargetOutputDir)/bh_ffmpeg.exe", Path.Combine(PluginDirectory, "ThirdParty/FFmpeg/Windows/ffmpeg.exe"));
 
-		RuntimeDependencies.Add("$(TargetOutputDir)/save.bh", Path.Combine(PluginDirectory, "save.bh"));
+		if(!Target.bBuildEditor)
+		{
+			RuntimeDependencies.Add("$(TargetOutputDir)/save.bh", Path.Combine(PluginDirectory, "save.bh"));
+		}
 	}
 }
