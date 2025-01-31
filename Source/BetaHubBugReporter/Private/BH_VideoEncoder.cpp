@@ -62,14 +62,7 @@ BH_VideoEncoder::BH_VideoEncoder(
         PlatformFile.CreateDirectoryTree(*segmentsDir);
     }
 
-    // Remove all existing segment files
-    IFileManager& FileManager = IFileManager::Get();
-    TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
-    for (const FString& SegmentFile : SegmentFiles)
-    {
-        FileManager.Delete(*(segmentsDir / SegmentFile));
-    }
+    RemoveAllSegments();
 
     outputFile = FPaths::Combine(segmentsDir, (segmentPrefix + TEXT("%06d.mp4")));
     encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
@@ -132,6 +125,8 @@ void BH_VideoEncoder::StartRecording()
 
             UE_LOG(LogBetaHub, Log, TEXT("Preferred FFmpeg options: %s"), *PreferredFfmpegOptions);
         }
+
+        RemoveAllSegments();
 
         thread = FRunnableThread::Create(this, TEXT("BH_VideoEncoderThread"), 0, TPri_Normal);
     }
@@ -343,7 +338,11 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     SegmentFiles.Sort();
     if (SegmentFiles.Num() > MaxSegments)
     {
+#if ENGINE_MINOR_VERSION >= 5
+        SegmentFiles.RemoveAt(0, SegmentFiles.Num() - MaxSegments, EAllowShrinking::Yes);
+#else
         SegmentFiles.RemoveAt(0, SegmentFiles.Num() - MaxSegments, true);
+#endif
     }
 
     // Check if there are any segments to merge
@@ -410,6 +409,27 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     }
 }
 
+void BH_VideoEncoder::FindAllSegments(TArray<FString>& FileNames)
+{
+    IFileManager& FileManager = IFileManager::Get();
+    FileManager.FindFiles(FileNames, *(segmentsDir / TEXT("segment_*.mp4")), true, false);
+}
+
+void BH_VideoEncoder::RemoveAllSegments()
+{
+    UE_LOG(LogBetaHub, Log, TEXT("Removing all segments!"));
+
+    // Remove all existing segment files
+    IFileManager& FileManager = IFileManager::Get();
+    TArray<FString> SegmentFiles;
+    FindAllSegments(SegmentFiles);
+
+    for (const FString& SegmentFile : SegmentFiles)
+    {
+        FileManager.Delete(*(segmentsDir / SegmentFile));
+    }
+}
+
 void BH_VideoEncoder::RemoveOldSegments()
 {
     // Removing by count instead of age, because video can be paused and we don't
@@ -417,7 +437,7 @@ void BH_VideoEncoder::RemoveOldSegments()
     
     IFileManager& FileManager = IFileManager::Get();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
+    FindAllSegments(SegmentFiles);
 
     // Sort segment files based on their numerical part
     SegmentFiles.Sort([](const FString& A, const FString& B)

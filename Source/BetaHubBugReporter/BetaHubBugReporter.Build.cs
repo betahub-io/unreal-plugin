@@ -47,6 +47,7 @@ public class BetaHubBugReporter : ModuleRules
 				"JsonUtilities",
 				"RenderCore",
 				"RHI",
+                "EnhancedInput"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

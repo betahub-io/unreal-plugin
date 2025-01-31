@@ -37,6 +37,8 @@ private:
     FDateTime LastSegmentCheckTime;
 
     void RunEncoding();
+    void FindAllSegments(TArray<FString>& FileNames);
+    void RemoveAllSegments();
     void RemoveOldSegments();
     int32 GetSegmentCountToKeep();
 

@@ -4,6 +4,7 @@
 #include "UObject/NoExportTypes.h"
 #include "BH_ReportFormWidget.h"
 #include "BH_PopupWidget.h"
+#include "InputAction.h"
 #include "BH_PluginSettings.generated.h"
 
 UCLASS(Config=Game, defaultconfig)

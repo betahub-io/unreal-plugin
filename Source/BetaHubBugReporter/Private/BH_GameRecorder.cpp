@@ -32,9 +32,10 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     , ViewportHeight(0)
     , FrameWidth(0)
     , FrameHeight(0)
+    , RawFrameBufferPool(3)
+    , HiddenAreaColor(FColor::Black)
     , LastCaptureTime(0)
     , RawFrameBufferQueue()
-    , RawFrameBufferPool(3)
     , MainEditorWindow(nullptr)
     , LargestSize(0, 0)
     , MaxVideoWidth(512) // Initialize with minimum value
@@ -193,6 +194,18 @@ void UBH_GameRecorder::Tick(float DeltaTime)
             {
                 PendingPixels[i] = PendingLinearPixels[i].ToFColor(false);
             }
+            
+            TArray<int32> HiddenIdices;
+
+            for (FVector4 DisabledRect : HiddenAreas)
+            {
+                HiddenIdices.Append(GetPixelIndicesFromViewportRectangle(FVector2D(DisabledRect.X, DisabledRect.Y), FVector2D(DisabledRect.Z, DisabledRect.W), TextureBuffer->GetWidth(), TextureBuffer->GetHeight()));
+            }
+
+            for (int32 Index : HiddenIdices)
+            {
+                PendingPixels[Index] = HiddenAreaColor;
+            }
 
             // Resize image to frame
             ResizeImageToFrame(PendingPixels, TextureBuffer->GetWidth(), TextureBuffer->GetHeight(), FrameWidth, FrameHeight, ResizedPixels);
@@ -235,6 +248,56 @@ void UBH_GameRecorder::ResizeImageToFrame(
     }
 }
 
+TArray<int32> UBH_GameRecorder::GetPixelIndicesFromViewportRectangle(const FVector2D& TopLeftViewportCoords, const FVector2D& BottomRightViewportCoords, int32 TextureWidth, int32 TextureHeight)
+{
+    TArray<int32> PixelIndices;
+
+    // Get viewport size
+    FVector2D ViewportSize;
+    GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+    // Check if viewport size and texture size are valid
+    if (ViewportSize.X <= 0 || ViewportSize.Y <= 0 || TextureWidth <= 0 || TextureHeight <= 0)
+    {
+        return PixelIndices; // Return empty if sizes are invalid
+    }
+
+    // Normalize the viewport coordinates (0 to 1)
+    float NormalizedTopLeftX = TopLeftViewportCoords.X / ViewportSize.X;
+    float NormalizedTopLeftY = TopLeftViewportCoords.Y / ViewportSize.Y;
+    float NormalizedBottomRightX = BottomRightViewportCoords.X / ViewportSize.X;
+    float NormalizedBottomRightY = BottomRightViewportCoords.Y / ViewportSize.Y;
+
+    // Convert normalized coordinates to texture coordinates
+    int32 TextureX1 = FMath::Clamp(static_cast<int32>(NormalizedTopLeftX * TextureWidth), 0, TextureWidth - 1);
+    int32 TextureY1 = FMath::Clamp(static_cast<int32>(NormalizedTopLeftY * TextureHeight), 0, TextureHeight - 1);
+    int32 TextureX2 = FMath::Clamp(static_cast<int32>(NormalizedBottomRightX * TextureWidth), 0, TextureWidth - 1);
+    int32 TextureY2 = FMath::Clamp(static_cast<int32>(NormalizedBottomRightY * TextureHeight), 0, TextureHeight - 1);
+
+    // Ensure coordinates are properly ordered (Top-left and bottom-right)
+    int32 StartX = FMath::Min(TextureX1, TextureX2);
+    int32 EndX = FMath::Max(TextureX1, TextureX2);
+    int32 StartY = FMath::Min(TextureY1, TextureY2);
+    int32 EndY = FMath::Max(TextureY1, TextureY2);
+
+    // Iterate through the rectangle area to collect indices
+    for (int32 Y = StartY; Y <= EndY; ++Y)
+    {
+        for (int32 X = StartX; X <= EndX; ++X)
+        {
+            int32 PixelIndex = Y * TextureWidth + X;
+
+            // Check if the pixel index is within the bounds of the array
+            if (PixelIndex >= 0 && PixelIndex < PendingPixels.Num())
+            {
+                PixelIndices.Add(PixelIndex);
+            }
+        }
+    }
+
+    return PixelIndices;
+}
+
 bool UBH_GameRecorder::IsTickable() const
 {
     return bIsRecording;
@@ -245,7 +308,7 @@ TStatId UBH_GameRecorder::GetStatId() const
     RETURN_QUICK_DECLARE_CYCLE_STAT(UBH_GameRecorder, STATGROUP_Tickables);
 }
 
-void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef& BackBuffer)
+void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer)
 {
     #if WITH_EDITOR
     // Log window title and size for debugging
@@ -293,7 +356,7 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef
             {
                 FViewport* Viewport = GEngine->GameViewport->GetGameViewport();
 
-                FTexture2DRHIRef GameBuffer = BackBuffer;
+                FTextureRHIRef GameBuffer = BackBuffer;
                 if (!GameBuffer)
                 {
                     UE_LOG(LogBetaHub, Error, TEXT("Failed to get game buffer. Will try next time..."));
@@ -331,11 +394,18 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef
 
     if (!bCopyTextureStarted && StagingTexture != nullptr)
     {
+#if ENGINE_MINOR_VERSION >= 5
+        AsyncTask(ENamedThreads::GameThread, [this, BackBuffer]()
+            {
+                ReadPixels(BackBuffer);
+            });
+#else
         ReadPixels(BackBuffer);
+#endif
     }
 }
 
-void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
+void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 {
     if (!GEngine || !GEngine->GameViewport) return;
 
@@ -364,7 +434,7 @@ void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
                 return;
             }
 
-            FTexture2DRHIRef Texture = BackBuffer;
+            FTextureRHIRef Texture = BackBuffer;
 
             FRHICopyTextureInfo CopyInfo;
             RHICmdList.CopyTexture(Texture, StagingTexture, CopyInfo);
@@ -386,6 +456,7 @@ void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
             RawFrameBufferQueue.Enqueue(TextureBuffer);
 
             RHICmdList.UnmapStagingSurface(StagingTexture);
+
         }
     );
 
@@ -393,7 +464,7 @@ void UBH_GameRecorder::ReadPixels(const FTexture2DRHIRef& BackBuffer)
     bCopyTextureStarted = true;
 }
 
-void UBH_GameRecorder::OnBackBufferResized(const FTexture2DRHIRef& BackBuffer)
+void UBH_GameRecorder::OnBackBufferResized(const FTextureRHIRef& BackBuffer)
 {
     FIntVector OriginalSize = BackBuffer->GetDesc().GetSize();
 
@@ -479,6 +550,21 @@ void UBH_GameRecorder::SetMaxVideoDimensions(int32 InMaxWidth, int32 InMaxHeight
 {
     MaxVideoWidth = FMath::Max(InMaxWidth, 512);
     MaxVideoHeight = FMath::Max(InMaxHeight, 512);
+}
+
+void UBH_GameRecorder::HideScreenAreaFromReport(FVector4 AreaToHide)
+{
+    HiddenAreas.Add(AreaToHide);
+}
+
+void UBH_GameRecorder::HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide)
+{
+    HiddenAreas.Append(AreasToHide);
+}
+
+void UBH_GameRecorder::SetHiddenAreaColor(FColor NewColor)
+{
+    HiddenAreaColor = NewColor;
 }
 
 #if ENGINE_MINOR_VERSION < 4
