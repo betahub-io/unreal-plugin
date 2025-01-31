@@ -47,6 +47,7 @@ public class BetaHubBugReporter : ModuleRules
 				"JsonUtilities",
 				"RenderCore",
 				"RHI",
+                "EnhancedInput"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
@@ -59,7 +60,11 @@ public class BetaHubBugReporter : ModuleRules
 			}
 			);
 
-		
-		RuntimeDependencies.Add("$(TargetOutputDir)/bh_ffmpeg.exe", Path.Combine(PluginDirectory, "ThirdParty/FFmpeg/Windows/ffmpeg.exe"));
+        RuntimeDependencies.Add("$(TargetOutputDir)/bh_ffmpeg.exe", Path.Combine(PluginDirectory, "ThirdParty/FFmpeg/Windows/ffmpeg.exe"));
+
+		if(!Target.bBuildEditor)
+		{
+			RuntimeDependencies.Add("$(TargetOutputDir)/save.bh", Path.Combine(PluginDirectory, "save.bh"));
+		}
 	}
 }

@@ -139,6 +139,7 @@ void UBH_ReportFormWidget::OnSubmitButtonClicked()
 void UBH_ReportFormWidget::OnCloseClicked()
 {
     GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+    RestoreCursorState();
     RemoveFromParent();
 }
 
@@ -146,7 +147,7 @@ void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
 {
     if (Settings->PopupWidgetClass)
     {
-        UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), Settings->PopupWidgetClass);
+        UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetOwningPlayer(), Settings->PopupWidgetClass);
         if (PopupWidget)
         {
             PopupWidget->SetMessage(Title, Description);

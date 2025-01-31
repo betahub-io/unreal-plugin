@@ -50,9 +50,11 @@ private:
     void OnLocalPlayerAdded(ULocalPlayer* Player);
     void OnPlayerControllerChanged(APlayerController* PC);
 
-    TObjectPtr<UInputComponent> InputComponent;
+    TObjectPtr<class UEnhancedInputComponent> InputComponent;
 
     TObjectPtr<APlayerController> CurrentPlayerController;
+
+    TObjectPtr<class UInputMappingContext> BetaHubMappingContext;
 
 public:
     UBH_Manager();
@@ -70,6 +72,12 @@ public:
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void OnBackgroundServiceRequestWidget();
 
+    UFUNCTION(BlueprintCallable, Category = "Bug Report")
+    void StartDrawingAreasToHide();
+
+    void HideScreenAreaFromReport(FVector4 AreaToHide);
+    void HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide);
+    void SetHiddenAreaColor(FColor NewColor);
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void FetchAllReleases();
 

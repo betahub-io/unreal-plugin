@@ -1,5 +1,8 @@
 #include "BH_Manager.h"
 #include "BH_Log.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 #include "HttpModule.h"
 #include "Engine/GameInstance.h"
 #include "Interfaces/IHttpRequest.h"
@@ -12,6 +15,8 @@ UBH_Manager::UBH_Manager()
     : InputComponent(nullptr)
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
+
+    BetaHubMappingContext = Settings->BetaHubMappingContext;
 }
 
 void UBH_Manager::StartService(UGameInstance* GI)
@@ -69,6 +74,22 @@ void UBH_Manager::OnBackgroundServiceRequestWidget()
     }
 }
 
+void UBH_Manager::StartDrawingAreasToHide()
+{
+#if WITH_EDITOR
+    auto NewWidget = CreateWidget(CurrentPlayerController, Settings->DrawingAreasToHideWidgetClass);
+
+    if (NewWidget)
+    {
+        NewWidget->AddToViewport();
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Drawing areas widget cannot be created!"));
+    }
+#endif
+}
+
 UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
 {
     if (!BackgroundService)
@@ -97,13 +118,45 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
 {
     CurrentPlayerController = PC;
 
-    if (PC)
+    //Add Input Mapping Context
+    UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
+
+    if (Subsystem && BetaHubMappingContext)
     {
-        InputComponent = NewObject<UInputComponent>(PC);
-        InputComponent->RegisterComponent();
-        InputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
-        PC->PushInputComponent(InputComponent);
+        Subsystem->AddMappingContext(BetaHubMappingContext, 0);
     }
+
+    TObjectPtr<const UInputAction> IA_ShowReportForm = BetaHubMappingContext->GetMapping(0).Action;
+
+    if (PC && IA_ShowReportForm)
+    {
+        InputComponent = Cast<UEnhancedInputComponent>(PC->InputComponent);
+        InputComponent->BindAction(IA_ShowReportForm, ETriggerEvent::Completed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
+    }
+
+#if WITH_EDITOR
+    TObjectPtr<const UInputAction> IA_ShowDrawArea = BetaHubMappingContext->GetMapping(1).Action;
+
+    if (InputComponent && IA_ShowDrawArea)
+    {
+        InputComponent->BindAction(IA_ShowDrawArea, ETriggerEvent::Completed, this, &UBH_Manager::StartDrawingAreasToHide);
+    }
+#endif
+}
+
+void UBH_Manager::HideScreenAreaFromReport(FVector4 AreaToHide)
+{
+    BackgroundService->GetGameRecorder()->HideScreenAreaFromReport(AreaToHide);
+}
+
+void UBH_Manager::HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide)
+{
+    BackgroundService->GetGameRecorder()->HideScreenAreaFromReportArray(AreasToHide);
+}
+
+void UBH_Manager::SetHiddenAreaColor(FColor NewColor)
+{
+    BackgroundService->GetGameRecorder()->SetHiddenAreaColor(NewColor);
 }
 
 void UBH_Manager::FetchAllReleases()

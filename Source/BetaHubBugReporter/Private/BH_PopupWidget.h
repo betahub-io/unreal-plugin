@@ -20,7 +20,7 @@ class UBH_PopupWidget : public UUserWidget
 	void OnCloseClicked();
 
 	protected:
-		virtual void NativeConstruct() override;
+		virtual void NativeOnInitialized() override;
 
 	public:
 		UPROPERTY(meta = (BindWidget))

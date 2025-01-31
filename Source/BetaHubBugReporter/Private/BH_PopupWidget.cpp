@@ -3,9 +3,9 @@
 
 #include "BH_PopupWidget.h"
 
-void UBH_PopupWidget::NativeConstruct()
+void UBH_PopupWidget::NativeOnInitialized()
 {
-    Super::NativeConstruct();
+    Super::NativeOnInitialized();
 
     if (this->CloseButton)
     {

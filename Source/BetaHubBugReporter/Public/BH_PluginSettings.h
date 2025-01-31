@@ -4,6 +4,7 @@
 #include "UObject/NoExportTypes.h"
 #include "BH_ReportFormWidget.h"
 #include "BH_PopupWidget.h"
+#include "InputAction.h"
 #include "BH_PluginSettings.generated.h"
 
 UCLASS(Config=Game, defaultconfig)
@@ -30,9 +31,9 @@ public:
         meta=(ToolTip="Enable or disable the shortcut key to open the bug report form."))
     bool bEnableShortcut;
 
-    UPROPERTY(EditAnywhere, Config, Category="Settings", 
-        meta=(ToolTip="The shortcut key to open the bug report form."))
-    FKey ShortcutKey;
+    UPROPERTY(EditAnywhere, Category = "Settings",
+        meta = (ToolTip = "Input mapping context for BetaHub interactions."))
+    TObjectPtr <class UInputMappingContext> BetaHubMappingContext;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The maximum number of frames per second (FPS) to record in the bug report video."))
@@ -57,6 +58,10 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
     TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
+        meta = (ToolTip = "The path to the widget to draw areas to hide screen from recording."))
+    TSubclassOf<UUserWidget> DrawingAreasToHideWidgetClass;
 
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);
 

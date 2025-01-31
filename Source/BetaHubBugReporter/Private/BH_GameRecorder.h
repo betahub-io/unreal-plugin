@@ -38,6 +38,10 @@ public:
     virtual bool IsTickable() const override;
     virtual TStatId GetStatId() const override;
 
+    void HideScreenAreaFromReport(FVector4 AreaToHide);
+    void HideScreenAreaFromReportArray(TArray<FVector4> AreasToHide);
+    void SetHiddenAreaColor(FColor NewColor);
+
     // Sets the maximum video dimensions while maintaining aspect ratio
     void SetMaxVideoDimensions(int32 InMaxWidth, int32 InMaxHeight);
 
@@ -47,6 +51,9 @@ private:
 
     UPROPERTY()
     ABH_SceneCaptureActor* SceneCaptureActor;
+
+    TArray<FVector4> HiddenAreas;
+    FColor HiddenAreaColor;
 
     TSharedPtr<BH_VideoEncoder> VideoEncoder;
     int32 TargetFPS;
@@ -61,7 +68,7 @@ private:
     TArray<FColor> PendingPixels;
     TArray<FColor> ResizedPixels;
 
-    FTexture2DRHIRef StagingTexture;
+    FTextureRHIRef StagingTexture;
     EPixelFormat StagingTextureFormat;
 
     int32 ViewportWidth;
@@ -85,9 +92,11 @@ private:
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);
 
-    void OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef& BackBuffer);
+    TArray<int32> GetPixelIndicesFromViewportRectangle(const FVector2D& TopLeftViewportCoords, const FVector2D& BottomRightViewportCoords, int32 TextureWidth, int32 TextureHeight);
 
-    void OnBackBufferResized(const FTexture2DRHIRef& BackBuffer);
+    void OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer);
+
+    void OnBackBufferResized(const FTextureRHIRef& BackBuffer);
 
     //Hack TODO
     TSet<FString> CreatedWindows;
