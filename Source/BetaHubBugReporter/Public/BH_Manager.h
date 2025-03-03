@@ -17,7 +17,7 @@ struct FReleaseInfo
     GENERATED_BODY()
 
     UPROPERTY(BlueprintReadOnly, Category="Release")
-    int32 Id;
+    int32 Id = -1;
 
     UPROPERTY(BlueprintReadOnly, Category="Release")
     FString Label;
@@ -50,8 +50,10 @@ private:
     void OnLocalPlayerAdded(ULocalPlayer* Player);
     void OnPlayerControllerChanged(APlayerController* PC);
 
+	UPROPERTY()
     TObjectPtr<UInputComponent> InputComponent;
 
+	UPROPERTY()
     TObjectPtr<APlayerController> CurrentPlayerController;
 
 public:
