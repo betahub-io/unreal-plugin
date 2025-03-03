@@ -50,10 +50,10 @@ private:
     void OnLocalPlayerAdded(ULocalPlayer* Player);
     void OnPlayerControllerChanged(APlayerController* PC);
 
-	UPROPERTY()
+    UPROPERTY()
     TObjectPtr<UInputComponent> InputComponent;
 
-	UPROPERTY()
+    UPROPERTY()
     TObjectPtr<APlayerController> CurrentPlayerController;
 
 public:
