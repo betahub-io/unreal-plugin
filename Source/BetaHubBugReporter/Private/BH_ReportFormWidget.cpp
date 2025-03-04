@@ -127,6 +127,12 @@ void UBH_ReportFormWidget::NativeDestruct()
     // Restore cursor state when the widget is destructed (hidden)
     RestoreCursorState();
 
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if (PlatformFile.FileExists(*ScreenshotPath))
+    {
+        PlatformFile.DeleteFile(*ScreenshotPath);
+    }
+
     // Do not start recording here, since it's the responsibility either of the close button, or BugReport class
 }
 
