@@ -3,6 +3,7 @@
 #include "Components/Button.h"
 #include "Components/EditableTextBox.h"
 #include "GameFramework/PlayerController.h"
+#include "HAL/PlatformFileManager.h"
 #include "BH_BugReport.h"
 #include "BH_PopupWidget.h"
 

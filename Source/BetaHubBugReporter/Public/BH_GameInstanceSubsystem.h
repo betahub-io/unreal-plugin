@@ -17,6 +17,5 @@ public:
     virtual void Deinitialize() override;
 
 private:
-    UPROPERTY(BlueprintReadOnly)
     UBH_Manager* Manager;
 };
