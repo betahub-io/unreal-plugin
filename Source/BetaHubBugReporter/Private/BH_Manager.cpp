@@ -8,10 +8,10 @@
 #include "Json.h"
 #include "JsonUtilities.h"
 
-UBH_Manager::UBH_Manager()
-    : InputComponent(nullptr)
+UBH_Manager::UBH_Manager() :
+	BackgroundService(nullptr), InputComponent(nullptr)
 {
-    Settings = GetMutableDefault<UBH_PluginSettings>();
+	Settings = GetMutableDefault<UBH_PluginSettings>();
 }
 
 void UBH_Manager::StartService(UGameInstance* GI)
@@ -35,7 +35,7 @@ void UBH_Manager::StartService(UGameInstance* GI)
     }
 
     GI->OnLocalPlayerAddedEvent.AddUObject(this, &UBH_Manager::OnLocalPlayerAdded);
-    
+
     BackgroundService = NewObject<UBH_BackgroundService>(this);
 
     BackgroundService->StartService();
@@ -76,7 +76,7 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
         UE_LOG(LogBetaHub, Error, TEXT("Background service not initialized. Use StartService() first."));
         return nullptr;
     }
-    
+
     if (Settings->ReportFormWidgetClass)
     {
         return BackgroundService->SpawnBugReportWidget(CurrentPlayerController, bTryCaptureMouse);
@@ -120,7 +120,7 @@ void UBH_Manager::FetchAllReleases()
         Endpoint += TEXT("/");
     }
     Endpoint += FString::Printf(TEXT("projects/%s/releases.json"), *Settings->ProjectId);
-    
+
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->SetURL(Endpoint);
     Request->SetVerb("GET");
@@ -142,7 +142,7 @@ void UBH_Manager::FetchLatestRelease()
         Endpoint += TEXT("/");
     }
     Endpoint += FString::Printf(TEXT("projects/%s/releases.json"), *Settings->ProjectId);
-    
+
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->SetURL(Endpoint);
     Request->SetVerb("GET");
@@ -164,7 +164,7 @@ void UBH_Manager::FetchReleaseById(int32 ReleaseId)
         Endpoint += TEXT("/");
     }
     Endpoint += FString::Printf(TEXT("projects/%s/releases/%d.json"), *Settings->ProjectId, ReleaseId);
-    
+
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->SetURL(Endpoint);
     Request->SetVerb("GET");
@@ -195,14 +195,14 @@ void UBH_Manager::OnFetchAllReleasesResponse(FHttpRequestPtr Request, FHttpRespo
             {
                 TSharedPtr<FJsonObject> JsonObject = Item->AsObject();
                 FReleaseInfo Release;
-                Release.Id = JsonObject->GetNumberField("id");
+                Release.Id = JsonObject->GetNumberField(TEXT("id"));
 
                 // Safely retrieve string fields
-                JsonObject->TryGetStringField("label", Release.Label);
-                JsonObject->TryGetStringField("summary", Release.Summary);
-                JsonObject->TryGetStringField("description", Release.Description);
-                JsonObject->TryGetStringField("created_at", Release.CreatedAt);
-                JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
+                JsonObject->TryGetStringField(TEXT("label"), Release.Label);
+                JsonObject->TryGetStringField(TEXT("summary"), Release.Summary);
+                JsonObject->TryGetStringField(TEXT("description"), Release.Description);
+                JsonObject->TryGetStringField(TEXT("created_at"), Release.CreatedAt);
+                JsonObject->TryGetStringField(TEXT("updated_at"), Release.UpdatedAt);
 
                 Releases.Add(Release);
             }
@@ -241,14 +241,14 @@ void UBH_Manager::OnFetchLatestReleaseResponse(FHttpRequestPtr Request, FHttpRes
                 {
                     TSharedPtr<FJsonObject> JsonObject = LatestJson->AsObject();
                     FReleaseInfo Release;
-                    Release.Id = JsonObject->GetNumberField("id");
+                	Release.Id = JsonObject->GetNumberField(TEXT("id"));
 
                     // Safely retrieve string fields
-                    JsonObject->TryGetStringField("label", Release.Label);
-                    JsonObject->TryGetStringField("summary", Release.Summary);
-                    JsonObject->TryGetStringField("description", Release.Description);
-                    JsonObject->TryGetStringField("created_at", Release.CreatedAt);
-                    JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
+                	JsonObject->TryGetStringField(TEXT("label"), Release.Label);
+                	JsonObject->TryGetStringField(TEXT("summary"), Release.Summary);
+                	JsonObject->TryGetStringField(TEXT("description"), Release.Description);
+                	JsonObject->TryGetStringField(TEXT("created_at"), Release.CreatedAt);
+                	JsonObject->TryGetStringField(TEXT("updated_at"), Release.UpdatedAt);
 
                     OnFetchLatestReleaseCompleted.Broadcast(Release);
                 }
@@ -286,14 +286,14 @@ void UBH_Manager::OnFetchReleaseByIdResponse(FHttpRequestPtr Request, FHttpRespo
     {
         TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
         FReleaseInfo Release;
-        Release.Id = JsonObject->GetNumberField("id");
+    	Release.Id = JsonObject->GetNumberField(TEXT("id"));
 
         // Safely retrieve string fields
-        JsonObject->TryGetStringField("label", Release.Label);
-        JsonObject->TryGetStringField("summary", Release.Summary);
-        JsonObject->TryGetStringField("description", Release.Description);
-        JsonObject->TryGetStringField("created_at", Release.CreatedAt);
-        JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
+    	JsonObject->TryGetStringField(TEXT("label"), Release.Label);
+    	JsonObject->TryGetStringField(TEXT("summary"), Release.Summary);
+    	JsonObject->TryGetStringField(TEXT("description"), Release.Description);
+    	JsonObject->TryGetStringField(TEXT("created_at"), Release.CreatedAt);
+    	JsonObject->TryGetStringField(TEXT("updated_at"), Release.UpdatedAt);
 
         OnFetchReleaseByIdCompleted.Broadcast(Release);
     }
