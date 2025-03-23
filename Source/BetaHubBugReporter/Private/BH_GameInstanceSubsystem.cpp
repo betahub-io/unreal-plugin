@@ -1,5 +1,6 @@
 #include "BH_GameInstanceSubsystem.h"
 #include "BH_Log.h"
+#include "BH_Manager.h"
 #include "Misc/Paths.h"
 #include "HAL/PlatformProcess.h"
 #include "Engine/Engine.h"
