@@ -331,7 +331,10 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef
 
     if (!bCopyTextureStarted && StagingTexture != nullptr)
     {
-        ReadPixels(BackBuffer);
+        AsyncTask(ENamedThreads::GameThread, [this, BackBuffer]()
+            {
+                ReadPixels(BackBuffer);
+            });
     }
 }
 
