@@ -23,6 +23,14 @@ public:
     FString ProjectId;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The Project token for authentication. Should start with 'tkn-' and can be found under Project -> Integrations -> Auth Tokens. Highly recommended to use this instead of the default anonymous authentication."))
+    FString ProjectToken;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="Optional release label for bug reports. If set, all bug reports will include this label. If the release doesn't exist on BetaHub, it will be created automatically."))
+    FString ReleaseLabel;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="This will spawn the background service on game startup, which will record the game session in the background. Disable if you're planning to start it manually using the Manager class."))
     bool bSpawnBackgroundServiceOnStartup;
 

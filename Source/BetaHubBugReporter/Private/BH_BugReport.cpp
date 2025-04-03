@@ -30,18 +30,20 @@ void UBH_BugReport::SubmitReport(
     bool bIncludeLogs,
     bool bIncludeScreenshot,
     TFunction<void()> OnSuccess,
-    TFunction<void(const FString&)> OnFailure
+    TFunction<void(const FString&)> OnFailure,
+    const FString& ReleaseLabel,
+    const FString& ReleaseId
 )
 {
     Async(EAsyncExecution::Thread,
         [this,
         Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
         bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
-        OnSuccess, OnFailure]()
+        OnSuccess, OnFailure, ReleaseLabel, ReleaseId]()
     {
         SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
             bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
-            OnSuccess, OnFailure);
+            OnSuccess, OnFailure, ReleaseLabel, ReleaseId);
     });
 }
 
@@ -56,7 +58,9 @@ void UBH_BugReport::SubmitReportAsync(
     bool bIncludeLogs,
     bool bIncludeScreenshot,
     TFunction<void()> OnSuccess,
-    TFunction<void(const FString&)> OnFailure
+    TFunction<void(const FString&)> OnFailure,
+    const FString& ReleaseLabel,
+    const FString& ReleaseId
     )
 {
     if (!Settings)
@@ -69,11 +73,40 @@ void UBH_BugReport::SubmitReportAsync(
     BH_HttpRequest* InitialRequest = new BH_HttpRequest();
     InitialRequest->SetURL(Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues.json"));
     InitialRequest->SetVerb("POST");
-    InitialRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
+    
+    // Use token-based authentication if available
+    if (!Settings->ProjectToken.IsEmpty())
+    {
+        InitialRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
+    }
+    else
+    {
+        InitialRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
+    }
+    
     InitialRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
     InitialRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
     InitialRequest->AddField(TEXT("issue[description]"), Description);
     InitialRequest->AddField(TEXT("issue[unformatted_steps_to_reproduce]"), StepsToReproduce);
+    
+    // Handle release information
+    // Priority: Parameter values override settings values
+    FString FinalReleaseLabel = ReleaseLabel;
+    if (FinalReleaseLabel.IsEmpty() && !Settings->ReleaseLabel.IsEmpty())
+    {
+        FinalReleaseLabel = Settings->ReleaseLabel;
+    }
+    
+    // Only set one of release_label or release_id, with release_id taking precedence if both are specified
+    if (!ReleaseId.IsEmpty())
+    {
+        InitialRequest->AddField(TEXT("issue[release_id]"), ReleaseId);
+    }
+    else if (!FinalReleaseLabel.IsEmpty())
+    {
+        InitialRequest->AddField(TEXT("issue[release_label]"), FinalReleaseLabel);
+    }
+    
     InitialRequest->FinalizeFormData();
 
     InitialRequest->ProcessRequest(
@@ -160,7 +193,17 @@ void UBH_BugReport::SubmitMedia(
     FString url = Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues/g-") + IssueId + TEXT("/") + Endpoint;
     MediaRequest->SetURL(url);
     MediaRequest->SetVerb("POST");
-    MediaRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
+    
+    // Use token-based authentication if available
+    if (!Settings->ProjectToken.IsEmpty())
+    {
+        MediaRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
+    }
+    else
+    {
+        MediaRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
+    }
+    
     MediaRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
     MediaRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
 
