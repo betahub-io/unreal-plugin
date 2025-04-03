@@ -41,20 +41,18 @@ class BETAHUBBUGREPORTER_API UBH_Manager : public UObject
     GENERATED_BODY()
 
 private:
-    UPROPERTY()
-    UBH_BackgroundService* BackgroundService;
+    UPROPERTY(Transient)
+    UBH_BackgroundService* BackgroundService = nullptr;
 
-    UPROPERTY()
-    UBH_PluginSettings* Settings;
+    UPROPERTY(Transient)
+    UBH_PluginSettings* Settings = nullptr;
 
     void OnLocalPlayerAdded(ULocalPlayer* Player);
     void OnPlayerControllerChanged(APlayerController* PC);
-
-    UPROPERTY()
-    TObjectPtr<UInputComponent> InputComponent;
-
-    UPROPERTY()
-    TObjectPtr<APlayerController> CurrentPlayerController;
+    
+    TWeakObjectPtr<UInputComponent> InputComponent;
+    
+    TWeakObjectPtr<APlayerController> CurrentPlayerController;
 
 public:
     UBH_Manager();
