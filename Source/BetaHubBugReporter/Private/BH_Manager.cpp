@@ -5,11 +5,8 @@
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Components/InputComponent.h"
-#include "Json.h"
-#include "JsonUtilities.h"
 
 UBH_Manager::UBH_Manager()
-    : InputComponent(nullptr)
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
 }
@@ -36,7 +33,7 @@ void UBH_Manager::StartService(UGameInstance* GI)
 
     GI->OnLocalPlayerAddedEvent.AddUObject(this, &UBH_Manager::OnLocalPlayerAdded);
     
-    BackgroundService = NewObject<UBH_BackgroundService>(this);
+    BackgroundService = NewObject<UBH_BackgroundService>(this, UBH_BackgroundService::StaticClass(), TEXT("BH_Manager_BH_BackgroundService0"), RF_Transient);
 
     BackgroundService->StartService();
 }
@@ -45,9 +42,9 @@ void UBH_Manager::StopService()
 {
     if (BackgroundService)
     {
-        if (CurrentPlayerController)
+        if (CurrentPlayerController.IsValid())
         {
-            CurrentPlayerController->PopInputComponent(InputComponent);
+            CurrentPlayerController->PopInputComponent(InputComponent.Get());
         }
 
         BackgroundService->StopService();
@@ -79,7 +76,7 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
     
     if (Settings->ReportFormWidgetClass)
     {
-        return BackgroundService->SpawnBugReportWidget(CurrentPlayerController, bTryCaptureMouse);
+        return BackgroundService->SpawnBugReportWidget(CurrentPlayerController.Get(), bTryCaptureMouse);
     }
     else
     {
@@ -99,10 +96,12 @@ void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
 
     if (PC)
     {
-        InputComponent = NewObject<UInputComponent>(PC);
-        InputComponent->RegisterComponent();
-        InputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
-        PC->PushInputComponent(InputComponent);
+        UInputComponent* NewInputComponent = NewObject<UInputComponent>(PC, UInputComponent::StaticClass(), TEXT("BH_Manager_InputComponent0"), RF_Transient);
+        NewInputComponent->RegisterComponent();
+        NewInputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
+        PC->PushInputComponent(NewInputComponent);
+
+        InputComponent = NewInputComponent;
     }
 }
 
@@ -195,14 +194,14 @@ void UBH_Manager::OnFetchAllReleasesResponse(FHttpRequestPtr Request, FHttpRespo
             {
                 TSharedPtr<FJsonObject> JsonObject = Item->AsObject();
                 FReleaseInfo Release;
-                Release.Id = JsonObject->GetNumberField("id");
+                Release.Id = JsonObject->GetNumberField(TEXT("id"));
 
                 // Safely retrieve string fields
-                JsonObject->TryGetStringField("label", Release.Label);
-                JsonObject->TryGetStringField("summary", Release.Summary);
-                JsonObject->TryGetStringField("description", Release.Description);
-                JsonObject->TryGetStringField("created_at", Release.CreatedAt);
-                JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
+                JsonObject->TryGetStringField(TEXT("label"), Release.Label);
+                JsonObject->TryGetStringField(TEXT("summary"), Release.Summary);
+                JsonObject->TryGetStringField(TEXT("description"), Release.Description);
+                JsonObject->TryGetStringField(TEXT("created_at"), Release.CreatedAt);
+                JsonObject->TryGetStringField(TEXT("updated_at"), Release.UpdatedAt);
 
                 Releases.Add(Release);
             }
@@ -241,14 +240,14 @@ void UBH_Manager::OnFetchLatestReleaseResponse(FHttpRequestPtr Request, FHttpRes
                 {
                     TSharedPtr<FJsonObject> JsonObject = LatestJson->AsObject();
                     FReleaseInfo Release;
-                    Release.Id = JsonObject->GetNumberField("id");
+                    Release.Id = JsonObject->GetNumberField(TEXT("id"));
 
                     // Safely retrieve string fields
-                    JsonObject->TryGetStringField("label", Release.Label);
-                    JsonObject->TryGetStringField("summary", Release.Summary);
-                    JsonObject->TryGetStringField("description", Release.Description);
-                    JsonObject->TryGetStringField("created_at", Release.CreatedAt);
-                    JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
+                    JsonObject->TryGetStringField(TEXT("label"), Release.Label);
+                    JsonObject->TryGetStringField(TEXT("summary"), Release.Summary);
+                    JsonObject->TryGetStringField(TEXT("description"), Release.Description);
+                    JsonObject->TryGetStringField(TEXT("created_at"), Release.CreatedAt);
+                    JsonObject->TryGetStringField(TEXT("updated_at"), Release.UpdatedAt);
 
                     OnFetchLatestReleaseCompleted.Broadcast(Release);
                 }
@@ -286,14 +285,14 @@ void UBH_Manager::OnFetchReleaseByIdResponse(FHttpRequestPtr Request, FHttpRespo
     {
         TSharedPtr<FJsonObject> JsonObject = JsonValue->AsObject();
         FReleaseInfo Release;
-        Release.Id = JsonObject->GetNumberField("id");
+        Release.Id = JsonObject->GetNumberField(TEXT("id"));
 
         // Safely retrieve string fields
-        JsonObject->TryGetStringField("label", Release.Label);
-        JsonObject->TryGetStringField("summary", Release.Summary);
-        JsonObject->TryGetStringField("description", Release.Description);
-        JsonObject->TryGetStringField("created_at", Release.CreatedAt);
-        JsonObject->TryGetStringField("updated_at", Release.UpdatedAt);
+        JsonObject->TryGetStringField(TEXT("label"), Release.Label);
+        JsonObject->TryGetStringField(TEXT("summary"), Release.Summary);
+        JsonObject->TryGetStringField(TEXT("description"), Release.Description);
+        JsonObject->TryGetStringField(TEXT("created_at"), Release.CreatedAt);
+        JsonObject->TryGetStringField(TEXT("updated_at"), Release.UpdatedAt);
 
         OnFetchReleaseByIdCompleted.Broadcast(Release);
     }
