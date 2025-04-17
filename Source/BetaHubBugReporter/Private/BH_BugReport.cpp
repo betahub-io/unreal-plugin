@@ -115,13 +115,15 @@ void UBH_BugReport::SubmitReportAsync(
         OnSuccess, OnFailure]
         (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
-        if (bWasSuccessful && Response->GetResponseCode() == 201)
+        // Check if the response is valid before accessing it
+        if (bWasSuccessful && Response.IsValid() && Response->GetResponseCode() == 201)
         {
             OnSuccess();
 
             IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
-            FString IssueId = ParseIssueIdFromResponse(Response->GetContentAsString());
+            FString ContentAsString = Response->GetContentAsString(); // Get content once
+            FString IssueId = ParseIssueIdFromResponse(ContentAsString);
             if (!IssueId.IsEmpty())
             {
                 // Save the recording
@@ -160,13 +162,33 @@ void UBH_BugReport::SubmitReportAsync(
                     SubmitMedia(Settings, IssueId, TEXT("log_files"), TEXT("log_file[contents]"), "", LogFileContents, TEXT("text/plain"));
                 }
             }
+            else
+            {
+                 // Log if we couldn't parse the IssueId even on success
+                 UE_LOG(LogBetaHub, Error, TEXT("Successfully submitted bug report but failed to parse Issue ID from response: %s"), *ContentAsString);
+                 // Decide if OnFailure should be called here or if logging is sufficient.
+                 // For now, just logging. If OnFailure is desired, replace the log with:
+                 // OnFailure(FString::Printf(TEXT("Failed to parse Issue ID from success response: %s"), *ContentAsString));
+            }
         }
         else
         {
-            // ShowPopup(TEXT("Failed to submit bug report."));
-            FString Error = ParseErrorFromResponse(Response->GetContentAsString());
-            UE_LOG(LogBetaHub, Error, TEXT("Failed to submit bug report: %s"), *Response->GetContentAsString());
-            OnFailure(Error);
+            // Handle failure case, also checking Response validity
+            FString ErrorMessage = TEXT("Unknown error submitting bug report.");
+            FString ResponseContentForLog = TEXT("No response content available.");
+            if (Response.IsValid())
+            {
+                ResponseContentForLog = Response->GetContentAsString();
+                ErrorMessage = ParseErrorFromResponse(ResponseContentForLog);
+            }
+            else if (!bWasSuccessful)
+            {
+                 ErrorMessage = TEXT("HTTP request failed (bWasSuccessful is false).");
+                 ResponseContentForLog = ErrorMessage; // Use the error message for logging content
+            }
+
+            UE_LOG(LogBetaHub, Error, TEXT("Failed to submit bug report: %s"), *ResponseContentForLog);
+            OnFailure(ErrorMessage); // Call OnFailure with the parsed or generated error message
         }
     });
 }
@@ -225,13 +247,24 @@ void UBH_BugReport::SubmitMedia(
 
     MediaRequest->ProcessRequest([MediaRequest](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
-        if (bWasSuccessful && (Response->GetResponseCode() == 200 || Response->GetResponseCode() == 201))
+        // Check if the response is valid before accessing it
+        if (bWasSuccessful && Response.IsValid() && (Response->GetResponseCode() == 200 || Response->GetResponseCode() == 201))
         {
             UE_LOG(LogBetaHub, Log, TEXT("Media submitted successfully."));
         }
         else
         {
-            UE_LOG(LogBetaHub, Error, TEXT("Failed to submit media: %s"), *Response->GetContentAsString());
+            // Handle failure case, also checking Response validity
+            FString ResponseContent = TEXT("No response content available.");
+            if(Response.IsValid())
+            {
+                ResponseContent = Response->GetContentAsString();
+            }
+            else if (!bWasSuccessful)
+            {
+                ResponseContent = TEXT("HTTP request failed (bWasSuccessful is false).");
+            }
+            UE_LOG(LogBetaHub, Error, TEXT("Failed to submit media: %s"), *ResponseContent);
         }
         delete MediaRequest;
     });
@@ -239,26 +272,57 @@ void UBH_BugReport::SubmitMedia(
 
 FString UBH_BugReport::ParseIssueIdFromResponse(const FString& Response)
 {
-    // Parse the issue ID from the JSON response
     TSharedPtr<FJsonObject> JsonObject;
     TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response);
-    if (FJsonSerializer::Deserialize(Reader, JsonObject))
+
+    // Check if deserialization is successful AND the resulting object is valid
+    if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
     {
-        return JsonObject->GetStringField(TEXT("id"));
+        FString IssueId;
+        // Safely try to get the string field "id"
+        if (JsonObject->TryGetStringField(TEXT("id"), IssueId))
+        {
+            return IssueId;
+        }
+        else
+        {
+            UE_LOG(LogBetaHub, Warning, TEXT("JSON response did not contain 'id' field: %s"), *Response);
+        }
     }
-    return FString();
+    else
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("Failed to parse JSON response for Issue ID: %s"), *Response);
+    }
+    return FString(); // Return empty string if parsing fails or field is missing
 }
 
 FString UBH_BugReport::ParseErrorFromResponse(const FString& Response)
 {
-    // Parse the error message from the JSON response
     TSharedPtr<FJsonObject> JsonObject;
     TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response);
-    if (FJsonSerializer::Deserialize(Reader, JsonObject))
+
+    // Check if deserialization is successful AND the resulting object is valid
+    if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
     {
-        return JsonObject->GetStringField(TEXT("error"));
+        FString ErrorMessage;
+        // Safely try to get the string field "error"
+        if (JsonObject->TryGetStringField(TEXT("error"), ErrorMessage))
+        {
+            return ErrorMessage;
+        }
+        else
+        {
+             UE_LOG(LogBetaHub, Warning, TEXT("JSON response did not contain 'error' field: %s"), *Response);
+             // Fallback: return the whole response if it's JSON but missing the 'error' field
+             return Response;
+        }
     }
-    return FString();
+    else
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("Failed to parse JSON response for Error. Returning raw response."));
+        // If it wasn't valid JSON, return the raw response as the error message
+        return Response;
+    }
 }
 
 void UBH_BugReport::ShowPopup(const FString& Message)
