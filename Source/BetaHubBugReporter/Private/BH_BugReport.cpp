@@ -70,7 +70,7 @@ void UBH_BugReport::SubmitReportAsync(
     }
 
     // Submit the initial bug report without media
-    BH_HttpRequest* InitialRequest = new BH_HttpRequest();
+    TSharedPtr<BH_HttpRequest> InitialRequest = MakeShared<BH_HttpRequest>();
     InitialRequest->SetURL(Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues.json"));
     InitialRequest->SetVerb("POST");
     
@@ -168,8 +168,6 @@ void UBH_BugReport::SubmitReportAsync(
             UE_LOG(LogBetaHub, Error, TEXT("Failed to submit bug report: %s"), *Response->GetContentAsString());
             OnFailure(Error);
         }
-
-        delete InitialRequest;
     });
 }
 
