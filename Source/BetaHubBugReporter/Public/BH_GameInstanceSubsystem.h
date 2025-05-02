@@ -17,5 +17,5 @@ public:
 
 protected:
     UPROPERTY(BlueprintReadOnly, Transient)
-    UBH_Manager* Manager = nullptr;
+    TObjectPtr<UBH_Manager> Manager = nullptr;
 };

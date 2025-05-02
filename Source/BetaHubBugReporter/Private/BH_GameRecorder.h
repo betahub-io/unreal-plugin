@@ -43,10 +43,10 @@ public:
 
 private:
     UPROPERTY()
-    UBH_FrameBuffer* FrameBuffer;
+    TObjectPtr<UBH_FrameBuffer> FrameBuffer;
 
     UPROPERTY()
-    ABH_SceneCaptureActor* SceneCaptureActor;
+    TObjectPtr<ABH_SceneCaptureActor> SceneCaptureActor;
 
     TSharedPtr<BH_VideoEncoder> VideoEncoder;
     int32 TargetFPS;

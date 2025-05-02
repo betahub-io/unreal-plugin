@@ -15,10 +15,10 @@ public:
     ABH_SceneCaptureActor();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Capture")
-    UTextureRenderTarget2D* RenderTarget;
+    TObjectPtr<UTextureRenderTarget2D> RenderTarget;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Capture")
-    USceneCaptureComponent2D* SceneCaptureComponent;
+    TObjectPtr<USceneCaptureComponent2D> SceneCaptureComponent;
 
 protected:
     virtual void BeginPlay() override;

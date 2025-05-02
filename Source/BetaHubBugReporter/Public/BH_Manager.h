@@ -42,10 +42,10 @@ class BETAHUBBUGREPORTER_API UBH_Manager : public UObject
 
 private:
     UPROPERTY(Transient)
-    UBH_BackgroundService* BackgroundService = nullptr;
+    TObjectPtr<UBH_BackgroundService> BackgroundService = nullptr;
 
     UPROPERTY(Transient)
-    UBH_PluginSettings* Settings = nullptr;
+    TObjectPtr<UBH_PluginSettings> Settings = nullptr;
 
     void OnLocalPlayerAdded(ULocalPlayer* Player);
     void OnPlayerControllerChanged(APlayerController* PC);

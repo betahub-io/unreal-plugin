@@ -41,28 +41,28 @@ public:
     UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer);
 
     UPROPERTY(meta = (BindWidget))
-    UButton* CloseButton;
+    TObjectPtr<UButton> CloseButton;
 
     UPROPERTY(meta = (BindWidget))
-    UMultiLineEditableTextBox* BugDescriptionEdit;
+    TObjectPtr<UMultiLineEditableTextBox> BugDescriptionEdit;
 
     UPROPERTY(meta = (BindWidget))
-    UMultiLineEditableTextBox* StepsToReproduceEdit;
+    TObjectPtr<UMultiLineEditableTextBox> StepsToReproduceEdit;
 
     UPROPERTY(meta = (BindWidget))
-    UCheckBox* IncludeVideoCheckbox;
+    TObjectPtr<UCheckBox> IncludeVideoCheckbox;
 
     UPROPERTY(meta = (BindWidget))
-    UCheckBox* IncludeLogsCheckbox;
+    TObjectPtr<UCheckBox> IncludeLogsCheckbox;
 
     UPROPERTY(meta = (BindWidget))
-    UCheckBox* IncludeScreenshotCheckbox;
+    TObjectPtr<UCheckBox> IncludeScreenshotCheckbox;
 
     UPROPERTY(meta = (BindWidget))
-    UButton* SubmitButton;
+    TObjectPtr<UButton> SubmitButton;
 
     UPROPERTY(meta = (BindWidget))
-    UTextBlock* SubmitLabel;
+    TObjectPtr<UTextBlock> SubmitLabel;
 
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
