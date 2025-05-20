@@ -18,7 +18,8 @@ UBH_PluginSettings::UBH_PluginSettings()
     MaxVideoHeight = 1200;
 
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
-    static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
+    static ConstructorHelpers::FClassFinder<UBH_FormSelectionWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/FormSelection"));
+    static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder3(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
 
     if (WidgetClassFinder1.Succeeded())
     {
@@ -31,7 +32,16 @@ UBH_PluginSettings::UBH_PluginSettings()
 
     if (WidgetClassFinder2.Succeeded())
     {
-        PopupWidgetClass = WidgetClassFinder2.Class;
+        SelectionWidgetClass = WidgetClassFinder2.Class;
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to find widget class at specified path."));
+    }
+
+    if (WidgetClassFinder3.Succeeded())
+    {
+        PopupWidgetClass = WidgetClassFinder3.Class;
     }
     else
     {

@@ -6,9 +6,17 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Components/InputComponent.h"
 
+UBH_Manager* UBH_Manager::Instance = nullptr;
+
 UBH_Manager::UBH_Manager()
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
+    Instance = this;
+}
+
+UBH_Manager* UBH_Manager::Get()
+{
+    return Instance;
 }
 
 void UBH_Manager::StartService(UGameInstance* GI)
@@ -62,8 +70,24 @@ void UBH_Manager::OnBackgroundServiceRequestWidget()
 
     if (Settings->bEnableShortcut)
     {
-        SpawnBugReportWidget(true);
+        SpawnSelectionWidget(true);
     }
+}
+
+UBH_FormSelectionWidget* UBH_Manager::SpawnSelectionWidget(bool bTryCaptureMouse)
+{
+    if (!CurrentPlayerController.IsValid())
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("CurrentPlayerController is not valid."));
+        return nullptr;
+    }
+
+    if (Settings->SelectionWidgetClass)
+    {
+        return BackgroundService->SpawnSelectionWidget(CurrentPlayerController.Get(), bTryCaptureMouse);
+    }
+
+    return nullptr;
 }
 
 UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)

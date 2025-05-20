@@ -4,6 +4,7 @@
 #include "BH_BackgroundService.h"
 #include "BH_PluginSettings.h"
 #include "BH_ReportFormWidget.h"
+#include "BH_FormSelectionWidget.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Http.h"
@@ -54,8 +55,13 @@ private:
     
     TWeakObjectPtr<APlayerController> CurrentPlayerController;
 
+    static UBH_Manager* Instance;
+
 public:
     UBH_Manager();
+
+    UFUNCTION(BlueprintCallable, Category="Bug Report")
+    static UBH_Manager* Get();
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void StartService(UGameInstance* GI);
@@ -65,6 +71,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     UBH_ReportFormWidget* SpawnBugReportWidget(bool bTryCaptureMouse = true);
+
+    UFUNCTION(BlueprintCallable, Category="Bug Report")
+    UBH_FormSelectionWidget* SpawnSelectionWidget(bool bTryCaptureMouse = true);
 
     // Callback function to handle widget spawning
     UFUNCTION(BlueprintCallable, Category="Bug Report")

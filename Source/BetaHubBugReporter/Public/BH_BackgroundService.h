@@ -5,6 +5,7 @@
 #include "BH_GameRecorder.h"
 #include "BH_LogCapture.h"
 #include "BH_ReportFormWidget.h"
+#include "BH_FormSelectionWidget.h"
 #include "BH_BackgroundService.generated.h"
 
 UCLASS(Blueprintable)
@@ -36,6 +37,8 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     UBH_ReportFormWidget* SpawnBugReportWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);
+
+    UBH_FormSelectionWidget* SpawnSelectionWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);
 
     void StartService();
     void StopService();

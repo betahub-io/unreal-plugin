@@ -4,6 +4,7 @@
 #include "UObject/NoExportTypes.h"
 #include "BH_ReportFormWidget.h"
 #include "BH_PopupWidget.h"
+#include "BH_FormSelectionWidget.h"
 #include "BH_PluginSettings.generated.h"
 
 UCLASS(Config=Game, defaultconfig)
@@ -61,6 +62,10 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the bug report form."))
     TSubclassOf<UBH_ReportFormWidget> ReportFormWidgetClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The path to the widget that will be used to display the selection menu."))
+    TSubclassOf<UBH_FormSelectionWidget> SelectionWidgetClass;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))

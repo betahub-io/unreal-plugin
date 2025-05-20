@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/CanvasPanelSlot.h"
 #include "TimerManager.h"
+#include "Components/Button.h"
+#include "Components/TextBlock.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)
@@ -139,7 +141,38 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
     return ReportForm;
 }
 
-UBH_GameRecorder* UBH_BackgroundService::GetGameRecorder()
+UBH_FormSelectionWidget* UBH_BackgroundService::SpawnSelectionWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse)
 {
-    return GameRecorder;
+    if (!LocalPlayerController)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("LocalPlayerController is null."));
+        return nullptr;
+    }
+
+    if (!Settings)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Settings is null."));
+        return nullptr;
+    }
+
+    if (!Settings->SelectionWidgetClass)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("SelectionWidgetClass is null."));
+        return nullptr;
+    }
+
+    UBH_FormSelectionWidget* SelectionWidget = CreateWidget<UBH_FormSelectionWidget>(LocalPlayerController, Settings->SelectionWidgetClass);
+    if (!SelectionWidget)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to create SelectionWidget."));
+        return nullptr;
+    }
+
+    SelectionWidget->Setup(Settings, GameRecorder);
+
+    UE_LOG(LogBetaHub, Log, TEXT("SelectionWidget created successfully."));
+
+    SelectionWidget->AddToViewport(100);
+
+    return SelectionWidget;
 }
