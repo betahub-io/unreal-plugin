@@ -1,5 +1,13 @@
 #include "BH_BackgroundService.h"
 #include "BH_Log.h"
+#include "BH_Manager.h"
+#include "BH_PluginSettings.h"
+#include "BH_GameRecorder.h"
+#include "BH_LogCapture.h"
+#include "BH_ReportFormWidget.h"
+#include "BH_FormSelectionWidget.h"
+#include "BH_RequestFeatureFormWidget.h"
+#include "BH_CreateTicketFormWidget.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Blueprint/UserWidget.h"
@@ -8,6 +16,9 @@
 #include "TimerManager.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
+#include "HAL/PlatformFileManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)
@@ -175,4 +186,76 @@ UBH_FormSelectionWidget* UBH_BackgroundService::SpawnSelectionWidget(APlayerCont
     SelectionWidget->AddToViewport(100);
 
     return SelectionWidget;
+}
+
+UBH_RequestFeatureFormWidget* UBH_BackgroundService::SpawnFeatureRequestWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse)
+{
+    if (!LocalPlayerController)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("LocalPlayerController is null."));
+        return nullptr;
+    }
+
+    if (!Settings)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Settings is null."));
+        return nullptr;
+    }
+
+    if (!Settings->FeatureRequestWidgetClass)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("FeatureRequestWidgetClass is null."));
+        return nullptr;
+    }
+
+    UBH_RequestFeatureFormWidget* FeatureRequestForm = CreateWidget<UBH_RequestFeatureFormWidget>(LocalPlayerController, Settings->FeatureRequestWidgetClass);
+    if (!FeatureRequestForm)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to create FeatureRequestForm widget."));
+        return nullptr;
+    }
+
+    FeatureRequestForm->Setup(Settings, bTryCaptureMouse);
+
+    UE_LOG(LogBetaHub, Log, TEXT("FeatureRequestForm widget created successfully."));
+
+    FeatureRequestForm->AddToViewport();
+
+    return FeatureRequestForm;
+}
+
+UBH_CreateTicketFormWidget* UBH_BackgroundService::SpawnTicketCreationWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse)
+{
+    if (!LocalPlayerController)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("LocalPlayerController is null."));
+        return nullptr;
+    }
+
+    if (!Settings)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Settings is null."));
+        return nullptr;
+    }
+
+    if (!Settings->TicketCreationWidgetClass)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("TicketCreationWidgetClass is null."));
+        return nullptr;
+    }
+
+    UBH_CreateTicketFormWidget* TicketCreationForm = CreateWidget<UBH_CreateTicketFormWidget>(LocalPlayerController, Settings->TicketCreationWidgetClass);
+    if (!TicketCreationForm)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to create TicketCreationForm widget."));
+        return nullptr;
+    }
+
+    TicketCreationForm->Setup(Settings, bTryCaptureMouse);
+
+    UE_LOG(LogBetaHub, Log, TEXT("TicketCreationForm widget created successfully."));
+
+    TicketCreationForm->AddToViewport();
+
+    return TicketCreationForm;
 }

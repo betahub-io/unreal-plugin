@@ -21,6 +21,16 @@ void UBH_FormSelectionWidget::NativeOnInitialized()
         ReportBugButton->OnClicked.AddDynamic(this, &UBH_FormSelectionWidget::OnReportBugClicked);
     }
 
+    if (RequestFeatureButton)
+    {
+        RequestFeatureButton->OnClicked.AddDynamic(this, &UBH_FormSelectionWidget::OnRequestFeatureClicked);
+    }
+
+    if (CreateTicketButton)
+    {
+        CreateTicketButton->OnClicked.AddDynamic(this, &UBH_FormSelectionWidget::OnCreateTicketClicked);
+    }
+
     if (CloseButton)
     {
         CloseButton->OnClicked.AddDynamic(this, &UBH_FormSelectionWidget::OnCloseClicked);
@@ -56,6 +66,42 @@ void UBH_FormSelectionWidget::OnReportBugClicked()
     if (UBH_Manager* Manager = UBH_Manager::Get())
     {
         Manager->SpawnBugReportWidget(true);
+    }
+}
+
+void UBH_FormSelectionWidget::OnRequestFeatureClicked()
+{
+    // Restore cursor state
+    if (APlayerController* PlayerController = GetOwningPlayer())
+    {
+        PlayerController->SetInputMode(FInputModeGameOnly());
+    }
+
+    // Remove this widget from viewport
+    RemoveFromParent();
+
+    // Spawn the feature request form
+    if (UBH_Manager* Manager = UBH_Manager::Get())
+    {
+        Manager->SpawnFeatureRequestWidget(true);
+    }
+}
+
+void UBH_FormSelectionWidget::OnCreateTicketClicked()
+{
+    // Restore cursor state
+    if (APlayerController* PlayerController = GetOwningPlayer())
+    {
+        PlayerController->SetInputMode(FInputModeGameOnly());
+    }
+
+    // Remove this widget from viewport
+    RemoveFromParent();
+
+    // Spawn the ticket creation form
+    if (UBH_Manager* Manager = UBH_Manager::Get())
+    {
+        Manager->SpawnTicketCreationWidget(true);
     }
 }
 

@@ -6,6 +6,8 @@
 #include "BH_LogCapture.h"
 #include "BH_ReportFormWidget.h"
 #include "BH_FormSelectionWidget.h"
+#include "BH_RequestFeatureFormWidget.h"
+#include "BH_CreateTicketFormWidget.h"
 #include "BH_BackgroundService.generated.h"
 
 UCLASS(Blueprintable)
@@ -37,6 +39,12 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     UBH_ReportFormWidget* SpawnBugReportWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);
+
+    UFUNCTION(BlueprintCallable, Category="BugReport")
+    UBH_RequestFeatureFormWidget* SpawnFeatureRequestWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);
+
+    UFUNCTION(BlueprintCallable, Category="BugReport")
+    UBH_CreateTicketFormWidget* SpawnTicketCreationWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);
 
     UBH_FormSelectionWidget* SpawnSelectionWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);
 

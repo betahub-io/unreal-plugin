@@ -20,6 +20,8 @@ UBH_PluginSettings::UBH_PluginSettings()
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
     static ConstructorHelpers::FClassFinder<UBH_FormSelectionWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/FormSelection"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder3(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
+    static ConstructorHelpers::FClassFinder<UBH_RequestFeatureFormWidget> WidgetClassFinder4(TEXT("/BetaHubBugReporter/RequestFeatureForm"));
+    static ConstructorHelpers::FClassFinder<UBH_CreateTicketFormWidget> WidgetClassFinder5(TEXT("/BetaHubBugReporter/CreateTicketForm"));
 
     if (WidgetClassFinder1.Succeeded())
     {
@@ -42,6 +44,24 @@ UBH_PluginSettings::UBH_PluginSettings()
     if (WidgetClassFinder3.Succeeded())
     {
         PopupWidgetClass = WidgetClassFinder3.Class;
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to find widget class at specified path."));
+    }
+
+    if (WidgetClassFinder4.Succeeded())
+    {
+        FeatureRequestWidgetClass = WidgetClassFinder4.Class;
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to find widget class at specified path."));
+    }
+
+    if (WidgetClassFinder5.Succeeded())
+    {
+        TicketCreationWidgetClass = WidgetClassFinder5.Class;
     }
     else
     {

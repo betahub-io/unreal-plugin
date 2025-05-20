@@ -109,6 +109,44 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
     }
 }
 
+UBH_RequestFeatureFormWidget* UBH_Manager::SpawnFeatureRequestWidget(bool bTryCaptureMouse)
+{
+    if (!BackgroundService)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Background service not initialized. Use StartService() first."));
+        return nullptr;
+    }
+    
+    if (Settings->FeatureRequestWidgetClass)
+    {
+        return BackgroundService->SpawnFeatureRequestWidget(CurrentPlayerController.Get(), bTryCaptureMouse);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot spawn feature request widget. No widget class specified or found."));
+        return nullptr;
+    }
+}
+
+UBH_CreateTicketFormWidget* UBH_Manager::SpawnTicketCreationWidget(bool bTryCaptureMouse)
+{
+    if (!BackgroundService)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Background service not initialized. Use StartService() first."));
+        return nullptr;
+    }
+    
+    if (Settings->TicketCreationWidgetClass)
+    {
+        return BackgroundService->SpawnTicketCreationWidget(CurrentPlayerController.Get(), bTryCaptureMouse);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot spawn ticket creation widget. No widget class specified or found."));
+        return nullptr;
+    }
+}
+
 void UBH_Manager::OnLocalPlayerAdded(ULocalPlayer* Player)
 {
     Player->OnPlayerControllerChanged().AddUObject(this, &UBH_Manager::OnPlayerControllerChanged);

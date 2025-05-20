@@ -5,6 +5,8 @@
 #include "BH_PluginSettings.h"
 #include "BH_ReportFormWidget.h"
 #include "BH_FormSelectionWidget.h"
+#include "BH_RequestFeatureFormWidget.h"
+#include "BH_CreateTicketFormWidget.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Http.h"
@@ -71,6 +73,12 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     UBH_ReportFormWidget* SpawnBugReportWidget(bool bTryCaptureMouse = true);
+
+    UFUNCTION(BlueprintCallable, Category="Bug Report")
+    UBH_RequestFeatureFormWidget* SpawnFeatureRequestWidget(bool bTryCaptureMouse = true);
+
+    UFUNCTION(BlueprintCallable, Category="Bug Report")
+    UBH_CreateTicketFormWidget* SpawnTicketCreationWidget(bool bTryCaptureMouse = true);
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     UBH_FormSelectionWidget* SpawnSelectionWidget(bool bTryCaptureMouse = true);

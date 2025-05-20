@@ -26,11 +26,23 @@ protected:
     UButton* ReportBugButton;
 
     UPROPERTY(meta = (BindWidget))
+    UButton* RequestFeatureButton;
+
+    UPROPERTY(meta = (BindWidget))
+    UButton* CreateTicketButton;
+
+    UPROPERTY(meta = (BindWidget))
     UButton* CloseButton;
 
 private:
     UFUNCTION()
     void OnReportBugClicked();
+
+    UFUNCTION()
+    void OnRequestFeatureClicked();
+
+    UFUNCTION()
+    void OnCreateTicketClicked();
 
     UFUNCTION()
     void OnCloseClicked();

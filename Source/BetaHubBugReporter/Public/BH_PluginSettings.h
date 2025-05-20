@@ -5,6 +5,8 @@
 #include "BH_ReportFormWidget.h"
 #include "BH_PopupWidget.h"
 #include "BH_FormSelectionWidget.h"
+#include "BH_RequestFeatureFormWidget.h"
+#include "BH_CreateTicketFormWidget.h"
 #include "BH_PluginSettings.generated.h"
 
 UCLASS(Config=Game, defaultconfig)
@@ -70,6 +72,14 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
     TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The path to the widget that will be used to display the feature request form."))
+    TSubclassOf<UBH_RequestFeatureFormWidget> FeatureRequestWidgetClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+        meta=(ToolTip="The path to the widget that will be used to display the ticket creation form."))
+    TSubclassOf<UBH_CreateTicketFormWidget> TicketCreationWidgetClass;
 
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);
 
