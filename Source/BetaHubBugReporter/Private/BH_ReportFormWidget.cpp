@@ -129,10 +129,13 @@ void UBH_ReportFormWidget::NativeDestruct()
     RestoreCursorState();
 
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-    if (PlatformFile.FileExists(*ScreenshotPath))
-    {
-        PlatformFile.DeleteFile(*ScreenshotPath);
-    }
+
+    // We can't delete the screenshot file here as it still could be used by the BugReport to upload the media
+    // TODO: Create a screenshot object that can destroy itself when it's no longer in use
+    // if (PlatformFile.FileExists(*ScreenshotPath))
+    // {
+    //     PlatformFile.DeleteFile(*ScreenshotPath);
+    // }
 
     // Do not start recording here, since it's the responsibility either of the close button, or BugReport class
 }

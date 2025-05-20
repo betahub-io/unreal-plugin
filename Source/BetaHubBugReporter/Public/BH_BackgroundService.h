@@ -14,10 +14,10 @@ class BETAHUBBUGREPORTER_API UBH_BackgroundService : public UObject
 
 private:
     UPROPERTY()
-    UBH_PluginSettings* Settings;
+    TObjectPtr<UBH_PluginSettings> Settings;
 
     UPROPERTY()
-    UBH_GameRecorder* GameRecorder;
+    TObjectPtr<UBH_GameRecorder> GameRecorder;
 
     UBH_LogCapture* LogCapture;
 

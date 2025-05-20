@@ -24,13 +24,13 @@ class UBH_PopupWidget : public UUserWidget
 
 	public:
 		UPROPERTY(meta = (BindWidget))
-		UTextBlock* Title;
+		TObjectPtr<UTextBlock> Title;
 
 		UPROPERTY(meta = (BindWidget))
-		UTextBlock* Description;
+		TObjectPtr<UTextBlock> Description;
 
 		UPROPERTY(meta = (BindWidget))
-		UButton* CloseButton;
+		TObjectPtr<UButton> CloseButton;
 
 		UFUNCTION(BlueprintCallable, Category="Popup")
 		void SetMessage(const FString& InTitle, const FString& InDescription);

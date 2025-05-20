@@ -22,7 +22,7 @@ private:
     static FString PreferredFfmpegOptions;
 
     UPROPERTY()
-    UBH_FrameBuffer* frameBuffer;
+    TObjectPtr<UBH_FrameBuffer> frameBuffer;
 
     FEvent* stopEvent;
     FEvent* pauseEvent;

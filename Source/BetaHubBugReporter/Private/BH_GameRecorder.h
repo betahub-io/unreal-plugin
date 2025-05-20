@@ -43,10 +43,10 @@ public:
 
 private:
     UPROPERTY()
-    UBH_FrameBuffer* FrameBuffer;
+    TObjectPtr<UBH_FrameBuffer> FrameBuffer;
 
     UPROPERTY()
-    ABH_SceneCaptureActor* SceneCaptureActor;
+    TObjectPtr<ABH_SceneCaptureActor> SceneCaptureActor;
 
     TSharedPtr<BH_VideoEncoder> VideoEncoder;
     int32 TargetFPS;
@@ -61,7 +61,7 @@ private:
     TArray<FColor> PendingPixels;
     TArray<FColor> ResizedPixels;
 
-    FTexture2DRHIRef StagingTexture;
+    FTextureRHIRef StagingTexture;
     EPixelFormat StagingTextureFormat;
 
     int32 ViewportWidth;
@@ -80,14 +80,14 @@ private:
     int32 MaxVideoWidth;
     int32 MaxVideoHeight;
 
-    void ReadPixels(const FTexture2DRHIRef& BackBuffer);
+    void ReadPixels(const FTextureRHIRef& BackBuffer);
 
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);
 
-    void OnBackBufferReady(SWindow& Window, const FTexture2DRHIRef& BackBuffer);
+    void OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer);
 
-    void OnBackBufferResized(const FTexture2DRHIRef& BackBuffer);
+    void OnBackBufferResized(const FTextureRHIRef& BackBuffer);
 
     //Hack TODO
     TSet<FString> CreatedWindows;
