@@ -342,6 +342,12 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 {
     if (!GEngine || !GEngine->GameViewport) return;
 
+    // Check if recording is still active
+    if (!bIsRecording) return;
+
+    // Check if staging texture is valid
+    if (!StagingTexture.IsValid()) return;
+
     // execute only if viewport sizes are same as registered
     if (BackBuffer->GetDesc().GetSize().X != ViewportWidth 
         || BackBuffer->GetDesc().GetSize().Y != ViewportHeight)
@@ -352,22 +358,21 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
         return;
     }
 
-
     ENQUEUE_RENDER_COMMAND(CopyTextureCommand)(
         [this, BackBuffer](FRHICommandListImmediate& RHICmdList) mutable
         {
             // Check for the second time, because the viewport state can change
-            if (!GEngine || !GEngine->GameViewport) return;
+            if (!GEngine || !GEngine->GameViewport || !bIsRecording || !StagingTexture.IsValid()) return;
 
             BH_RawFrameBuffer<uint8>* TextureBuffer = RawFrameBufferPool.GetElement();
             if (!TextureBuffer)
             {
                 // no texture buffer available at this time
-                // UE_LOG(LogBetaHub, Error, TEXT("No texture buffer available."));
                 return;
             }
 
             FTextureRHIRef Texture = BackBuffer;
+            if (!Texture.IsValid()) return;
 
             FRHICopyTextureInfo CopyInfo;
             RHICmdList.CopyTexture(Texture, StagingTexture, CopyInfo);
@@ -378,15 +383,21 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 
             RHICmdList.MapStagingSurface(StagingTexture, RawData, RawDataWidth, RawDataHeight);
 
+            if (RawData)
+            {
+                TextureBuffer->CopyFrom(
+                    reinterpret_cast<uint8*>(RawData),
+                    RawDataWidth,
+                    RawDataHeight,
+                    GPixelFormats[StagingTextureFormat].BlockBytes);
 
-            TextureBuffer->CopyFrom(
-                reinterpret_cast<uint8*>(RawData),
-                RawDataWidth,
-                RawDataHeight,
-                GPixelFormats[StagingTextureFormat].BlockBytes);
-
-            // async queue for processing
-            RawFrameBufferQueue.Enqueue(TextureBuffer);
+                // async queue for processing
+                RawFrameBufferQueue.Enqueue(TextureBuffer);
+            }
+            else
+            {
+                RawFrameBufferPool.ReleaseElement(TextureBuffer);
+            }
 
             RHICmdList.UnmapStagingSurface(StagingTexture);
         }
