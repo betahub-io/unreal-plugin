@@ -1,9 +1,13 @@
 #include "BH_RequestFeatureFormWidget.h"
 #include "BH_PluginSettings.h"
 #include "BH_PopupWidget.h"
+#include "BH_FeatureRequest.h"
 #include "Components/CanvasPanel.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
 
 UBH_RequestFeatureFormWidget::UBH_RequestFeatureFormWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
@@ -95,9 +99,27 @@ void UBH_RequestFeatureFormWidget::SubmitRequest()
         return;
     }
 
-    // TODO: Implement API call to submit feature request
-    ShowPopup("Success", "Your feature request has been submitted successfully.");
-    RemoveFromParent();
+    if (!Settings)
+    {
+        ShowPopup("Error", "Settings not initialized.");
+        return;
+    }
+
+    SubmitLabel->SetText(FText::FromString("Submitting..."));
+
+    UBH_FeatureRequest* FeatureRequest = NewObject<UBH_FeatureRequest>();
+    FeatureRequest->SubmitRequest(Settings, Description,
+        [this]()
+        {
+            ShowPopup("Success", "Your feature request has been submitted successfully.");
+            RemoveFromParent();
+        },
+        [this](const FString& ErrorMessage)
+        {
+            ShowPopup("Error", ErrorMessage);
+            SubmitLabel->SetText(FText::FromString("Submit"));
+        }
+    );
 }
 
 void UBH_RequestFeatureFormWidget::ShowPopup(const FString& Title, const FString& Description)
