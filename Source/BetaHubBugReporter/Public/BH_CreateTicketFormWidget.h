@@ -5,6 +5,7 @@
 #include "Components/Button.h"
 #include "Components/MultiLineEditableTextBox.h"
 #include "Components/TextBlock.h"
+#include "Components/EditableTextBox.h"
 #include "BH_CreateTicketFormWidget.generated.h"
 
 UCLASS(Blueprintable)
@@ -36,6 +37,9 @@ public:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UMultiLineEditableTextBox> TicketDescriptionEdit;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UEditableTextBox> EmailEdit;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UButton> SubmitButton;

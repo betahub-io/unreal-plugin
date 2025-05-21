@@ -1,6 +1,7 @@
 #include "BH_CreateTicketFormWidget.h"
 #include "BH_PluginSettings.h"
 #include "BH_PopupWidget.h"
+#include "BH_Ticket.h"
 #include "Components/CanvasPanel.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
@@ -83,21 +84,47 @@ void UBH_CreateTicketFormWidget::OnSubmitButtonClicked()
 
 void UBH_CreateTicketFormWidget::SubmitTicket()
 {
-    if (!TicketDescriptionEdit)
+    if (!TicketDescriptionEdit || !EmailEdit)
     {
         return;
     }
 
     FString Description = TicketDescriptionEdit->GetText().ToString();
+    FString Email = EmailEdit->GetText().ToString();
+
     if (Description.IsEmpty())
     {
         ShowPopup("Error", "Please enter a description for your ticket.");
         return;
     }
 
-    // TODO: Implement API call to submit ticket
-    ShowPopup("Success", "Your ticket has been submitted successfully.");
-    RemoveFromParent();
+    if (Email.IsEmpty())
+    {
+        ShowPopup("Error", "Please enter your email address.");
+        return;
+    }
+
+    if (!Settings)
+    {
+        ShowPopup("Error", "Settings not initialized.");
+        return;
+    }
+
+    SubmitLabel->SetText(FText::FromString("Submitting..."));
+
+    UBH_Ticket* Ticket = NewObject<UBH_Ticket>();
+    Ticket->SubmitTicket(Settings, Description, Email,
+        [this]()
+        {
+            ShowPopup("Success", "Your ticket has been submitted successfully.");
+            RemoveFromParent();
+        },
+        [this](const FString& ErrorMessage)
+        {
+            ShowPopup("Error", ErrorMessage);
+            SubmitLabel->SetText(FText::FromString("Submit"));
+        }
+    );
 }
 
 void UBH_CreateTicketFormWidget::ShowPopup(const FString& Title, const FString& Description)
