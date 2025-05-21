@@ -1,0 +1,421 @@
+openapi: 3.0.0
+info:
+  title: BetaHub API
+  version: 1.0.0
+  description: API for interacting with BetaHub's bug reporting and project management system
+
+servers:
+  - url: "{endpoint}"
+    description: BetaHub API server
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+
+    Issue:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        unformatted_steps_to_reproduce:
+          type: string
+        custom:
+          type: object
+        extras:
+          type: object
+
+    FeatureRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+        body:
+          type: string
+        commentable_id:
+          type: string
+        commentable_type:
+          type: string
+          enum: [Ticket, Issue, FeatureRequest]
+
+    SupportKnowledgeResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        confidence:
+          type: number
+
+paths:
+  /projects/{project_id}.json:
+    get:
+      summary: Get project details
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{project_id}/issues.json:
+    post:
+      summary: Create a new issue
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                issue:
+                  $ref: '#/components/schemas/Issue'
+                user:
+                  $ref: '#/components/schemas/User'
+                  nullable: true
+                skip_description_check:
+                  type: boolean
+      responses:
+        '201':
+          description: Issue created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{project_id}/feature_requests.json:
+    post:
+      summary: Create a new feature request
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                feature_request:
+                  $ref: '#/components/schemas/FeatureRequest'
+                user:
+                  $ref: '#/components/schemas/User'
+                  nullable: true
+                skip_moderation:
+                  type: boolean
+      responses:
+        '201':
+          description: Feature request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureRequest'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{project_id}/tickets.json:
+    post:
+      summary: Create a new ticket
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ticket:
+                  $ref: '#/components/schemas/Ticket'
+                user:
+                  $ref: '#/components/schemas/User'
+                  nullable: true
+      responses:
+        '201':
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /comments.json:
+    post:
+      summary: Create a new comment
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                comment:
+                  $ref: '#/components/schemas/Comment'
+                user:
+                  $ref: '#/components/schemas/User'
+                  nullable: true
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+
+  /projects/{project_id}/issues/g-{issue_id}/screenshots.json:
+    post:
+      summary: Attach a screenshot to an issue
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: issue_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                screenshot:
+                  type: object
+                  properties:
+                    image:
+                      type: string
+                      format: binary
+      responses:
+        '201':
+          description: Screenshot attached successfully
+
+  /projects/{project_id}/issues/g-{issue_id}/video_clips.json:
+    post:
+      summary: Attach a video clip to an issue
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: issue_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                video_clip:
+                  type: object
+                  properties:
+                    video:
+                      type: string
+                      format: binary
+      responses:
+        '201':
+          description: Video clip attached successfully
+
+  /projects/{project_id}/issues/g-{issue_id}/log_files.json:
+    post:
+      summary: Attach a log file to an issue
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: issue_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                log_file:
+                  type: object
+                  properties:
+                    file:
+                      type: string
+                      format: binary
+      responses:
+        '201':
+          description: Log file attached successfully
+
+  /projects/{project_id}/support_knowledge/ask:
+    post:
+      summary: Ask a support question
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                user:
+                  type: object
+                  nullable: true
+                  properties:
+                    email:
+                      type: string
+      responses:
+        '200':
+          description: Support answer received
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportKnowledgeResponse'
+
+  /projects/{project_id}/support_knowledge_interactions/{interaction_id}/reactions:
+    post:
+      summary: Create a reaction to a support knowledge interaction
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: interaction_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  nullable: true
+                  properties:
+                    email:
+                      type: string
+                reaction:
+                  type: string
+      responses:
+        '200':
+          description: Reaction created successfully
+        '201':
+          description: Reaction created successfully
+
+    delete:
+      summary: Delete a reaction from a support knowledge interaction
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: interaction_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reaction deleted successfully
+        '201':
+          description: Reaction deleted successfully
