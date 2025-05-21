@@ -125,9 +125,6 @@ void UBH_ReportFormWidget::NativeDestruct()
 {
     Super::NativeDestruct();
 
-    // Restore cursor state when the widget is destructed (hidden)
-    RestoreCursorState();
-
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 
     // We can't delete the screenshot file here as it still could be used by the BugReport to upload the media
@@ -149,6 +146,7 @@ void UBH_ReportFormWidget::OnSubmitButtonClicked()
 void UBH_ReportFormWidget::OnCloseClicked()
 {
     GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+    RestoreCursorState();
     RemoveFromParent();
 }
 

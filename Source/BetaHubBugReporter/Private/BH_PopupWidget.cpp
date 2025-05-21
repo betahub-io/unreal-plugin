@@ -2,6 +2,8 @@
 
 
 #include "BH_PopupWidget.h"
+#include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 void UBH_PopupWidget::NativeConstruct()
 {
@@ -15,6 +17,10 @@ void UBH_PopupWidget::NativeConstruct()
 
 void UBH_PopupWidget::OnCloseClicked()
 {
+    if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+    {
+        PC->SetInputMode(FInputModeGameOnly());
+    }
     RemoveFromParent();
 }
 
