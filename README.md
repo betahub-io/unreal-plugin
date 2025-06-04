@@ -14,6 +14,11 @@ The plugin will start a *Background Service* that will record gameplay session a
 4. Restart Unreal Editor.
 5. Confirm any prompts or warnings that may appear.
 
+## Compatibility
+
+This plugin is fully compatible with Unreal Engine versions **5.3**, **5.4**, **5.5**, and **5.6**.  
+All features have been tested and verified on these versions.
+
 ## Configuration
 
 All you need to do is to go to your *Player Settings* and in the *BetaHub Bug Reported* section under the *Plugins* category, set your Project ID. You can find your Project ID in your project *General Settings* page.
