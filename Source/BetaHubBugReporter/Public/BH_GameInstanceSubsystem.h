@@ -16,6 +16,6 @@ public:
     virtual void Deinitialize() override;
 
 protected:
-    UPROPERTY(BlueprintReadOnly, Transient)
+    UPROPERTY(BlueprintReadOnly, Transient, Category = "BetaHub")
     TObjectPtr<UBH_Manager> Manager = nullptr;
 };
