@@ -1,6 +1,7 @@
 #include "BH_VideoEncoder.h"
 #include "CoreTypes.h"
 #include "BH_Log.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "HAL/PlatformProcess.h"
 #include "HAL/PlatformFileManager.h"
 #include "HAL/Event.h"
