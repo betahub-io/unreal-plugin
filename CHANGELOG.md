@@ -1,6 +1,25 @@
 # Changelog
 
-## UNRELEASED
+## 1.2.0 - 2025-08-01
+
+### Added
+
+- Release management support with new project token configuration
+- Enhanced HTTP error handling for improved reliability during bug report submission
+
+### Fixed
+
+- Screenshots not uploading properly during bug report submission
+- Memory problems causing application crashes and instability
+- Deprecated warnings and compilation issues for better engine compatibility
+
+### Changed
+
+- Improved performance with asynchronous ReadPixels execution
+- Enhanced pointer handling using modern Unreal Engine TObjectPtr types
+- Updated documentation with Unreal Engine compatibility information
+
+## 1.1.0 - 2024-12-04
 
 ### Added
 
