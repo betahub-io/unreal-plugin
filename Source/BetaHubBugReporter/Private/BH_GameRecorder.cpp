@@ -129,8 +129,11 @@ void UBH_GameRecorder::StopRecording()
             FSlateApplicationBase::Get().GetRenderer()->OnBackBufferReadyToPresent().RemoveAll(this);
         }
 
+        // Ensure all pending render commands complete before releasing staging texture
+        FlushRenderingCommands();
+        
         // Remove staging texture
-        if (StagingTexture)
+        if (StagingTexture.IsValid())
         {
             StagingTexture.SafeRelease();
         }
@@ -247,6 +250,13 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer)
 {
+    // Validate BackBuffer before proceeding
+    if (!BackBuffer.IsValid())
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("OnBackBufferReady called with invalid BackBuffer"));
+        return;
+    }
+
     #if WITH_EDITOR
     // Log window title and size for debugging
     FString WindowTitle = Window.GetTitle().ToString();
@@ -285,7 +295,7 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& 
 
     // Create the staging texture if not already created.
     // We need to do it here since UE 5.3 does not allow creating textures outside the Draw event.
-    if (StagingTexture == nullptr)
+    if (!StagingTexture.IsValid())
     {
 
         ENQUEUE_RENDER_COMMAND(CaptureFrameCommand)(
@@ -321,15 +331,16 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& 
                 StagingTextureFormat = StagingTexture->GetFormat();
 
                 // check if the texture was created
-                if (!StagingTexture)
+                if (!StagingTexture.IsValid())
                 {
-                    UE_LOG(LogBetaHub, Error, TEXT("Failed to create staging texture."));
+                    UE_LOG(LogBetaHub, Error, TEXT("Failed to create staging texture. GameBuffer size: %dx%d, format: %d"), 
+                        GameBuffer->GetSizeX(), GameBuffer->GetSizeY(), (int32)GameBuffer->GetFormat());
                     return;
                 }
             });
     }
 
-    if (!bCopyTextureStarted && StagingTexture != nullptr)
+    if (!bCopyTextureStarted && StagingTexture.IsValid())
     {
         AsyncTask(ENamedThreads::GameThread, [this, BackBuffer]()
             {
@@ -368,6 +379,16 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
             }
 
             FTextureRHIRef Texture = BackBuffer;
+
+            // Validate both textures before copying to prevent assert failure
+            if (!Texture.IsValid() || !StagingTexture.IsValid())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("CopyTexture failed: Invalid texture references. Texture valid: %s, StagingTexture valid: %s"), 
+                    Texture.IsValid() ? TEXT("true") : TEXT("false"), 
+                    StagingTexture.IsValid() ? TEXT("true") : TEXT("false"));
+                RawFrameBufferPool.ReleaseElement(TextureBuffer);
+                return;
+            }
 
             FRHICopyTextureInfo CopyInfo;
             RHICmdList.CopyTexture(Texture, StagingTexture, CopyInfo);
