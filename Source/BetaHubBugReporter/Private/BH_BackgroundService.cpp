@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/CanvasPanelSlot.h"
 #include "TimerManager.h"
+#include "UnrealClient.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)
@@ -60,8 +61,10 @@ void UBH_BackgroundService::RetryInitializeService()
                     // Final check: ensure viewport is ready for rendering
                     if (Viewport->GetRenderTargetTexture())
                     {
+                        // Store viewport size in local variables for UE 5.6 format string validation
+                        FIntPoint ViewportSize = Viewport->GetSizeXY();
                         UE_LOG(LogBetaHub, Log, TEXT("Viewport fully ready. Initializing service with viewport size: %dx%d"), 
-                            Viewport->GetSizeXY().X, Viewport->GetSizeXY().Y);
+                            ViewportSize.X, ViewportSize.Y);
                         
                         // Viewport is now fully available, clear the timer and initialize the service
                         GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
@@ -75,8 +78,10 @@ void UBH_BackgroundService::RetryInitializeService()
                 }
                 else
                 {
+                    // Store viewport size in local variables for UE 5.6 format string validation
+                    FIntPoint ViewportSize = Viewport->GetSizeXY();
                     UE_LOG(LogBetaHub, Warning, TEXT("Viewport has invalid size: %dx%d"), 
-                        Viewport->GetSizeXY().X, Viewport->GetSizeXY().Y);
+                        ViewportSize.X, ViewportSize.Y);
                 }
             }
             else
