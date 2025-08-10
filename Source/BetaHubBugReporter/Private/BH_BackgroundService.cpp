@@ -47,14 +47,51 @@ void UBH_BackgroundService::RetryInitializeService()
     
     if (GetWorld()) 
     {
+        // Enhanced checks for viewport readiness in packaged builds
         if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport)
         {
-            // Viewport is now available, clear the timer and initialize the service
-            GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
-            InitializeService();
-        } else
+            // Additional validation for packaged builds - ensure RHI is initialized
+            if (GDynamicRHI && IsInGameThread())
+            {
+                // Check if the viewport has a valid size (not 0x0)
+                FViewport* Viewport = GEngine->GameViewport->Viewport;
+                if (Viewport->GetSizeXY().X > 0 && Viewport->GetSizeXY().Y > 0)
+                {
+                    // Final check: ensure viewport is ready for rendering
+                    if (Viewport->GetRenderTargetTexture())
+                    {
+                        UE_LOG(LogBetaHub, Log, TEXT("Viewport fully ready. Initializing service with viewport size: %dx%d"), 
+                            Viewport->GetSizeXY().X, Viewport->GetSizeXY().Y);
+                        
+                        // Viewport is now fully available, clear the timer and initialize the service
+                        GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+                        InitializeService();
+                        return;
+                    }
+                    else
+                    {
+                        UE_LOG(LogBetaHub, Warning, TEXT("Viewport available but no valid back buffer yet."));
+                    }
+                }
+                else
+                {
+                    UE_LOG(LogBetaHub, Warning, TEXT("Viewport has invalid size: %dx%d"), 
+                        Viewport->GetSizeXY().X, Viewport->GetSizeXY().Y);
+                }
+            }
+            else
+            {
+                UE_LOG(LogBetaHub, Warning, TEXT("RHI not ready. GDynamicRHI: %s, GameThread: %s"), 
+                    GDynamicRHI ? TEXT("valid") : TEXT("null"),
+                    IsInGameThread() ? TEXT("true") : TEXT("false"));
+            }
+        } 
+        else
         {
-            UE_LOG(LogBetaHub, Warning, TEXT("GameViewport is still null."));
+            UE_LOG(LogBetaHub, Warning, TEXT("GameViewport components still null. GEngine: %s, GameViewport: %s, Viewport: %s"), 
+                GEngine ? TEXT("valid") : TEXT("null"),
+                (GEngine && GEngine->GameViewport) ? TEXT("valid") : TEXT("null"),
+                (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport) ? TEXT("valid") : TEXT("null"));
         }
     }
     else
