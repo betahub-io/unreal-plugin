@@ -114,7 +114,7 @@ void BH_S3Uploader::UploadFileToS3(
                 UploadUrl,
                 Headers,
                 FileData,
-                [this, BaseUrl, ProjectId, IssueId, ApiToken, MediaType, BlobSignedId, OnComplete]
+                [this, BaseUrl, ProjectId, IssueId, ApiToken, MediaEndpoint, BlobSignedId, OnComplete]
                 (bool bS3Success, const FString& S3Error)
                 {
                     if (!bS3Success)
