@@ -4,6 +4,7 @@
 #include "BH_PopupWidget.h"
 #include "BH_PluginSettings.h"
 #include "BH_GameRecorder.h"
+#include "BH_MediaUploadManager.h"
 #include "Json.h"
 #include "Async/Async.h"
 #include "Misc/Paths.h"
@@ -14,6 +15,8 @@
 #include "EngineGlobals.h"
 #include "Engine/Engine.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 
 UBH_BugReport::UBH_BugReport()
 {
@@ -88,6 +91,7 @@ void UBH_BugReport::SubmitReportAsync(
     InitialRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
     InitialRequest->AddField(TEXT("issue[description]"), Description);
     InitialRequest->AddField(TEXT("issue[unformatted_steps_to_reproduce]"), StepsToReproduce);
+    InitialRequest->AddField(TEXT("draft"), TEXT("true")); // Create as draft for media upload
     
     // Handle release information
     // Priority: Parameter values override settings values
@@ -116,16 +120,16 @@ void UBH_BugReport::SubmitReportAsync(
         (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
         // Check if the response is valid before accessing it
-        if (bWasSuccessful && Response.IsValid() && Response->GetResponseCode() == 201)
+        if (bWasSuccessful && Response.IsValid() && (Response->GetResponseCode() == 200 || Response->GetResponseCode() == 201))
         {
-            OnSuccess();
-
-            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-
-            FString ContentAsString = Response->GetContentAsString(); // Get content once
+            FString ContentAsString = Response->GetContentAsString();
             FString IssueId = ParseIssueIdFromResponse(ContentAsString);
+            FString ApiToken = ParseTokenFromResponse(ContentAsString);
+
             if (!IssueId.IsEmpty())
             {
+                UE_LOG(LogBetaHub, Log, TEXT("Draft issue created successfully with ID: %s"), *IssueId);
+
                 // Save the recording
                 FString VideoPath;
                 if (GameRecorder)
@@ -136,39 +140,83 @@ void UBH_BugReport::SubmitReportAsync(
                     }
                     GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
                 }
-                
-                if (!VideoPath.IsEmpty())
-                {
-                    SubmitMedia(Settings, IssueId, TEXT("video_clips"), TEXT("video_clip[video]"), VideoPath, "", TEXT("video/mp4"));
 
-                    // cleanup
-                    if (PlatformFile.FileExists(*VideoPath))
+                FString FormattedIssueId = FString::Printf(TEXT("g-%s"), *IssueId);
+
+                // Use new media upload manager for S3 uploads
+                TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
+
+                BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
+                UploadCompleteDelegate.BindLambda([Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, ScreenshotPath]
+                    (const BH_MediaUploadManager::FMediaUploadResult& Result)
+                {
+                    if (Result.bSuccess)
+                    {
+                        UE_LOG(LogBetaHub, Log, TEXT("Media upload completed successfully"));
+                        UE_LOG(LogBetaHub, Log, TEXT("  - Screenshots: %d"), Result.ScreenshotsUploaded);
+                        UE_LOG(LogBetaHub, Log, TEXT("  - Videos: %d"), Result.VideosUploaded);
+                        UE_LOG(LogBetaHub, Log, TEXT("  - Log files: %d"), Result.LogsUploaded);
+                    }
+                    else if (Result.TotalFilesUploaded > 0)
+                    {
+                        // Partial success
+                        UE_LOG(LogBetaHub, Warning, TEXT("Some media uploads succeeded (%d of attempted)"), Result.TotalFilesUploaded);
+                        for (const FString& Error : Result.Errors)
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("Upload error: %s"), *Error);
+                        }
+                    }
+                    else
+                    {
+                        // All uploads failed
+                        UE_LOG(LogBetaHub, Warning, TEXT("All media uploads failed, publishing issue without media"));
+                    }
+
+                    // Always publish the issue, even if media uploads failed
+                    PublishIssue(Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure);
+
+                    // Cleanup files
+                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+                    if (!VideoPath.IsEmpty() && PlatformFile.FileExists(*VideoPath))
                     {
                         PlatformFile.DeleteFile(*VideoPath);
                     }
-                }
-                if (!ScreenshotPath.IsEmpty() && bIncludeScreenshot)
-                {
-                    SubmitMedia(Settings, IssueId, TEXT("screenshots"), TEXT("screenshot[image]"), ScreenshotPath, "", TEXT("image/png"));
-
-                    // cleanup
-                    if (PlatformFile.FileExists(*ScreenshotPath))
+                    if (!ScreenshotPath.IsEmpty() && PlatformFile.FileExists(*ScreenshotPath))
                     {
                         PlatformFile.DeleteFile(*ScreenshotPath);
                     }
-                }
-                if (!LogFileContents.IsEmpty() && bIncludeLogs)
+                });
+
+                BH_MediaUploadManager::FOnProgressUpdate ProgressDelegate;
+                ProgressDelegate.BindLambda([](const BH_MediaUploadManager::FUploadProgress& Progress)
                 {
-                    SubmitMedia(Settings, IssueId, TEXT("log_files"), TEXT("log_file[contents]"), "", LogFileContents, TEXT("text/plain"));
-                }
+                    UE_LOG(LogBetaHub, Verbose, TEXT("Upload progress: %s (%.1f%%)"),
+                        *Progress.CurrentFile, Progress.ProgressPercent);
+                });
+
+                // Start media uploads using S3 direct upload
+                MediaManager->UploadMediaFiles(
+                    Settings->ApiEndpoint,
+                    Settings->ProjectId,
+                    FormattedIssueId,
+                    ApiToken,
+                    VideoPath,
+                    ScreenshotPath,
+                    LogFileContents,
+                    bIncludeVideo && !VideoPath.IsEmpty(),
+                    bIncludeScreenshot && !ScreenshotPath.IsEmpty(),
+                    bIncludeLogs && !LogFileContents.IsEmpty(),
+                    ProgressDelegate,
+                    UploadCompleteDelegate
+                );
             }
             else
             {
-                 // Log if we couldn't parse the IssueId even on success
-                 UE_LOG(LogBetaHub, Error, TEXT("Successfully submitted bug report but failed to parse Issue ID from response: %s"), *ContentAsString);
-                 // Decide if OnFailure should be called here or if logging is sufficient.
-                 // For now, just logging. If OnFailure is desired, replace the log with:
-                 // OnFailure(FString::Printf(TEXT("Failed to parse Issue ID from success response: %s"), *ContentAsString));
+                // Log if we couldn't parse the IssueId even on success
+                UE_LOG(LogBetaHub, Error, TEXT("Failed to parse Issue ID from response: %s"), *ContentAsString);
+                AsyncTask(ENamedThreads::GameThread, [OnFailure, ContentAsString]() {
+                    OnFailure(FString::Printf(TEXT("Failed to parse Issue ID from response: %s"), *ContentAsString));
+                });
             }
         }
         else
@@ -323,6 +371,102 @@ FString UBH_BugReport::ParseErrorFromResponse(const FString& Response)
         // If it wasn't valid JSON, return the raw response as the error message
         return Response;
     }
+}
+
+FString UBH_BugReport::ParseTokenFromResponse(const FString& Response)
+{
+    TSharedPtr<FJsonObject> JsonObject;
+    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response);
+
+    if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+    {
+        FString Token;
+        // Try to get the "token" field
+        if (JsonObject->TryGetStringField(TEXT("token"), Token))
+        {
+            return Token;
+        }
+        else
+        {
+            UE_LOG(LogBetaHub, Warning, TEXT("JSON response did not contain 'token' field"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("Failed to parse JSON response for Token"));
+    }
+    return FString(); // Return empty string if parsing fails
+}
+
+void UBH_BugReport::PublishIssue(
+    UBH_PluginSettings* Settings,
+    const FString& IssueId,
+    const FString& ApiToken,
+    TFunction<void()> OnSuccess,
+    TFunction<void(const FString&)> OnFailure)
+{
+    if (!Settings)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Settings is null in PublishIssue"));
+        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
+            OnFailure(TEXT("Invalid settings"));
+        });
+        return;
+    }
+
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+    FString Url = Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues/") + IssueId + TEXT("/publish");
+
+    Request->SetURL(Url);
+    Request->SetVerb(TEXT("POST"));
+    Request->SetHeader(TEXT("Accept"), TEXT("application/json"));
+    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+    Request->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *ApiToken));
+    Request->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
+
+    // Create JSON body
+    TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+    JsonObject->SetBoolField(TEXT("email_my_report"), false);
+
+    FString JsonString;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
+    FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+    Request->SetContentAsString(JsonString);
+
+    Request->OnProcessRequestComplete().BindLambda(
+        [OnSuccess, OnFailure](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bWasSuccessful)
+        {
+            if (bWasSuccessful && HttpResponse.IsValid() &&
+                (HttpResponse->GetResponseCode() == 200 || HttpResponse->GetResponseCode() == 201))
+            {
+                UE_LOG(LogBetaHub, Log, TEXT("Issue published successfully"));
+                AsyncTask(ENamedThreads::GameThread, [OnSuccess]() {
+                    OnSuccess();
+                });
+            }
+            else
+            {
+                FString ErrorMessage = TEXT("Failed to publish issue");
+                if (HttpResponse.IsValid())
+                {
+                    ErrorMessage = FString::Printf(TEXT("Failed to publish issue: HTTP %d - %s"),
+                        HttpResponse->GetResponseCode(), *HttpResponse->GetContentAsString());
+                }
+                else if (!bWasSuccessful)
+                {
+                    ErrorMessage = TEXT("Failed to publish issue: Network request failed");
+                }
+
+                UE_LOG(LogBetaHub, Error, TEXT("%s"), *ErrorMessage);
+                AsyncTask(ENamedThreads::GameThread, [OnFailure, ErrorMessage]() {
+                    OnFailure(ErrorMessage);
+                });
+            }
+        }
+    );
+
+    Request->SetTimeout(30.0f);
+    Request->ProcessRequest();
 }
 
 void UBH_BugReport::ShowPopup(const FString& Message)
