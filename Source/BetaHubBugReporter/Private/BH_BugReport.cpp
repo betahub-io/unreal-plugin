@@ -147,7 +147,7 @@ void UBH_BugReport::SubmitReportAsync(
                 TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
 
                 BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
-                UploadCompleteDelegate.BindLambda([Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, ScreenshotPath]
+                UploadCompleteDelegate.BindLambda([Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, ScreenshotPath, MediaManager]
                     (const BH_MediaUploadManager::FMediaUploadResult& Result)
                 {
                     if (Result.bSuccess)
