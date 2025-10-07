@@ -85,5 +85,15 @@ private:
 
     FString ParseIssueIdFromResponse(const FString& Response);
     FString ParseErrorFromResponse(const FString& Response);
+    FString ParseTokenFromResponse(const FString& Response);
     void ShowPopup(const FString& Message);
+
+    // New method for publishing draft issue
+    static void PublishIssue(
+        UBH_PluginSettings* Settings,
+        const FString& IssueId,
+        const FString& ApiToken,
+        TFunction<void()> OnSuccess,
+        TFunction<void(const FString&)> OnFailure
+    );
 };
