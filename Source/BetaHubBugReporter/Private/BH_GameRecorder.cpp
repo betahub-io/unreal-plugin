@@ -322,7 +322,9 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& 
                 TextureCreateDesc.SetInitialState(ERHIAccess::CPURead);
                 TextureCreateDesc.SetFlags(ETextureCreateFlags::CPUReadback);
 
-#if ENGINE_MINOR_VERSION >= 4
+#if ENGINE_MINOR_VERSION >= 7
+                StagingTexture = RHICmdList.CreateTexture(TextureCreateDesc);
+#elif ENGINE_MINOR_VERSION >= 4
                 StagingTexture = GDynamicRHI->RHICreateTexture(RHICmdList, TextureCreateDesc);
 #else
                 StagingTexture = RHICreateTexture(TextureCreateDesc);
