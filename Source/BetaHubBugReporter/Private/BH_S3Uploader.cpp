@@ -26,6 +26,7 @@ void BH_S3Uploader::UploadFileToS3(
     const FString& MediaEndpoint,
     const FString& FilePath,
     const FString& ContentType,
+    const FString& CustomName,
     const FOnUploadComplete& OnComplete)
 {
     // Read file data
@@ -60,7 +61,7 @@ void BH_S3Uploader::UploadFileToS3(
         FileSize,
         Checksum,
         ContentType,
-        [this, BaseUrl, ProjectId, IssueId, ApiToken, MediaEndpoint, FileData, OnComplete]
+        [this, BaseUrl, ProjectId, IssueId, ApiToken, MediaEndpoint, FileData, CustomName, OnComplete]
         (bool bSuccess, const FString& ErrorMsg, const FString& BlobSignedId, TSharedPtr<FJsonObject> PresignedData)
         {
             if (!bSuccess)
@@ -114,7 +115,7 @@ void BH_S3Uploader::UploadFileToS3(
                 UploadUrl,
                 Headers,
                 FileData,
-                [this, BaseUrl, ProjectId, IssueId, ApiToken, MediaEndpoint, BlobSignedId, OnComplete]
+                [this, BaseUrl, ProjectId, IssueId, ApiToken, MediaEndpoint, BlobSignedId, CustomName, OnComplete]
                 (bool bS3Success, const FString& S3Error)
                 {
                     if (!bS3Success)
@@ -134,6 +135,7 @@ void BH_S3Uploader::UploadFileToS3(
                         ConfirmEndpoint,
                         ApiToken,
                         BlobSignedId,
+                        CustomName,
                         [OnComplete, BlobSignedId](bool bConfirmSuccess, const FString& ConfirmError)
                         {
                             FUploadResult Result;
@@ -278,6 +280,7 @@ void BH_S3Uploader::ConfirmUpload(
     const FString& Endpoint,
     const FString& ApiToken,
     const FString& BlobSignedId,
+    const FString& CustomName,
     TFunction<void(bool, const FString&)> OnComplete)
 {
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
@@ -290,6 +293,12 @@ void BH_S3Uploader::ConfirmUpload(
     // Build JSON request body
     TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
     JsonObject->SetStringField(TEXT("blob_signed_id"), BlobSignedId);
+
+    // Add custom name if provided (only works for log_files endpoint)
+    if (!CustomName.IsEmpty())
+    {
+        JsonObject->SetStringField(TEXT("name"), CustomName);
+    }
 
     FString JsonString;
     TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);

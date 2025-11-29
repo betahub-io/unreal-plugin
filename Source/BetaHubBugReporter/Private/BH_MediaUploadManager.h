@@ -54,6 +54,7 @@ public:
      * @param VideoPaths            Array of video file paths
      * @param ScreenshotPaths       Array of screenshot file paths
      * @param LogFileContents       Array of log file contents as strings
+     * @param LogFileNames          Array of custom names for log files (optional, matches LogFileContents indices)
      * @param OnProgress            Progress callback
      * @param OnComplete            Completion callback
      */
@@ -65,6 +66,7 @@ public:
         const TArray<FString>& VideoPaths,
         const TArray<FString>& ScreenshotPaths,
         const TArray<FString>& LogFileContents,
+        const TArray<FString>& LogFileNames,
         const FOnProgressUpdate& OnProgress,
         const FOnUploadComplete& OnComplete
     );
@@ -135,6 +137,7 @@ private:
         FString FilePath;
         FString ContentType;
         FString Description;        // Human-readable description like "Screenshot 2 of 5"
+        FString CustomName;         // Optional custom display name for BetaHub (only for log files)
         bool bIsTempFile;
     };
 

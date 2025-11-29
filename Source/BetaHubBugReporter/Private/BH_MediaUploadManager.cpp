@@ -27,6 +27,7 @@ void BH_MediaUploadManager::UploadMediaFiles(
     const TArray<FString>& VideoPaths,
     const TArray<FString>& ScreenshotPaths,
     const TArray<FString>& LogFileContents,
+    const TArray<FString>& LogFileNames,
     const FOnProgressUpdate& OnProgress,
     const FOnUploadComplete& OnComplete)
 {
@@ -59,6 +60,7 @@ void BH_MediaUploadManager::UploadMediaFiles(
             Task.MediaType = EBH_MediaType::Video;
             Task.FilePath = VideoPath;
             Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::Video, VideoPath);
+            Task.CustomName = TEXT("");  // Videos don't support custom names
 
             if (VideoPaths.Num() > 1)
             {
@@ -89,6 +91,7 @@ void BH_MediaUploadManager::UploadMediaFiles(
             Task.MediaType = EBH_MediaType::Screenshot;
             Task.FilePath = ScreenshotPath;
             Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::Screenshot, ScreenshotPath);
+            Task.CustomName = TEXT("");  // Screenshots don't support custom names
 
             if (ScreenshotPaths.Num() > 1)
             {
@@ -111,12 +114,13 @@ void BH_MediaUploadManager::UploadMediaFiles(
 
     // Build upload queue for log files (create temp files from content)
     int32 LogIndex = 1;
-    for (const FString& LogContent : LogFileContents)
+    for (int32 i = 0; i < LogFileContents.Num(); i++)
     {
+        const FString& LogContent = LogFileContents[i];
         if (!LogContent.IsEmpty())
         {
-            // Create temporary file for log contents
-            FString TempLogPath = CreateTempFile(LogContent, TEXT("log"), LogIndex - 1);
+            // Create temporary file for log contents (GUID name for local safety)
+            FString TempLogPath = CreateTempFile(LogContent, TEXT("log"), i);
             if (!TempLogPath.IsEmpty())
             {
                 FUploadTask Task;
@@ -124,13 +128,23 @@ void BH_MediaUploadManager::UploadMediaFiles(
                 Task.FilePath = TempLogPath;
                 Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::LogFile, TempLogPath);
 
-                if (LogFileContents.Num() > 1)
+                // Use custom name if provided, otherwise use default description
+                if (LogFileNames.IsValidIndex(i) && !LogFileNames[i].IsEmpty())
                 {
-                    Task.Description = FString::Printf(TEXT("Log file %d of %d"), LogIndex, LogFileContents.Num());
+                    Task.CustomName = LogFileNames[i];
+                    Task.Description = LogFileNames[i];
                 }
                 else
                 {
-                    Task.Description = TEXT("log file");
+                    Task.CustomName = TEXT("");  // No custom name
+                    if (LogFileContents.Num() > 1)
+                    {
+                        Task.Description = FString::Printf(TEXT("Log file %d of %d"), LogIndex, LogFileContents.Num());
+                    }
+                    else
+                    {
+                        Task.Description = TEXT("log file");
+                    }
                 }
 
                 Task.bIsTempFile = true;
@@ -194,7 +208,7 @@ void BH_MediaUploadManager::UploadMediaFiles(
         LogContents.Add(LogFileContents);
     }
 
-    // Call the new array-based method
+    // Call the new array-based method (with empty LogFileNames for backward compatibility)
     UploadMediaFiles(
         BaseUrl,
         ProjectId,
@@ -203,6 +217,7 @@ void BH_MediaUploadManager::UploadMediaFiles(
         VideoPaths,
         ScreenshotPaths,
         LogContents,
+        TArray<FString>(),  // Empty LogFileNames - no custom names
         OnProgress,
         OnComplete
     );
@@ -290,6 +305,7 @@ void BH_MediaUploadManager::ProcessNextUpload()
         MediaEndpoint,
         Task.FilePath,
         Task.ContentType,
+        Task.CustomName,
         UploadDelegate
     );
 }
