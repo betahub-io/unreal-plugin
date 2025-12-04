@@ -129,14 +129,14 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                 {
                     // GameRecorder inherits from FTickableGameObject and is not thread-safe
                     // Execute on game thread to avoid race conditions
-                    // Use TSharedPtr to safely pass data between threads
-                    TSharedPtr<FString> VideoPathPtr = MakeShared<FString>();
-                    AsyncTask(ENamedThreads::GameThread, [GameRecorder, Settings, VideoPathPtr]() {
-                        *VideoPathPtr = GameRecorder->SaveRecording();
+                    TFuture<FString> VideoPathFuture = AsyncTask(ENamedThreads::GameThread, [GameRecorder, Settings]() -> FString {
+                        FString RecordedPath = GameRecorder->SaveRecording();
                         GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
-                    }).Wait();
+                        return RecordedPath;
+                    });
 
-                    VideoPath = *VideoPathPtr;
+                    // Block until game thread task completes (safe since we're on HTTP thread)
+                    VideoPath = VideoPathFuture.Get();
 
                     if (!VideoPath.IsEmpty())
                     {
