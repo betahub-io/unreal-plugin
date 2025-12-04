@@ -193,15 +193,12 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                 // Use new media upload manager for S3 uploads
                 TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
 
-                // Capture weak pointer for Settings to ensure lifetime safety in nested async callback
-                TWeakObjectPtr<UBH_PluginSettings> WeakSettingsForUpload = Settings;
-
                 BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
-                UploadCompleteDelegate.BindLambda([WeakSettingsForUpload, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, MediaManager]
+                UploadCompleteDelegate.BindLambda([WeakSettings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, MediaManager]
                     (const BH_MediaUploadManager::FMediaUploadResult& Result)
                 {
-                    // Validate Settings is still alive
-                    if (!WeakSettingsForUpload.IsValid())
+                    // Re-validate Settings is still alive in nested callback
+                    if (!WeakSettings.IsValid())
                     {
                         UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed during media upload"));
                         AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
@@ -210,7 +207,7 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                         return;
                     }
 
-                    UBH_PluginSettings* Settings = WeakSettingsForUpload.Get();
+                    UBH_PluginSettings* Settings = WeakSettings.Get();
                     if (!Settings)
                     {
                         UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid during upload completion"));
