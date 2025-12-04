@@ -116,21 +116,6 @@ private:
         const FString& ReleaseLabel = TEXT(""),
         const FString& ReleaseId = TEXT(""));
 
-    void SubmitReportAsync(
-        UBH_PluginSettings* Settings,
-        UBH_GameRecorder* GameRecorder,
-        const FString& Description,
-        const FString& StepsToReproduce,
-        const FString& ScreenshotPath,
-        const FString& LogFileContents,
-        bool bIncludeVideo,
-        bool bIncludeLogs,
-        bool bIncludeScreenshot,
-        TFunction<void()> OnSuccess,
-        TFunction<void(const FString&)> OnFailure,
-        const FString& ReleaseLabel = TEXT(""),
-        const FString& ReleaseId = TEXT(""));
-
     void SubmitMedia(
         UBH_PluginSettings* Settings,
         const FString& IssueId,

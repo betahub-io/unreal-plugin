@@ -60,6 +60,9 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
     if (!Settings)
     {
         UE_LOG(LogBetaHub, Error, TEXT("Settings is null"));
+        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
+            OnFailure(TEXT("Invalid settings"));
+        });
         return;
     }
 
@@ -103,11 +106,38 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
 
     InitialRequest->FinalizeFormData();
 
+    // Use weak pointers for UObjects to prevent crashes if garbage collected during async operation
+    TWeakObjectPtr<UBH_PluginSettings> WeakSettings = Settings;
+    TWeakObjectPtr<UBH_GameRecorder> WeakGameRecorder = GameRecorder;
+
     InitialRequest->ProcessRequest(
-        [Settings, GameRecorder, Videos, Screenshots, Logs, InitialRequest,
+        [WeakSettings, WeakGameRecorder, Videos, Screenshots, Logs, InitialRequest,
         OnSuccess, OnFailure]
         (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
+        // Validate UObject pointers are still valid
+        if (!WeakSettings.IsValid())
+        {
+            UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed during async operation"));
+            AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
+                OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+            });
+            return;
+        }
+
+        UBH_PluginSettings* Settings = WeakSettings.Get();
+        UBH_GameRecorder* GameRecorder = WeakGameRecorder.Get(); // May be null if destroyed
+
+        // Double-check Settings is valid (IsValid can return true for pending kill objects)
+        if (!Settings)
+        {
+            UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid after weak pointer validation"));
+            AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
+                OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+            });
+            return;
+        }
+
         if (bWasSuccessful && Response.IsValid() && (Response->GetResponseCode() == 200 || Response->GetResponseCode() == 201))
         {
             FString ContentAsString = Response->GetContentAsString();
@@ -129,7 +159,17 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                 {
                     // GameRecorder inherits from FTickableGameObject and is not thread-safe
                     // Execute on game thread to avoid race conditions
-                    TFuture<FString> VideoPathFuture = AsyncTask(ENamedThreads::GameThread, [GameRecorder, Settings]() -> FString {
+                    // Use Async (not AsyncTask) to get TFuture return value
+                    TFuture<FString> VideoPathFuture = Async(EAsyncExecution::TaskGraphMainThread, [WeakGameRecorder, WeakSettings]() -> FString {
+                        // Re-validate weak pointers inside game thread task
+                        UBH_GameRecorder* GameRecorder = WeakGameRecorder.Get();
+                        UBH_PluginSettings* Settings = WeakSettings.Get();
+
+                        if (!GameRecorder || !Settings)
+                        {
+                            return TEXT("");  // Objects destroyed during async operation
+                        }
+
                         FString RecordedPath = GameRecorder->SaveRecording();
                         GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
                         return RecordedPath;
@@ -153,10 +193,33 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                 // Use new media upload manager for S3 uploads
                 TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
 
+                // Capture weak pointer for Settings to ensure lifetime safety in nested async callback
+                TWeakObjectPtr<UBH_PluginSettings> WeakSettingsForUpload = Settings;
+
                 BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
-                UploadCompleteDelegate.BindLambda([Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, MediaManager]
+                UploadCompleteDelegate.BindLambda([WeakSettingsForUpload, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, MediaManager]
                     (const BH_MediaUploadManager::FMediaUploadResult& Result)
                 {
+                    // Validate Settings is still alive
+                    if (!WeakSettingsForUpload.IsValid())
+                    {
+                        UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed during media upload"));
+                        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
+                            OnFailure(TEXT("Operation cancelled - settings destroyed during upload"));
+                        });
+                        return;
+                    }
+
+                    UBH_PluginSettings* Settings = WeakSettingsForUpload.Get();
+                    if (!Settings)
+                    {
+                        UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid during upload completion"));
+                        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
+                            OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+                        });
+                        return;
+                    }
+
                     if (Result.bSuccess)
                     {
                         UE_LOG(LogBetaHub, Log, TEXT("Media upload completed successfully"));
@@ -182,7 +245,7 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                     // Always publish the issue, even if media uploads failed
                     PublishIssue(Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure);
 
-                    // Cleanup auto-recorded video file
+                    // Cleanup auto-recorded video file (auto-generated by GameRecorder)
                     if (!VideoPath.IsEmpty())
                     {
                         IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -261,207 +324,72 @@ void UBH_BugReport::SubmitReport(
     const FString& ReleaseId
 )
 {
-    Async(EAsyncExecution::Thread,
-        [this,
-        Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
-        bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
-        OnSuccess, OnFailure, ReleaseLabel, ReleaseId]()
-    {
-        SubmitReportAsync(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
-            bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
-            OnSuccess, OnFailure, ReleaseLabel, ReleaseId);
-    });
-}
+    // Convert legacy parameters to new FBH_MediaFile struct format
+    TArray<FBH_MediaFile> Videos;
+    TArray<FBH_MediaFile> Screenshots;
+    TArray<FBH_MediaFile> Logs;
 
-void UBH_BugReport::SubmitReportAsync(
-    UBH_PluginSettings* Settings,
-    UBH_GameRecorder* GameRecorder,
-    const FString& Description,
-    const FString& StepsToReproduce,
-    const FString& ScreenshotPath,
-    const FString& LogFileContents,
-    bool bIncludeVideo,
-    bool bIncludeLogs,
-    bool bIncludeScreenshot,
-    TFunction<void()> OnSuccess,
-    TFunction<void(const FString&)> OnFailure,
-    const FString& ReleaseLabel,
-    const FString& ReleaseId
-    )
-{
-    if (!Settings)
+    // Note: Video from GameRecorder is handled internally by SubmitReportWithMedia
+    // so we don't add it here - just pass bIncludeVideo via GameRecorder parameter
+
+    if (bIncludeScreenshot && !ScreenshotPath.IsEmpty())
     {
-        UE_LOG(LogBetaHub, Error, TEXT("Settings is null"));
-        return;
+        FBH_MediaFile Screenshot;
+        Screenshot.FilePath = ScreenshotPath;
+        Screenshots.Add(Screenshot);
     }
 
-    // Submit the initial bug report without media
-    TSharedPtr<BH_HttpRequest> InitialRequest = MakeShared<BH_HttpRequest>();
-    InitialRequest->SetURL(Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues.json"));
-    InitialRequest->SetVerb("POST");
-    
-    // Use token-based authentication if available
-    if (!Settings->ProjectToken.IsEmpty())
+    if (bIncludeLogs && !LogFileContents.IsEmpty())
     {
-        InitialRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
+        FBH_MediaFile Log;
+        Log.Content = LogFileContents;
+        Logs.Add(Log);
     }
-    else
-    {
-        InitialRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
-    }
-    
-    InitialRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
-    InitialRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
-    InitialRequest->AddField(TEXT("issue[description]"), Description);
-    InitialRequest->AddField(TEXT("issue[unformatted_steps_to_reproduce]"), StepsToReproduce);
-    InitialRequest->AddField(TEXT("draft"), TEXT("true")); // Create as draft for media upload
-    
-    // Handle release information
-    // Priority: Parameter values override settings values
-    FString FinalReleaseLabel = ReleaseLabel;
-    if (FinalReleaseLabel.IsEmpty() && !Settings->ReleaseLabel.IsEmpty())
-    {
-        FinalReleaseLabel = Settings->ReleaseLabel;
-    }
-    
-    // Only set one of release_label or release_id, with release_id taking precedence if both are specified
-    if (!ReleaseId.IsEmpty())
-    {
-        InitialRequest->AddField(TEXT("issue[release_id]"), ReleaseId);
-    }
-    else if (!FinalReleaseLabel.IsEmpty())
-    {
-        InitialRequest->AddField(TEXT("issue[release_label]"), FinalReleaseLabel);
-    }
-    
-    InitialRequest->FinalizeFormData();
 
-    InitialRequest->ProcessRequest(
-        [this, Settings, GameRecorder, ScreenshotPath, LogFileContents, InitialRequest,
-        bIncludeVideo, bIncludeLogs, bIncludeScreenshot,
-        OnSuccess, OnFailure]
-        (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
-    {
-        // Check if the response is valid before accessing it
-        if (bWasSuccessful && Response.IsValid() && (Response->GetResponseCode() == 200 || Response->GetResponseCode() == 201))
+    // Only pass GameRecorder if bIncludeVideo is true
+    UBH_GameRecorder* RecorderToPass = (bIncludeVideo && GameRecorder) ? GameRecorder : nullptr;
+
+    // Wrap callbacks to handle screenshot cleanup (legacy API behavior)
+    // Screenshot files are auto-generated by GameRecorder/widget and must be cleaned up
+    TFunction<void()> WrappedOnSuccess = [OnSuccess, ScreenshotPath]() {
+        // Cleanup screenshot file before calling user callback
+        if (!ScreenshotPath.IsEmpty())
         {
-            FString ContentAsString = Response->GetContentAsString();
-            FString IssueId = UBH_BugReport::ParseIssueIdFromResponse(ContentAsString);
-            FString ApiToken = UBH_BugReport::ParseTokenFromResponse(ContentAsString);
-
-            if (!IssueId.IsEmpty())
+            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+            if (PlatformFile.FileExists(*ScreenshotPath))
             {
-                UE_LOG(LogBetaHub, Log, TEXT("Draft issue created successfully with ID: %s"), *IssueId);
-
-                // Save the recording
-                FString VideoPath;
-                if (GameRecorder)
-                {
-                    if (bIncludeVideo)
-                    {
-                        VideoPath = GameRecorder->SaveRecording();
-                    }
-                    GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
-                }
-
-                FString FormattedIssueId = FString::Printf(TEXT("g-%s"), *IssueId);
-
-                // Use new media upload manager for S3 uploads
-                TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
-
-                BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
-                UploadCompleteDelegate.BindLambda([Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, ScreenshotPath, MediaManager]
-                    (const BH_MediaUploadManager::FMediaUploadResult& Result)
-                {
-                    if (Result.bSuccess)
-                    {
-                        UE_LOG(LogBetaHub, Log, TEXT("Media upload completed successfully"));
-                        UE_LOG(LogBetaHub, Log, TEXT("  - Screenshots: %d"), Result.ScreenshotsUploaded);
-                        UE_LOG(LogBetaHub, Log, TEXT("  - Videos: %d"), Result.VideosUploaded);
-                        UE_LOG(LogBetaHub, Log, TEXT("  - Log files: %d"), Result.LogsUploaded);
-                    }
-                    else if (Result.TotalFilesUploaded > 0)
-                    {
-                        // Partial success
-                        UE_LOG(LogBetaHub, Warning, TEXT("Some media uploads succeeded (%d of attempted)"), Result.TotalFilesUploaded);
-                        for (const FString& Error : Result.Errors)
-                        {
-                            UE_LOG(LogBetaHub, Warning, TEXT("Upload error: %s"), *Error);
-                        }
-                    }
-                    else
-                    {
-                        // All uploads failed
-                        UE_LOG(LogBetaHub, Warning, TEXT("All media uploads failed, publishing issue without media"));
-                    }
-
-                    // Always publish the issue, even if media uploads failed
-                    PublishIssue(Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure);
-
-                    // Cleanup files
-                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-                    if (!VideoPath.IsEmpty() && PlatformFile.FileExists(*VideoPath))
-                    {
-                        PlatformFile.DeleteFile(*VideoPath);
-                    }
-                    if (!ScreenshotPath.IsEmpty() && PlatformFile.FileExists(*ScreenshotPath))
-                    {
-                        PlatformFile.DeleteFile(*ScreenshotPath);
-                    }
-                });
-
-                BH_MediaUploadManager::FOnProgressUpdate ProgressDelegate;
-                ProgressDelegate.BindLambda([](const BH_MediaUploadManager::FUploadProgress& Progress)
-                {
-                    UE_LOG(LogBetaHub, Verbose, TEXT("Upload progress: %s (%.1f%%)"),
-                        *Progress.CurrentFile, Progress.ProgressPercent);
-                });
-
-                // Start media uploads using S3 direct upload
-                MediaManager->UploadMediaFiles(
-                    Settings->ApiEndpoint,
-                    Settings->ProjectId,
-                    FormattedIssueId,
-                    ApiToken,
-                    VideoPath,
-                    ScreenshotPath,
-                    LogFileContents,
-                    bIncludeVideo && !VideoPath.IsEmpty(),
-                    bIncludeScreenshot && !ScreenshotPath.IsEmpty(),
-                    bIncludeLogs && !LogFileContents.IsEmpty(),
-                    ProgressDelegate,
-                    UploadCompleteDelegate
-                );
-            }
-            else
-            {
-                // Log if we couldn't parse the IssueId even on success
-                UE_LOG(LogBetaHub, Error, TEXT("Failed to parse Issue ID from response: %s"), *ContentAsString);
-                AsyncTask(ENamedThreads::GameThread, [OnFailure, ContentAsString]() {
-                    OnFailure(FString::Printf(TEXT("Failed to parse Issue ID from response: %s"), *ContentAsString));
-                });
+                PlatformFile.DeleteFile(*ScreenshotPath);
             }
         }
-        else
-        {
-            // Handle failure case, also checking Response validity
-            FString ErrorMessage = TEXT("Unknown error submitting bug report.");
-            FString ResponseContentForLog = TEXT("No response content available.");
-            if (Response.IsValid())
-            {
-                ResponseContentForLog = Response->GetContentAsString();
-                ErrorMessage = UBH_BugReport::ParseErrorFromResponse(ResponseContentForLog);
-            }
-            else if (!bWasSuccessful)
-            {
-                 ErrorMessage = TEXT("HTTP request failed (bWasSuccessful is false).");
-                 ResponseContentForLog = ErrorMessage; // Use the error message for logging content
-            }
+        OnSuccess();
+    };
 
-            UE_LOG(LogBetaHub, Error, TEXT("Failed to submit bug report: %s"), *ResponseContentForLog);
-            OnFailure(ErrorMessage); // Call OnFailure with the parsed or generated error message
+    TFunction<void(const FString&)> WrappedOnFailure = [OnFailure, ScreenshotPath](const FString& Error) {
+        // Cleanup screenshot file even on failure
+        if (!ScreenshotPath.IsEmpty())
+        {
+            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+            if (PlatformFile.FileExists(*ScreenshotPath))
+            {
+                PlatformFile.DeleteFile(*ScreenshotPath);
+            }
         }
-    });
+        OnFailure(Error);
+    };
+
+    SubmitReportWithMedia(
+        Settings,
+        RecorderToPass,
+        Description,
+        StepsToReproduce,
+        Videos,
+        Screenshots,
+        Logs,
+        WrappedOnSuccess,
+        WrappedOnFailure,
+        ReleaseLabel,
+        ReleaseId
+    );
 }
 
 void UBH_BugReport::SubmitMedia(
