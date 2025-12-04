@@ -45,7 +45,34 @@ public:
     DECLARE_DELEGATE_OneParam(FOnUploadComplete, const FMediaUploadResult&);
 
     /**
+     * Upload multiple media files sequentially with custom names (recommended)
+     *
+     * @param BaseUrl               BetaHub API base URL
+     * @param ProjectId             Project identifier
+     * @param IssueId               Issue ID (with g- prefix)
+     * @param ApiToken              JWT token from draft issue
+     * @param Videos                Array of video files (can be file paths or content)
+     * @param Screenshots           Array of screenshot files (can be file paths or content)
+     * @param Logs                  Array of log files (can be file paths or content)
+     * @param OnProgress            Progress callback
+     * @param OnComplete            Completion callback
+     */
+    void UploadMediaFiles(
+        const FString& BaseUrl,
+        const FString& ProjectId,
+        const FString& IssueId,
+        const FString& ApiToken,
+        const TArray<FBH_MediaFile>& Videos,
+        const TArray<FBH_MediaFile>& Screenshots,
+        const TArray<FBH_MediaFile>& Logs,
+        const FOnProgressUpdate& OnProgress,
+        const FOnUploadComplete& OnComplete
+    );
+
+    /**
      * Upload multiple media files sequentially (supports multiple files per type)
+     *
+     * @deprecated Use the overload accepting TArray<FBH_MediaFile> instead for custom file names
      *
      * @param BaseUrl               BetaHub API base URL
      * @param ProjectId             Project identifier
@@ -57,6 +84,7 @@ public:
      * @param OnProgress            Progress callback
      * @param OnComplete            Completion callback
      */
+    UE_DEPRECATED(5.4, "Use the UploadMediaFiles overload accepting TArray<FBH_MediaFile> instead for custom file names")
     void UploadMediaFiles(
         const FString& BaseUrl,
         const FString& ProjectId,
@@ -117,8 +145,12 @@ private:
 
     /**
      * Create a temporary file from string contents (for log files)
+     * @param Contents      String content to write to file
+     * @param Extension     File extension (e.g., "log", "txt")
+     * @param Index         Numeric index for unique filename generation
+     * @param CustomName    Optional custom name to use for the filename
      */
-    FString CreateTempFile(const FString& Contents, const FString& Extension, int32 Index = 0);
+    FString CreateTempFile(const FString& Contents, const FString& Extension, int32 Index = 0, const FString& CustomName = TEXT(""));
 
     /**
      * Clean up temporary files
@@ -135,6 +167,7 @@ private:
         FString FilePath;
         FString ContentType;
         FString Description;        // Human-readable description like "Screenshot 2 of 5"
+        FString CustomName;         // Optional custom display name for BetaHub
         bool bIsTempFile;
     };
 

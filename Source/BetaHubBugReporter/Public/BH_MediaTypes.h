@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BH_MediaTypes.generated.h"
 
 /**
  * Enum representing different types of media that can be uploaded to BetaHub
@@ -11,6 +12,50 @@ enum class EBH_MediaType : uint8
     Screenshot      UMETA(DisplayName = "Screenshot"),
     Video          UMETA(DisplayName = "Video"),
     LogFile        UMETA(DisplayName = "Log File"),
+};
+
+/**
+ * Represents a media file that can be uploaded to BetaHub
+ * Can represent either a file on disk or string content
+ */
+USTRUCT(BlueprintType)
+struct BETAHUBBUGREPORTER_API FBH_MediaFile
+{
+    GENERATED_BODY()
+
+    /**
+     * Path to the file on disk (empty if using Content)
+     */
+    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
+    FString FilePath;
+
+    /**
+     * String content to upload (empty if using FilePath)
+     * Useful for log files that are generated at runtime
+     */
+    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
+    FString Content;
+
+    /**
+     * Optional custom display name for the file
+     * If empty, a default name will be generated
+     */
+    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
+    FString Name;
+
+    FBH_MediaFile()
+        : FilePath(TEXT(""))
+        , Content(TEXT(""))
+        , Name(TEXT(""))
+    {
+    }
+
+    FBH_MediaFile(const FString& InFilePath, const FString& InName = TEXT(""))
+        : FilePath(InFilePath)
+        , Content(TEXT(""))
+        , Name(InName)
+    {
+    }
 };
 
 /**

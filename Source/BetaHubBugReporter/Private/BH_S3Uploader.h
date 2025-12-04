@@ -40,6 +40,7 @@ public:
      * @param MediaEndpoint     API endpoint string: "screenshots", "video_clips", or "log_files"
      * @param FilePath          Path to the file to upload
      * @param ContentType       MIME type of the file
+     * @param CustomName        Optional custom display name for the file
      * @param OnComplete        Callback when upload completes
      */
     void UploadFileToS3(
@@ -50,6 +51,7 @@ public:
         const FString& MediaEndpoint,
         const FString& FilePath,
         const FString& ContentType,
+        const FString& CustomName,
         const FOnUploadComplete& OnComplete
     );
 
@@ -84,6 +86,7 @@ private:
         const FString& Endpoint,
         const FString& ApiToken,
         const FString& BlobSignedId,
+        const FString& CustomName,
         TFunction<void(bool, const FString&)> OnComplete
     );
 

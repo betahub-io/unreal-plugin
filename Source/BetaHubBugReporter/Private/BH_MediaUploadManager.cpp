@@ -24,9 +24,9 @@ void BH_MediaUploadManager::UploadMediaFiles(
     const FString& ProjectId,
     const FString& IssueId,
     const FString& ApiToken,
-    const TArray<FString>& VideoPaths,
-    const TArray<FString>& ScreenshotPaths,
-    const TArray<FString>& LogFileContents,
+    const TArray<FBH_MediaFile>& Videos,
+    const TArray<FBH_MediaFile>& Screenshots,
+    const TArray<FBH_MediaFile>& Logs,
     const FOnProgressUpdate& OnProgress,
     const FOnUploadComplete& OnComplete)
 {
@@ -51,94 +51,205 @@ void BH_MediaUploadManager::UploadMediaFiles(
 
     // Build upload queue for videos
     int32 VideoIndex = 1;
-    for (const FString& VideoPath : VideoPaths)
+    for (const FBH_MediaFile& Video : Videos)
     {
-        if (!VideoPath.IsEmpty() && FPaths::FileExists(VideoPath))
+        // Validate: exactly one of FilePath or Content must be set
+        bool bHasFilePath = !Video.FilePath.IsEmpty();
+        bool bHasContent = !Video.Content.IsEmpty();
+
+        if (!bHasFilePath && !bHasContent)
         {
-            FUploadTask Task;
-            Task.MediaType = EBH_MediaType::Video;
-            Task.FilePath = VideoPath;
-            Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::Video, VideoPath);
+            UE_LOG(LogBetaHub, Warning, TEXT("Video entry skipped: both FilePath and Content are empty"));
+            continue;
+        }
 
-            if (VideoPaths.Num() > 1)
+        if (bHasFilePath && bHasContent)
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Video entry skipped: both FilePath and Content are set (only one allowed)"));
+            continue;
+        }
+
+        FUploadTask Task;
+        Task.MediaType = EBH_MediaType::Video;
+        Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::Video, Video.FilePath);
+        Task.CustomName = Video.Name;
+
+        if (bHasFilePath)
+        {
+            // File path provided - check if it exists
+            if (!FPaths::FileExists(Video.FilePath))
             {
-                Task.Description = FString::Printf(TEXT("Video %d of %d"), VideoIndex, VideoPaths.Num());
-            }
-            else
-            {
-                Task.Description = TEXT("video recording");
+                UE_LOG(LogBetaHub, Warning, TEXT("Video file not found, skipping: %s"), *Video.FilePath);
+                continue;
             }
 
+            Task.FilePath = Video.FilePath;
             Task.bIsTempFile = false;
-            UploadQueue.Add(Task);
-            VideoIndex++;
         }
-        else if (!VideoPath.IsEmpty())
+        else
         {
-            UE_LOG(LogBetaHub, Warning, TEXT("Video file not found: %s"), *VideoPath);
+            // Content provided - create temp file
+            UE_LOG(LogBetaHub, Error, TEXT("Video entry skipped: Content mode not supported for videos (use FilePath instead)"));
+            continue;
         }
+
+        if (Videos.Num() > 1)
+        {
+            Task.Description = FString::Printf(TEXT("Video %d of %d"), VideoIndex, Videos.Num());
+        }
+        else
+        {
+            Task.Description = TEXT("video recording");
+        }
+
+        UploadQueue.Add(Task);
+        VideoIndex++;
     }
 
     // Build upload queue for screenshots
     int32 ScreenshotIndex = 1;
-    for (const FString& ScreenshotPath : ScreenshotPaths)
+    for (const FBH_MediaFile& Screenshot : Screenshots)
     {
-        if (!ScreenshotPath.IsEmpty() && FPaths::FileExists(ScreenshotPath))
+        // Validate: exactly one of FilePath or Content must be set
+        bool bHasFilePath = !Screenshot.FilePath.IsEmpty();
+        bool bHasContent = !Screenshot.Content.IsEmpty();
+
+        if (!bHasFilePath && !bHasContent)
         {
-            FUploadTask Task;
-            Task.MediaType = EBH_MediaType::Screenshot;
-            Task.FilePath = ScreenshotPath;
-            Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::Screenshot, ScreenshotPath);
+            UE_LOG(LogBetaHub, Warning, TEXT("Screenshot entry skipped: both FilePath and Content are empty"));
+            continue;
+        }
 
-            if (ScreenshotPaths.Num() > 1)
+        if (bHasFilePath && bHasContent)
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Screenshot entry skipped: both FilePath and Content are set (only one allowed)"));
+            continue;
+        }
+
+        FUploadTask Task;
+        Task.MediaType = EBH_MediaType::Screenshot;
+        Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::Screenshot, Screenshot.FilePath);
+        Task.CustomName = Screenshot.Name;
+
+        if (bHasFilePath)
+        {
+            // File path provided - check if it exists
+            if (!FPaths::FileExists(Screenshot.FilePath))
             {
-                Task.Description = FString::Printf(TEXT("Screenshot %d of %d"), ScreenshotIndex, ScreenshotPaths.Num());
-            }
-            else
-            {
-                Task.Description = TEXT("screenshot");
+                UE_LOG(LogBetaHub, Warning, TEXT("Screenshot file not found, skipping: %s"), *Screenshot.FilePath);
+                continue;
             }
 
+            Task.FilePath = Screenshot.FilePath;
             Task.bIsTempFile = false;
-            UploadQueue.Add(Task);
-            ScreenshotIndex++;
         }
-        else if (!ScreenshotPath.IsEmpty())
+        else
         {
-            UE_LOG(LogBetaHub, Warning, TEXT("Screenshot file not found: %s"), *ScreenshotPath);
+            // Content provided - create temp file
+            UE_LOG(LogBetaHub, Error, TEXT("Screenshot entry skipped: Content mode not supported for screenshots (use FilePath instead)"));
+            continue;
         }
+
+        if (Screenshots.Num() > 1)
+        {
+            Task.Description = FString::Printf(TEXT("Screenshot %d of %d"), ScreenshotIndex, Screenshots.Num());
+        }
+        else
+        {
+            Task.Description = TEXT("screenshot");
+        }
+
+        UploadQueue.Add(Task);
+        ScreenshotIndex++;
     }
 
-    // Build upload queue for log files (create temp files from content)
+    // Build upload queue for log files
     int32 LogIndex = 1;
-    for (const FString& LogContent : LogFileContents)
+    for (const FBH_MediaFile& Log : Logs)
     {
-        if (!LogContent.IsEmpty())
+        // Validate: exactly one of FilePath or Content must be set
+        bool bHasFilePath = !Log.FilePath.IsEmpty();
+        bool bHasContent = !Log.Content.IsEmpty();
+
+        if (!bHasFilePath && !bHasContent)
         {
-            // Create temporary file for log contents
-            FString TempLogPath = CreateTempFile(LogContent, TEXT("log"), LogIndex - 1);
-            if (!TempLogPath.IsEmpty())
-            {
-                FUploadTask Task;
-                Task.MediaType = EBH_MediaType::LogFile;
-                Task.FilePath = TempLogPath;
-                Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::LogFile, TempLogPath);
-
-                if (LogFileContents.Num() > 1)
-                {
-                    Task.Description = FString::Printf(TEXT("Log file %d of %d"), LogIndex, LogFileContents.Num());
-                }
-                else
-                {
-                    Task.Description = TEXT("log file");
-                }
-
-                Task.bIsTempFile = true;
-                UploadQueue.Add(Task);
-                TempFilesToCleanup.Add(TempLogPath);
-                LogIndex++;
-            }
+            UE_LOG(LogBetaHub, Warning, TEXT("Log entry skipped: both FilePath and Content are empty"));
+            continue;
         }
+
+        if (bHasFilePath && bHasContent)
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Log entry skipped: both FilePath and Content are set (only one allowed)"));
+            continue;
+        }
+
+        FUploadTask Task;
+        Task.MediaType = EBH_MediaType::LogFile;
+        Task.CustomName = Log.Name;
+
+        if (bHasFilePath)
+        {
+            // File path provided - check if it exists and read it
+            if (!FPaths::FileExists(Log.FilePath))
+            {
+                UE_LOG(LogBetaHub, Warning, TEXT("Log file not found, skipping: %s"), *Log.FilePath);
+                continue;
+            }
+
+            // Read file content
+            FString FileContent;
+            if (!FFileHelper::LoadFileToString(FileContent, *Log.FilePath))
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Failed to read log file, skipping: %s"), *Log.FilePath);
+                continue;
+            }
+
+            // Create temp file from content
+            FString TempLogPath = CreateTempFile(FileContent, TEXT("log"), LogIndex - 1, Log.Name);
+            if (TempLogPath.IsEmpty())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Failed to create temp file for log: %s"), *Log.FilePath);
+                continue;
+            }
+
+            Task.FilePath = TempLogPath;
+            Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::LogFile, TempLogPath);
+            Task.bIsTempFile = true;
+            TempFilesToCleanup.Add(TempLogPath);
+        }
+        else
+        {
+            // Content provided - create temp file
+            if (Log.Content.IsEmpty())
+            {
+                UE_LOG(LogBetaHub, Warning, TEXT("Log content is empty, skipping"));
+                continue;
+            }
+
+            FString TempLogPath = CreateTempFile(Log.Content, TEXT("log"), LogIndex - 1, Log.Name);
+            if (TempLogPath.IsEmpty())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Failed to create temp file for log content"));
+                continue;
+            }
+
+            Task.FilePath = TempLogPath;
+            Task.ContentType = BH_MediaTypeHelper::GetDefaultContentType(EBH_MediaType::LogFile, TempLogPath);
+            Task.bIsTempFile = true;
+            TempFilesToCleanup.Add(TempLogPath);
+        }
+
+        if (Logs.Num() > 1)
+        {
+            Task.Description = FString::Printf(TEXT("Log file %d of %d"), LogIndex, Logs.Num());
+        }
+        else
+        {
+            Task.Description = TEXT("log file");
+        }
+
+        UploadQueue.Add(Task);
+        LogIndex++;
     }
 
     // Check if there's anything to upload
@@ -150,13 +261,69 @@ void BH_MediaUploadManager::UploadMediaFiles(
         return;
     }
 
-    UE_LOG(LogBetaHub, Log, TEXT("Starting upload of %d media file(s)"), UploadQueue.Num());
-    UE_LOG(LogBetaHub, Log, TEXT("  - %d video(s)"), VideoIndex - 1);
-    UE_LOG(LogBetaHub, Log, TEXT("  - %d screenshot(s)"), ScreenshotIndex - 1);
-    UE_LOG(LogBetaHub, Log, TEXT("  - %d log file(s)"), LogIndex - 1);
-
-    // Start first upload
+    // Start uploading
+    UE_LOG(LogBetaHub, Log, TEXT("Starting upload of %d media files"), UploadQueue.Num());
     ProcessNextUpload();
+}
+
+void BH_MediaUploadManager::UploadMediaFiles(
+    const FString& BaseUrl,
+    const FString& ProjectId,
+    const FString& IssueId,
+    const FString& ApiToken,
+    const TArray<FString>& VideoPaths,
+    const TArray<FString>& ScreenshotPaths,
+    const TArray<FString>& LogFileContents,
+    const FOnProgressUpdate& OnProgress,
+    const FOnUploadComplete& OnComplete)
+{
+    // Convert legacy arrays to FBH_MediaFile structs
+    TArray<FBH_MediaFile> Videos;
+    TArray<FBH_MediaFile> Screenshots;
+    TArray<FBH_MediaFile> Logs;
+
+    for (const FString& VideoPath : VideoPaths)
+    {
+        if (!VideoPath.IsEmpty())
+        {
+            FBH_MediaFile Video;
+            Video.FilePath = VideoPath;
+            Videos.Add(Video);
+        }
+    }
+
+    for (const FString& ScreenshotPath : ScreenshotPaths)
+    {
+        if (!ScreenshotPath.IsEmpty())
+        {
+            FBH_MediaFile Screenshot;
+            Screenshot.FilePath = ScreenshotPath;
+            Screenshots.Add(Screenshot);
+        }
+    }
+
+    for (const FString& LogContent : LogFileContents)
+    {
+        if (!LogContent.IsEmpty())
+        {
+            FBH_MediaFile Log;
+            Log.Content = LogContent;
+            Logs.Add(Log);
+        }
+    }
+
+    // Call the new struct-based method
+    UploadMediaFiles(
+        BaseUrl,
+        ProjectId,
+        IssueId,
+        ApiToken,
+        Videos,
+        Screenshots,
+        Logs,
+        OnProgress,
+        OnComplete
+    );
 }
 
 // Legacy single-file method for backward compatibility
@@ -290,6 +457,7 @@ void BH_MediaUploadManager::ProcessNextUpload()
         MediaEndpoint,
         Task.FilePath,
         Task.ContentType,
+        Task.CustomName,
         UploadDelegate
     );
 }
@@ -347,7 +515,7 @@ FString BH_MediaUploadManager::GetContentTypeForFile(const FString& FilePath)
     );
 }
 
-FString BH_MediaUploadManager::CreateTempFile(const FString& Contents, const FString& Extension, int32 Index)
+FString BH_MediaUploadManager::CreateTempFile(const FString& Contents, const FString& Extension, int32 Index, const FString& CustomName)
 {
     // Generate unique temp file name
     FString TempDir = FPaths::ProjectSavedDir() / TEXT("BetaHub") / TEXT("Temp");
@@ -359,7 +527,7 @@ FString BH_MediaUploadManager::CreateTempFile(const FString& Contents, const FSt
         PlatformFile.CreateDirectoryTree(*TempDir);
     }
 
-    // Create filename with index if multiple files
+    // Create filename - use GUID for local file safety (custom name is sent to server only)
     FString Filename;
     if (Index > 0)
     {
