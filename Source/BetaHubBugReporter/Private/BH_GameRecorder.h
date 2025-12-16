@@ -56,6 +56,7 @@ private:
 
     bool bCopyTextureStarted;
     FRenderCommandFence CopyTextureFence;
+    bool bIsResizing;
 
     TArray<FLinearColor> PendingLinearPixels;
     TArray<FColor> PendingPixels;

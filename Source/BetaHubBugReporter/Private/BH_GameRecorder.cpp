@@ -3,6 +3,7 @@
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/Engine.h"
+#include "TimerManager.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Misc/FileHelper.h"
@@ -27,6 +28,7 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
     , bIsRecording(false)
     , bCopyTextureStarted(false)
+    , bIsResizing(false)
     , StagingTexture(nullptr)
     , ViewportWidth(0)
     , ViewportHeight(0)
@@ -45,28 +47,37 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
 
 void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDuration)
 {
+    UE_LOG(LogBetaHub, Log, TEXT("StartRecording called with FPS: %d, Duration: %d seconds"), InTargetFPS, InRecordingDuration);
+
     if (!GEngine)
     {
-        UE_LOG(LogBetaHub, Error, TEXT("GEngine is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("StartRecording failed: GEngine is null"));
         return;
     }
 
     if (!GEngine->GameViewport)
     {
-        UE_LOG(LogBetaHub, Error, TEXT("GameViewport is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("StartRecording failed: GameViewport is null"));
         return;
     }
 
     UWorld* World = GEngine->GameViewport->GetWorld();
     if (!World)
     {
-        UE_LOG(LogBetaHub, Error, TEXT("World context is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("StartRecording failed: World context is null"));
         return;
     }
 
     if (!GEngine->GameViewport->GetGameViewport())
     {
-        UE_LOG(LogBetaHub, Error, TEXT("Viewport is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("StartRecording failed: Viewport is null"));
+        return;
+    }
+
+    // Additional validation for packaged builds
+    if (!GDynamicRHI)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("StartRecording failed: RHI not initialized"));
         return;
     }
 
@@ -353,7 +364,20 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& 
 
 void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 {
-    if (!GEngine || !GEngine->GameViewport) return;
+    if (!GEngine || !GEngine->GameViewport) 
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("ReadPixels failed: GEngine (%s) or GameViewport (%s) is null"),
+            GEngine ? TEXT("valid") : TEXT("null"),
+            (GEngine && GEngine->GameViewport) ? TEXT("valid") : TEXT("null"));
+        return;
+    }
+
+    // Additional validation for packaged builds
+    if (!BackBuffer.IsValid())
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("ReadPixels failed: BackBuffer is invalid"));
+        return;
+    }
 
     // execute only if viewport sizes are same as registered
     if (BackBuffer->GetDesc().GetSize().X != ViewportWidth 
@@ -362,6 +386,13 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
         UE_LOG(LogBetaHub, Warning, TEXT("Viewport size has changed. Restarting recording. Was: %dx%d, Now: %dx%d"),
             ViewportWidth, ViewportHeight, BackBuffer->GetDesc().GetSize().X, BackBuffer->GetDesc().GetSize().Y);
         OnBackBufferResized(BackBuffer);
+        return;
+    }
+
+    // Skip if we're already resizing to prevent conflicts
+    if (bIsResizing)
+    {
+        UE_LOG(LogBetaHub, Verbose, TEXT("Skipping ReadPixels during resize operation"));
         return;
     }
 
@@ -382,7 +413,7 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 
             FTextureRHIRef Texture = BackBuffer;
 
-            // Validate both textures before copying to prevent assert failure
+            // Enhanced validation to prevent RHI assertion failures
             if (!Texture.IsValid() || !StagingTexture.IsValid())
             {
                 UE_LOG(LogBetaHub, Error, TEXT("CopyTexture failed: Invalid texture references. Texture valid: %s, StagingTexture valid: %s"), 
@@ -392,8 +423,45 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
                 return;
             }
 
+            // Additional checks for RHI context validity
+            if (!GDynamicRHI)
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("CopyTexture failed: RHI context invalid. GDynamicRHI is null"));
+                RawFrameBufferPool.ReleaseElement(TextureBuffer);
+                return;
+            }
+
+            // Check texture compatibility
+            if (Texture->GetSizeX() != StagingTexture->GetSizeX() || 
+                Texture->GetSizeY() != StagingTexture->GetSizeY())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("CopyTexture failed: Texture size mismatch. Source: %dx%d, Staging: %dx%d"), 
+                    Texture->GetSizeX(), Texture->GetSizeY(),
+                    StagingTexture->GetSizeX(), StagingTexture->GetSizeY());
+                RawFrameBufferPool.ReleaseElement(TextureBuffer);
+                return;
+            }
+
+            // Ensure textures are on GPU memory and accessible
+            if (!Texture->IsValid() || !StagingTexture->IsValid())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("CopyTexture failed: Textures became invalid during execution"));
+                RawFrameBufferPool.ReleaseElement(TextureBuffer);
+                return;
+            }
+
             FRHICopyTextureInfo CopyInfo;
-            RHICmdList.CopyTexture(Texture, StagingTexture, CopyInfo);
+            // Wrap in try-catch equivalent for UE (check for valid state one more time)
+            if (Texture.GetReference() && StagingTexture.GetReference())
+            {
+                RHICmdList.CopyTexture(Texture, StagingTexture, CopyInfo);
+            }
+            else
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("CopyTexture failed: Texture references became null"));
+                RawFrameBufferPool.ReleaseElement(TextureBuffer);
+                return;
+            }
 
             void* RawData = nullptr;
             int32 RawDataWidth = 0;
@@ -421,11 +489,38 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 
 void UBH_GameRecorder::OnBackBufferResized(const FTextureRHIRef& BackBuffer)
 {
+    // Prevent concurrent resize operations during level transitions
+    if (bIsResizing)
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("Resize already in progress, skipping duplicate resize request"));
+        return;
+    }
+
+    // Additional validation for packaged builds
+    if (!BackBuffer.IsValid() || !GDynamicRHI)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("OnBackBufferResized called with invalid BackBuffer or RHI context"));
+        return;
+    }
+
+    bIsResizing = true;
+
     FIntVector OriginalSize = BackBuffer->GetDesc().GetSize();
+
+    // Validate size is reasonable (not 0x0 which can happen during transitions)
+    if (OriginalSize.X <= 0 || OriginalSize.Y <= 0)
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("Invalid back buffer size during resize: %dx%d, skipping resize"), 
+            OriginalSize.X, OriginalSize.Y);
+        bIsResizing = false;
+        return;
+    }
 
     // need ViewportWidth and ViewportHeight to have it saved for later viewport size change comparison
     int32 OriginalWidth = ViewportWidth = OriginalSize.X;
     int32 OriginalHeight = ViewportHeight = OriginalSize.Y;
+
+    UE_LOG(LogBetaHub, Log, TEXT("Resizing recording from viewport size: %dx%d"), OriginalWidth, OriginalHeight);
 
     // Calculate scaling factor based on the maximum dimension
     float WidthRatio = static_cast<float>(OriginalWidth) / MaxVideoWidth;
@@ -437,7 +532,7 @@ void UBH_GameRecorder::OnBackBufferResized(const FTextureRHIRef& BackBuffer)
         FrameWidth = FMath::RoundToInt(OriginalWidth / ScalingFactor);
         FrameHeight = FMath::RoundToInt(OriginalHeight / ScalingFactor);
 
-        UE_LOG(LogBetaHub, Log, TEXT("Resizing frame to %dx%d"), FrameWidth, FrameHeight);
+        UE_LOG(LogBetaHub, Log, TEXT("Scaling frame to %dx%d (scale factor: %.2f)"), FrameWidth, FrameHeight, ScalingFactor);
     }
     else
     {
@@ -449,9 +544,42 @@ void UBH_GameRecorder::OnBackBufferResized(const FTextureRHIRef& BackBuffer)
     FrameWidth = (FrameWidth + 3) & ~3;
     FrameHeight = (FrameHeight + 3) & ~3;
 
+    // Wait for any ongoing texture operations to complete before stopping
+    if (bCopyTextureStarted && CopyTextureFence.IsFenceComplete())
+    {
+        UE_LOG(LogBetaHub, Log, TEXT("Waiting for texture operations to complete before resize..."));
+        CopyTextureFence.Wait();
+    }
+
+    // Gracefully stop recording with proper cleanup
+    UE_LOG(LogBetaHub, Log, TEXT("Stopping recording for resize operation"));
     StopRecording();
+    
+    // Clean up staging texture to prevent stale references
+    if (StagingTexture.IsValid())
+    {
+        StagingTexture.SafeRelease();
+    }
+
     VideoEncoder.Reset(); // will need to recreate it
-    StartRecording(TargetFPS, RecordingDuration.GetTotalSeconds());
+
+    // Delay restart slightly to ensure clean state during level transitions
+    if (UWorld* World = GetWorld())
+    {
+        FTimerHandle RestartTimerHandle;
+        World->GetTimerManager().SetTimer(RestartTimerHandle, [this]()
+        {
+            UE_LOG(LogBetaHub, Log, TEXT("Restarting recording after resize with dimensions: %dx%d"), FrameWidth, FrameHeight);
+            StartRecording(TargetFPS, RecordingDuration.GetTotalSeconds());
+            bIsResizing = false;
+        }, 0.1f, false);
+    }
+    else
+    {
+        // Fallback if world is not available
+        StartRecording(TargetFPS, RecordingDuration.GetTotalSeconds());
+        bIsResizing = false;
+    }
 }
 
 void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data)
