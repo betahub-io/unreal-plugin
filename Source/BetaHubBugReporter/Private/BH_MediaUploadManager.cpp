@@ -341,35 +341,41 @@ void BH_MediaUploadManager::UploadMediaFiles(
     const FOnProgressUpdate& OnProgress,
     const FOnUploadComplete& OnComplete)
 {
-    // Convert single files to arrays
-    TArray<FString> VideoPaths;
-    TArray<FString> ScreenshotPaths;
-    TArray<FString> LogContents;
+    // Convert single files to FBH_MediaFile structs
+    TArray<FBH_MediaFile> Videos;
+    TArray<FBH_MediaFile> Screenshots;
+    TArray<FBH_MediaFile> Logs;
 
     if (bIncludeVideo && !VideoPath.IsEmpty())
     {
-        VideoPaths.Add(VideoPath);
+        FBH_MediaFile Video;
+        Video.FilePath = VideoPath;
+        Videos.Add(Video);
     }
 
     if (bIncludeScreenshot && !ScreenshotPath.IsEmpty())
     {
-        ScreenshotPaths.Add(ScreenshotPath);
+        FBH_MediaFile Screenshot;
+        Screenshot.FilePath = ScreenshotPath;
+        Screenshots.Add(Screenshot);
     }
 
     if (bIncludeLogs && !LogFileContents.IsEmpty())
     {
-        LogContents.Add(LogFileContents);
+        FBH_MediaFile Log;
+        Log.Content = LogFileContents;
+        Logs.Add(Log);
     }
 
-    // Call the new array-based method
+    // Call the new struct-based method (not the deprecated array-based method)
     UploadMediaFiles(
         BaseUrl,
         ProjectId,
         IssueId,
         ApiToken,
-        VideoPaths,
-        ScreenshotPaths,
-        LogContents,
+        Videos,
+        Screenshots,
+        Logs,
         OnProgress,
         OnComplete
     );
