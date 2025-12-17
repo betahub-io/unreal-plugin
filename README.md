@@ -16,7 +16,7 @@ The plugin will start a *Background Service* that will record gameplay session a
 
 ## Compatibility
 
-This plugin is fully compatible with Unreal Engine versions **5.3**, **5.4**, **5.5**, and **5.6**.  
+This plugin is fully compatible with Unreal Engine versions **5.3**, **5.4**, **5.5**, and **5.6**. If you're looking for Unreal 4 support, there's a [separate repo for that](https://github.com/betahub-io/unreal-4-plugin).
 All features have been tested and verified on these versions.
 
 ## Configuration
