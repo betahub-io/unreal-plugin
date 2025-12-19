@@ -6,6 +6,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "Misc/Base64.h"
 #include "Misc/SecureHash.h"
 #include "HAL/PlatformFilemanager.h"

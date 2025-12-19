@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/Paths.h"
 #include "BH_MediaTypes.generated.h"
 
 /**
