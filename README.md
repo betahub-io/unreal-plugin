@@ -25,7 +25,7 @@ All you need to do is to go to your *Player Settings* and in the *BetaHub Bug Re
 
 There, you can also configure your shortcut key to open the bug reporter window.
 
-For full docs and guides, please visit the [BetaHub Documentation](https://www.betahub.io/docs/integration-guides/#unreal-plugin-integration).
+For full docs and guides, please visit the [BetaHub Documentation](https://betahub.io/docs/permalinks/unreal-plugin).
 
 ## Development Branch
 
