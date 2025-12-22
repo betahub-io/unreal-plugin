@@ -148,130 +148,154 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
             {
                 UE_LOG(LogBetaHub, Log, TEXT("Draft issue created successfully with ID: %s"), *IssueId);
 
-                // Prepare media arrays - copy provided arrays
-                TArray<FBH_MediaFile> FinalVideos = Videos;
-                TArray<FBH_MediaFile> FinalScreenshots = Screenshots;
-                TArray<FBH_MediaFile> FinalLogs = Logs;
-
-                // Handle GameRecorder if provided - must be called on game thread for thread safety
-                FString VideoPath;
-                if (GameRecorder)
-                {
-                    // GameRecorder inherits from FTickableGameObject and is not thread-safe
-                    // Execute on game thread to avoid race conditions
-                    // Use Async (not AsyncTask) to get TFuture return value
-                    TFuture<FString> VideoPathFuture = Async(EAsyncExecution::TaskGraphMainThread, [WeakGameRecorder, WeakSettings]() -> FString {
-                        // Re-validate weak pointers inside game thread task
-                        UBH_GameRecorder* GameRecorder = WeakGameRecorder.Get();
-                        UBH_PluginSettings* Settings = WeakSettings.Get();
-
-                        if (!GameRecorder || !Settings)
-                        {
-                            return TEXT("");  // Objects destroyed during async operation
-                        }
-
-                        FString RecordedPath = GameRecorder->SaveRecording();
-                        GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
-                        return RecordedPath;
-                    });
-
-                    // Block until game thread task completes (safe since we're on HTTP thread)
-                    VideoPath = VideoPathFuture.Get();
-
-                    if (!VideoPath.IsEmpty())
-                    {
-                        // Add recorded video to the list
-                        FBH_MediaFile RecordedVideo;
-                        RecordedVideo.FilePath = VideoPath;
-                        RecordedVideo.Name = TEXT(""); // No custom name for auto-recorded video
-                        FinalVideos.Add(RecordedVideo);
-                    }
-                }
-
                 FString FormattedIssueId = FString::Printf(TEXT("g-%s"), *IssueId);
 
-                // Use new media upload manager for S3 uploads
-                TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
-
-                BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
-                UploadCompleteDelegate.BindLambda([WeakSettings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, MediaManager]
-                    (const BH_MediaUploadManager::FMediaUploadResult& Result)
+                // Lambda to start media uploads - called after video save completes (or immediately if no video)
+                auto StartMediaUploads = [WeakSettings, Videos, Screenshots, Logs, FormattedIssueId, ApiToken, OnSuccess, OnFailure]
+                    (const FString& VideoPath)
                 {
-                    // Re-validate Settings is still alive in nested callback
+                    UE_LOG(LogBetaHub, Log, TEXT("StartMediaUploads called with VideoPath: %s"), *VideoPath);
+
                     if (!WeakSettings.IsValid())
                     {
-                        UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed during media upload"));
-                        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
-                            OnFailure(TEXT("Operation cancelled - settings destroyed during upload"));
-                        });
+                        UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed before media upload"));
+                        OnFailure(TEXT("Operation cancelled - settings destroyed"));
                         return;
                     }
 
                     UBH_PluginSettings* Settings = WeakSettings.Get();
                     if (!Settings)
                     {
-                        UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid during upload completion"));
-                        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
-                            OnFailure(TEXT("Operation cancelled - settings no longer valid"));
-                        });
+                        UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid before media upload"));
+                        OnFailure(TEXT("Operation cancelled - settings no longer valid"));
                         return;
                     }
 
-                    if (Result.bSuccess)
-                    {
-                        UE_LOG(LogBetaHub, Log, TEXT("Media upload completed successfully"));
-                        UE_LOG(LogBetaHub, Log, TEXT("  - Screenshots: %d"), Result.ScreenshotsUploaded);
-                        UE_LOG(LogBetaHub, Log, TEXT("  - Videos: %d"), Result.VideosUploaded);
-                        UE_LOG(LogBetaHub, Log, TEXT("  - Log files: %d"), Result.LogsUploaded);
-                    }
-                    else if (Result.TotalFilesUploaded > 0)
-                    {
-                        // Partial success
-                        UE_LOG(LogBetaHub, Warning, TEXT("Some media uploads succeeded (%d of attempted)"), Result.TotalFilesUploaded);
-                        for (const FString& Error : Result.Errors)
-                        {
-                            UE_LOG(LogBetaHub, Warning, TEXT("Upload error: %s"), *Error);
-                        }
-                    }
-                    else
-                    {
-                        // All uploads failed
-                        UE_LOG(LogBetaHub, Warning, TEXT("All media uploads failed, publishing issue without media"));
-                    }
+                    // Prepare media arrays
+                    TArray<FBH_MediaFile> FinalVideos = Videos;
+                    TArray<FBH_MediaFile> FinalScreenshots = Screenshots;
+                    TArray<FBH_MediaFile> FinalLogs = Logs;
 
-                    // Always publish the issue, even if media uploads failed
-                    PublishIssue(Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure);
-
-                    // Cleanup auto-recorded video file (auto-generated by GameRecorder)
                     if (!VideoPath.IsEmpty())
                     {
-                        IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-                        if (PlatformFile.FileExists(*VideoPath))
-                        {
-                            PlatformFile.DeleteFile(*VideoPath);
-                        }
+                        FBH_MediaFile RecordedVideo;
+                        RecordedVideo.FilePath = VideoPath;
+                        RecordedVideo.Name = TEXT("");
+                        FinalVideos.Add(RecordedVideo);
                     }
-                });
 
-                BH_MediaUploadManager::FOnProgressUpdate ProgressDelegate;
-                ProgressDelegate.BindLambda([](const BH_MediaUploadManager::FUploadProgress& Progress)
+                    // Use new media upload manager for S3 uploads
+                    TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
+
+                    BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
+                    UploadCompleteDelegate.BindLambda([WeakSettings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, MediaManager]
+                        (const BH_MediaUploadManager::FMediaUploadResult& Result)
+                    {
+                        if (!WeakSettings.IsValid())
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed during media upload"));
+                            OnFailure(TEXT("Operation cancelled - settings destroyed during upload"));
+                            return;
+                        }
+
+                        UBH_PluginSettings* Settings = WeakSettings.Get();
+                        if (!Settings)
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid during upload completion"));
+                            OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+                            return;
+                        }
+
+                        if (Result.bSuccess)
+                        {
+                            UE_LOG(LogBetaHub, Log, TEXT("Media upload completed successfully"));
+                            UE_LOG(LogBetaHub, Log, TEXT("  - Screenshots: %d"), Result.ScreenshotsUploaded);
+                            UE_LOG(LogBetaHub, Log, TEXT("  - Videos: %d"), Result.VideosUploaded);
+                            UE_LOG(LogBetaHub, Log, TEXT("  - Log files: %d"), Result.LogsUploaded);
+                        }
+                        else if (Result.TotalFilesUploaded > 0)
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("Some media uploads succeeded (%d of attempted)"), Result.TotalFilesUploaded);
+                            for (const FString& Error : Result.Errors)
+                            {
+                                UE_LOG(LogBetaHub, Warning, TEXT("Upload error: %s"), *Error);
+                            }
+                        }
+                        else
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("All media uploads failed, publishing issue without media"));
+                        }
+
+                        // Always publish the issue, even if media uploads failed
+                        PublishIssue(Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure);
+
+                        // Cleanup auto-recorded video file
+                        if (!VideoPath.IsEmpty())
+                        {
+                            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+                            if (PlatformFile.FileExists(*VideoPath))
+                            {
+                                PlatformFile.DeleteFile(*VideoPath);
+                            }
+                        }
+                    });
+
+                    BH_MediaUploadManager::FOnProgressUpdate ProgressDelegate;
+                    ProgressDelegate.BindLambda([](const BH_MediaUploadManager::FUploadProgress& Progress)
+                    {
+                        UE_LOG(LogBetaHub, Verbose, TEXT("Upload progress: %s (%.1f%%)"),
+                            *Progress.CurrentFile, Progress.ProgressPercent);
+                    });
+
+                    UE_LOG(LogBetaHub, Log, TEXT("Starting media uploads..."));
+                    MediaManager->UploadMediaFiles(
+                        Settings->ApiEndpoint,
+                        Settings->ProjectId,
+                        FormattedIssueId,
+                        ApiToken,
+                        FinalVideos,
+                        FinalScreenshots,
+                        FinalLogs,
+                        ProgressDelegate,
+                        UploadCompleteDelegate
+                    );
+                };
+
+                // Handle GameRecorder using continuation style (no blocking)
+                if (GameRecorder)
                 {
-                    UE_LOG(LogBetaHub, Verbose, TEXT("Upload progress: %s (%.1f%%)"),
-                        *Progress.CurrentFile, Progress.ProgressPercent);
-                });
+                    UE_LOG(LogBetaHub, Log, TEXT("GameRecorder provided, scheduling video save on game thread..."));
 
-                // Start media uploads using S3 direct upload with new struct-based API
-                MediaManager->UploadMediaFiles(
-                    Settings->ApiEndpoint,
-                    Settings->ProjectId,
-                    FormattedIssueId,
-                    ApiToken,
-                    FinalVideos,
-                    FinalScreenshots,
-                    FinalLogs,
-                    ProgressDelegate,
-                    UploadCompleteDelegate
-                );
+                    // Use AsyncTask - saves video then continues with media upload in the same callback
+                    AsyncTask(ENamedThreads::GameThread, [WeakGameRecorder, WeakSettings, StartMediaUploads]()
+                    {
+                        UE_LOG(LogBetaHub, Log, TEXT("Game thread task: saving video recording..."));
+
+                        UBH_GameRecorder* GameRecorder = WeakGameRecorder.Get();
+                        UBH_PluginSettings* Settings = WeakSettings.Get();
+
+                        FString VideoPath;
+                        if (GameRecorder && Settings)
+                        {
+                            VideoPath = GameRecorder->SaveRecording();
+                            UE_LOG(LogBetaHub, Log, TEXT("SaveRecording returned: %s"), *VideoPath);
+
+                            GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+                        }
+                        else
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("GameRecorder or Settings destroyed, skipping video save"));
+                        }
+
+                        // Continue with media upload (no blocking needed)
+                        StartMediaUploads(VideoPath);
+                    });
+                }
+                else
+                {
+                    // No GameRecorder - start media uploads immediately
+                    StartMediaUploads(TEXT(""));
+                }
             }
             else
             {

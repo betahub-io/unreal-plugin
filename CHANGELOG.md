@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0 - 2025-12-22
+
+### Fixed
+
+- Editor freeze/deadlock during bug report submission caused by blocking async call on game thread
+
 ## 1.2.0 - 2025-08-01
 
 ### Added
