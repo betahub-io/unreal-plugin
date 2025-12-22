@@ -2,9 +2,15 @@
 
 ## 1.4.0 - 2025-12-22
 
+### Added
+
+- Suggestions/feature request submission support with optional screenshot attachment
+- Report type selector (Bug Report / Suggestion) in the feedback form
+
 ### Fixed
 
 - Editor freeze/deadlock during bug report submission caused by blocking async call on game thread
+- Cursor state not properly restored when popup is displayed after form submission
 
 ## 1.2.0 - 2025-08-01
 

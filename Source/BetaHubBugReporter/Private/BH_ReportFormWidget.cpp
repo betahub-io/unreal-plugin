@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HAL/PlatformFileManager.h"
 #include "BH_BugReport.h"
+#include "BH_FeatureRequest.h"
 #include "BH_PopupWidget.h"
 
 // constructor
@@ -12,9 +13,11 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     : Super(ObjectInitializer)
     , GameRecorder(nullptr)
     , Settings(nullptr)
+    , CurrentReportType(EBH_ReportType::Bug)
     , bCursorStateModified(false)
     , bWasCursorVisible(false)
     , bWasCursorLocked(false)
+    , bSuppressCursorRestore(false)
 {
     SetIsFocusable(true);
 }
@@ -23,7 +26,7 @@ void UBH_ReportFormWidget::NativeOnInitialized()
 {
     Super::NativeOnInitialized();
 
-    // Bind the button click event
+    // Bind the button click events
     if (SubmitButton)
     {
         SubmitButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnSubmitButtonClicked);
@@ -33,6 +36,20 @@ void UBH_ReportFormWidget::NativeOnInitialized()
     {
         CloseButton->OnClicked.AddDynamic(this, &UBH_ReportFormWidget::OnCloseClicked);
     }
+
+    // Bind report type checkbox events
+    if (BugReportCheckBox)
+    {
+        BugReportCheckBox->OnCheckStateChanged.AddDynamic(this, &UBH_ReportFormWidget::OnBugReportCheckBoxChanged);
+    }
+
+    if (SuggestionCheckBox)
+    {
+        SuggestionCheckBox->OnCheckStateChanged.AddDynamic(this, &UBH_ReportFormWidget::OnSuggestionCheckBoxChanged);
+    }
+
+    // Initialize form to default state (Bug Report)
+    SetReportType(EBH_ReportType::Bug);
 }
 
 void UBH_ReportFormWidget::Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents,
@@ -48,31 +65,71 @@ bool bTryCaptureMouse)
         SetCursorState();
     }
 
-    GameRecorder->StopRecording();
+    if (GameRecorder)
+    {
+        GameRecorder->StopRecording();
+    }
 }
 
 void UBH_ReportFormWidget::SubmitReport()
-{ 
-    FString BugDescription = BugDescriptionEdit->GetText().ToString();
-    FString StepsToReproduce = StepsToReproduceEdit->GetText().ToString();
+{
+    FString Description = BugDescriptionEdit->GetText().ToString();
+    TWeakObjectPtr<UBH_ReportFormWidget> WeakThis(this);
 
-    UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s"), *BugDescription);
-    UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
+    if (CurrentReportType == EBH_ReportType::Bug)
+    {
+        FString StepsToReproduce = StepsToReproduceEdit->GetText().ToString();
 
-    UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
-    BugReport->SubmitReport(Settings, GameRecorder, BugDescription, StepsToReproduce, ScreenshotPath, LogFileContents,
-        IncludeVideoCheckbox->IsChecked(), IncludeLogsCheckbox->IsChecked(), IncludeScreenshotCheckbox->IsChecked(),
-        [this]()
-        {
-            ShowPopup("Success", "Report submitted successfully!");
-            RemoveFromParent();
-        },
-        [this](const FString& ErrorMessage)
-        {
-            ShowPopup("Error", ErrorMessage);
-            SubmitLabel->SetText(FText::FromString("Submit"));
-        }
-    );
+        UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s"), *Description);
+        UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
+
+        UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
+        BugReport->SubmitReport(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
+            IncludeVideoCheckbox->IsChecked(), IncludeLogsCheckbox->IsChecked(), IncludeScreenshotCheckbox->IsChecked(),
+            [WeakThis]()
+            {
+                if (UBH_ReportFormWidget* Self = WeakThis.Get())
+                {
+                    Self->bSuppressCursorRestore = true;
+                    Self->ShowPopup("Success", "Bug report submitted successfully!");
+                    Self->RemoveFromParent();
+                }
+            },
+            [WeakThis](const FString& ErrorMessage)
+            {
+                if (UBH_ReportFormWidget* Self = WeakThis.Get())
+                {
+                    Self->ShowPopup("Error", ErrorMessage);
+                    Self->SubmitLabel->SetText(FText::FromString("Submit"));
+                }
+            }
+        );
+    }
+    else // EBH_ReportType::Suggestion
+    {
+        UE_LOG(LogBetaHub, Log, TEXT("Suggestion Description: %s"), *Description);
+
+        UBH_FeatureRequest* FeatureRequest = NewObject<UBH_FeatureRequest>();
+        FeatureRequest->SubmitFeatureRequest(Settings, Description, ScreenshotPath, IncludeScreenshotCheckbox->IsChecked(),
+            [WeakThis]()
+            {
+                if (UBH_ReportFormWidget* Self = WeakThis.Get())
+                {
+                    Self->bSuppressCursorRestore = true;
+                    Self->ShowPopup("Success", "Suggestion submitted successfully!");
+                    Self->RemoveFromParent();
+                }
+            },
+            [WeakThis](const FString& ErrorMessage)
+            {
+                if (UBH_ReportFormWidget* Self = WeakThis.Get())
+                {
+                    Self->ShowPopup("Error", ErrorMessage);
+                    Self->SubmitLabel->SetText(FText::FromString("Submit"));
+                }
+            }
+        );
+    }
 }
 
 void UBH_ReportFormWidget::SetCursorState()
@@ -94,11 +151,11 @@ void UBH_ReportFormWidget::SetCursorState()
 
 void UBH_ReportFormWidget::RestoreCursorState()
 {
-    if (!bCursorStateModified)
+    if (!bCursorStateModified || bSuppressCursorRestore)
     {
         return;
     }
-    
+
     if (APlayerController* PlayerController = GetOwningPlayer())
     {
 
@@ -148,13 +205,16 @@ void UBH_ReportFormWidget::OnSubmitButtonClicked()
 
 void UBH_ReportFormWidget::OnCloseClicked()
 {
-    GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+    if (GameRecorder && Settings)
+    {
+        GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+    }
     RemoveFromParent();
 }
 
 void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Description)
 {
-    if (Settings->PopupWidgetClass)
+    if (Settings && Settings->PopupWidgetClass)
     {
         UBH_PopupWidget* PopupWidget = CreateWidget<UBH_PopupWidget>(GetWorld(), Settings->PopupWidgetClass);
         if (PopupWidget)
@@ -165,6 +225,77 @@ void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
     }
     else
     {
-        UE_LOG(LogBetaHub, Error, TEXT("PopupWidgetClass is null."));
+        UE_LOG(LogBetaHub, Error, TEXT("Settings or PopupWidgetClass is null."));
+    }
+}
+
+void UBH_ReportFormWidget::OnBugReportCheckBoxChanged(bool bIsChecked)
+{
+    if (bIsChecked)
+    {
+        SetReportType(EBH_ReportType::Bug);
+    }
+    else if (CurrentReportType == EBH_ReportType::Bug)
+    {
+        // Don't allow unchecking the current selection
+        BugReportCheckBox->SetIsChecked(true);
+    }
+}
+
+void UBH_ReportFormWidget::OnSuggestionCheckBoxChanged(bool bIsChecked)
+{
+    if (bIsChecked)
+    {
+        SetReportType(EBH_ReportType::Suggestion);
+    }
+    else if (CurrentReportType == EBH_ReportType::Suggestion)
+    {
+        // Don't allow unchecking the current selection
+        SuggestionCheckBox->SetIsChecked(true);
+    }
+}
+
+void UBH_ReportFormWidget::SetReportType(EBH_ReportType NewType)
+{
+    CurrentReportType = NewType;
+
+    // Update checkboxes to reflect the current selection
+    if (BugReportCheckBox)
+    {
+        BugReportCheckBox->SetIsChecked(NewType == EBH_ReportType::Bug);
+    }
+
+    if (SuggestionCheckBox)
+    {
+        SuggestionCheckBox->SetIsChecked(NewType == EBH_ReportType::Suggestion);
+    }
+
+    UpdateFormForReportType();
+}
+
+void UBH_ReportFormWidget::UpdateFormForReportType()
+{
+    const bool bIsBugReport = (CurrentReportType == EBH_ReportType::Bug);
+    const ESlateVisibility BugReportVisibility = bIsBugReport ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+
+    // Show/hide bug report specific fields
+    if (StepsToReproduceLabel)
+    {
+        StepsToReproduceLabel->SetVisibility(BugReportVisibility);
+    }
+
+    if (StepsToReproduceEdit)
+    {
+        StepsToReproduceEdit->SetVisibility(BugReportVisibility);
+    }
+
+    if (IncludeGameplayVideoContainer)
+    {
+        IncludeGameplayVideoContainer->SetVisibility(BugReportVisibility);
+    }
+
+    if (IncludeLogsContainer)
+    {
+        IncludeLogsContainer->SetVisibility(BugReportVisibility);
     }
 }

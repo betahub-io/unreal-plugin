@@ -7,7 +7,15 @@
 #include "Components/MultiLineEditableTextBox.h"
 #include "Components/TextBlock.h"
 #include "Components/CheckBox.h"
+#include "Components/HorizontalBox.h"
 #include "BH_ReportFormWidget.generated.h"
+
+UENUM(BlueprintType)
+enum class EBH_ReportType : uint8
+{
+    Bug UMETA(DisplayName = "Bug Report"),
+    Suggestion UMETA(DisplayName = "Suggestion")
+};
 
 UCLASS()
 class BETAHUBBUGREPORTER_API UBH_ReportFormWidget : public UUserWidget
@@ -20,16 +28,27 @@ private:
 
     FString ScreenshotPath;
     FString LogFileContents;
-    
+
     UBH_PluginSettings* Settings;
+
+    EBH_ReportType CurrentReportType;
 
     bool bCursorStateModified;
     bool bWasCursorVisible;
     bool bWasCursorLocked;
+    bool bSuppressCursorRestore;
 
     UFUNCTION()
     void OnCloseClicked();
 
+    UFUNCTION()
+    void OnBugReportCheckBoxChanged(bool bIsChecked);
+
+    UFUNCTION()
+    void OnSuggestionCheckBoxChanged(bool bIsChecked);
+
+    void SetReportType(EBH_ReportType NewType);
+    void UpdateFormForReportType();
     void ShowPopup(const FString& Title, const FString& Description);
 
 protected:
@@ -43,17 +62,35 @@ public:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UButton> CloseButton;
 
+    // Report type checkboxes
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UCheckBox> BugReportCheckBox;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UCheckBox> SuggestionCheckBox;
+
+    // Description field (shared between bug reports and suggestions)
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UMultiLineEditableTextBox> BugDescriptionEdit;
 
+    // Bug report specific fields
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> StepsToReproduceLabel;
+
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UMultiLineEditableTextBox> StepsToReproduceEdit;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UHorizontalBox> IncludeGameplayVideoContainer;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UCheckBox> IncludeVideoCheckbox;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UCheckBox> IncludeLogsCheckbox;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UHorizontalBox> IncludeLogsContainer;
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UCheckBox> IncludeScreenshotCheckbox;

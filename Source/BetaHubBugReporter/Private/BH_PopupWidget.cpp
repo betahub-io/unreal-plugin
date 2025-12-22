@@ -2,6 +2,15 @@
 
 
 #include "BH_PopupWidget.h"
+#include "GameFramework/PlayerController.h"
+
+UBH_PopupWidget::UBH_PopupWidget(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
+    , bCursorStateModified(false)
+    , bWasCursorVisible(false)
+{
+    SetIsFocusable(true);
+}
 
 void UBH_PopupWidget::NativeConstruct()
 {
@@ -10,6 +19,41 @@ void UBH_PopupWidget::NativeConstruct()
     if (this->CloseButton)
     {
         this->CloseButton->OnClicked.AddDynamic(this, &UBH_PopupWidget::OnCloseClicked);
+    }
+
+    SetCursorState();
+}
+
+void UBH_PopupWidget::NativeDestruct()
+{
+    Super::NativeDestruct();
+    RestoreCursorState();
+}
+
+void UBH_PopupWidget::SetCursorState()
+{
+    if (APlayerController* PlayerController = GetOwningPlayer())
+    {
+        bCursorStateModified = true;
+        bWasCursorVisible = PlayerController->bShowMouseCursor;
+
+        PlayerController->SetShowMouseCursor(true);
+        PlayerController->SetInputMode(FInputModeUIOnly());
+    }
+}
+
+void UBH_PopupWidget::RestoreCursorState()
+{
+    if (!bCursorStateModified)
+    {
+        return;
+    }
+
+    if (APlayerController* PlayerController = GetOwningPlayer())
+    {
+        PlayerController->SetShowMouseCursor(bWasCursorVisible);
+        PlayerController->SetInputMode(FInputModeGameOnly());
+        bCursorStateModified = false;
     }
 }
 

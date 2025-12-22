@@ -16,23 +16,33 @@ class UBH_PopupWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
+private:
+	bool bCursorStateModified;
+	bool bWasCursorVisible;
+
 	UFUNCTION()
 	void OnCloseClicked();
 
-	protected:
-		virtual void NativeConstruct() override;
+	void SetCursorState();
+	void RestoreCursorState();
 
-	public:
-		UPROPERTY(meta = (BindWidget))
-		TObjectPtr<UTextBlock> Title;
+protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
-		UPROPERTY(meta = (BindWidget))
-		TObjectPtr<UTextBlock> Description;
+public:
+	UBH_PopupWidget(const FObjectInitializer& ObjectInitializer);
 
-		UPROPERTY(meta = (BindWidget))
-		TObjectPtr<UButton> CloseButton;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Title;
 
-		UFUNCTION(BlueprintCallable, Category="Popup")
-		void SetMessage(const FString& InTitle, const FString& InDescription);
-	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> Description;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> CloseButton;
+
+	UFUNCTION(BlueprintCallable, Category="Popup")
+	void SetMessage(const FString& InTitle, const FString& InDescription);
+
 };
