@@ -83,11 +83,46 @@ void UBH_ReportFormWidget::SubmitReport()
         UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s"), *Description);
         UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
 
+        // Build media file arrays
+        TArray<FBH_MediaFile> Videos;  // Empty - video is handled via GameRecorder
+        TArray<FBH_MediaFile> Screenshots;
+        TArray<FBH_MediaFile> Logs;
+
+        if (IncludeScreenshotCheckbox->IsChecked() && !ScreenshotPath.IsEmpty())
+        {
+            FBH_MediaFile Screenshot;
+            Screenshot.FilePath = ScreenshotPath;
+            Screenshots.Add(Screenshot);
+        }
+
+        if (IncludeLogsCheckbox->IsChecked() && !LogFileContents.IsEmpty())
+        {
+            FBH_MediaFile Log;
+            Log.Content = LogFileContents;
+            Logs.Add(Log);
+        }
+
+        // Only pass GameRecorder if video checkbox is checked
+        UBH_GameRecorder* RecorderToPass = (IncludeVideoCheckbox->IsChecked() && GameRecorder) ? GameRecorder : nullptr;
+
+        // Capture ScreenshotPath for cleanup in callbacks
+        FString ScreenshotPathCopy = ScreenshotPath;
+
         UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
-        BugReport->SubmitReport(Settings, GameRecorder, Description, StepsToReproduce, ScreenshotPath, LogFileContents,
-            IncludeVideoCheckbox->IsChecked(), IncludeLogsCheckbox->IsChecked(), IncludeScreenshotCheckbox->IsChecked(),
-            [WeakThis]()
+        BugReport->SubmitReportWithMedia(Settings, RecorderToPass, Description, StepsToReproduce,
+            Videos, Screenshots, Logs,
+            [WeakThis, ScreenshotPathCopy]()
             {
+                // Cleanup screenshot file
+                if (!ScreenshotPathCopy.IsEmpty())
+                {
+                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+                    if (PlatformFile.FileExists(*ScreenshotPathCopy))
+                    {
+                        PlatformFile.DeleteFile(*ScreenshotPathCopy);
+                    }
+                }
+
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
                     Self->bSuppressCursorRestore = true;
@@ -95,8 +130,18 @@ void UBH_ReportFormWidget::SubmitReport()
                     Self->RemoveFromParent();
                 }
             },
-            [WeakThis](const FString& ErrorMessage)
+            [WeakThis, ScreenshotPathCopy](const FString& ErrorMessage)
             {
+                // Cleanup screenshot file even on failure
+                if (!ScreenshotPathCopy.IsEmpty())
+                {
+                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+                    if (PlatformFile.FileExists(*ScreenshotPathCopy))
+                    {
+                        PlatformFile.DeleteFile(*ScreenshotPathCopy);
+                    }
+                }
+
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
                     Self->ShowPopup("Error", ErrorMessage);
