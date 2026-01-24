@@ -19,6 +19,16 @@ The plugin will start a *Background Service* that will record gameplay session a
 This plugin is fully compatible with Unreal Engine versions **5.3**, **5.4**, **5.5**, and **5.6**. If you're looking for Unreal 4 support, there's a [separate repo for that](https://github.com/betahub-io/unreal-4-plugin).
 All features have been tested and verified on these versions.
 
+## FFmpeg Installation
+
+The plugin requires FFmpeg for video recording. Place the FFmpeg executable in the following location based on your platform:
+
+- **Windows:** `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe`
+- **Mac:** `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Mac/ffmpeg`
+- **Linux:** `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Linux/ffmpeg`
+
+For packaged builds, place the executable (renamed to `bh_ffmpeg` or `bh_ffmpeg.exe`) in `Binaries/<Platform>/`.
+
 ## Configuration
 
 All you need to do is to go to your *Player Settings* and in the *BetaHub Bug Reported* section under the *Plugins* category, set your Project ID. You can find your Project ID in your project *General Settings* page.
