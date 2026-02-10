@@ -50,6 +50,11 @@ void UBH_PluginSettings::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 
 void UBH_PluginSettings::ValidateSettings()
 {
+    if (ProjectToken.IsEmpty())
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("ProjectToken is not set. Bug reports and suggestions will not be submitted until a valid token is configured."));
+    }
+
     if (MaxVideoWidth < 512)
     {
         MaxVideoWidth = 512;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.0 - 2026-02-10
+
+### Changed
+
+- **Breaking:** Project Token (ProjectToken) is now required for all submissions. Anonymous authentication fallback has been removed. If the token is not configured, submissions will be blocked with a user-facing error popup.
+
 ## 1.4.0 - 2025-12-22
 
 ### Added

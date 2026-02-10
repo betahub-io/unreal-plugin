@@ -66,20 +66,21 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
         return;
     }
 
+    if (Settings->ProjectToken.IsEmpty())
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Cannot submit bug report."));
+        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
+            OnFailure(TEXT("Project Token is not configured. Please set it in the BetaHub plugin settings."));
+        });
+        return;
+    }
+
     // Submit the initial bug report without media
     TSharedPtr<BH_HttpRequest> InitialRequest = MakeShared<BH_HttpRequest>();
     InitialRequest->SetURL(Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues.json"));
     InitialRequest->SetVerb("POST");
 
-    // Use token-based authentication if available
-    if (!Settings->ProjectToken.IsEmpty())
-    {
-        InitialRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
-    }
-    else
-    {
-        InitialRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
-    }
+    InitialRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
 
     InitialRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
     InitialRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
@@ -428,21 +429,19 @@ void UBH_BugReport::SubmitMedia(
         return;
     }
 
+    if (Settings->ProjectToken.IsEmpty())
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Cannot submit media."));
+        return;
+    }
+
     BH_HttpRequest* MediaRequest = new BH_HttpRequest();
 
     FString url = Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/issues/g-") + IssueId + TEXT("/") + Endpoint;
     MediaRequest->SetURL(url);
     MediaRequest->SetVerb("POST");
-    
-    // Use token-based authentication if available
-    if (!Settings->ProjectToken.IsEmpty())
-    {
-        MediaRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
-    }
-    else
-    {
-        MediaRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
-    }
+
+    MediaRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
     
     MediaRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
     MediaRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));

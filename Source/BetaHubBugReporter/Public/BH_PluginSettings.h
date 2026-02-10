@@ -23,7 +23,7 @@ public:
     FString ProjectId;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
-        meta=(ToolTip="The Project token for authentication. Should start with 'tkn-' and can be found under Project -> Integrations -> Auth Tokens. Highly recommended to use this instead of the default anonymous authentication."))
+        meta=(ToolTip="Required. The Project token for authentication. Should start with 'tkn-' and can be found under Project -> Integrations -> Auth Tokens."))
     FString ProjectToken;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 

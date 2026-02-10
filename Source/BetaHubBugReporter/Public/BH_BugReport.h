@@ -39,7 +39,7 @@ public:
      *                              Takes precedence over ReleaseLabel if both are provided
      *
      * Notes:
-     * - Authentication uses ProjectToken from Settings if available, falling back to anonymous authentication
+     * - Authentication uses ProjectToken from Settings (required)
      * - If both ReleaseId and ReleaseLabel are provided, ReleaseId takes precedence
      * - If ReleaseLabel references a non-existent release, it will be automatically created on BetaHub
      * - Each media file in the arrays can have a custom display name via the Name field
@@ -82,7 +82,7 @@ public:
      *                              Takes precedence over ReleaseLabel if both are provided
      *
      * Notes:
-     * - Authentication uses ProjectToken from Settings if available, falling back to anonymous authentication
+     * - Authentication uses ProjectToken from Settings (required)
      * - If both ReleaseId and ReleaseLabel are provided, ReleaseId takes precedence
      * - If ReleaseLabel references a non-existent release, it will be automatically created on BetaHub
      */

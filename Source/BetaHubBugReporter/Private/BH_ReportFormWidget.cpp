@@ -73,6 +73,14 @@ bool bTryCaptureMouse)
 
 void UBH_ReportFormWidget::SubmitReport()
 {
+    if (!Settings || Settings->ProjectToken.IsEmpty())
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Please set it in Project Settings -> BetaHub."));
+        ShowPopup("Error", "Bug reporting is not configured. Please set the Project Token in the BetaHub plugin settings.");
+        SubmitLabel->SetText(FText::FromString("Submit"));
+        return;
+    }
+
     FString Description = BugDescriptionEdit->GetText().ToString();
     TWeakObjectPtr<UBH_ReportFormWidget> WeakThis(this);
 

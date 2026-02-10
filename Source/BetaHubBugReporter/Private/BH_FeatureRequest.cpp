@@ -29,18 +29,21 @@ void UBH_FeatureRequest::SubmitFeatureRequest(
         return;
     }
 
+    if (Settings->ProjectToken.IsEmpty())
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Cannot submit suggestion."));
+        if (OnFailure)
+        {
+            OnFailure(TEXT("Project Token is not configured. Please set it in the BetaHub plugin settings."));
+        }
+        return;
+    }
+
     TSharedPtr<BH_HttpRequest> InitialRequest = MakeShared<BH_HttpRequest>();
     InitialRequest->SetURL(Settings->ApiEndpoint + TEXT("/projects/") + Settings->ProjectId + TEXT("/feature_requests.json"));
     InitialRequest->SetVerb("POST");
 
-    if (!Settings->ProjectToken.IsEmpty())
-    {
-        InitialRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
-    }
-    else
-    {
-        InitialRequest->SetHeader(TEXT("Authorization"), TEXT("FormUser anonymous"));
-    }
+    InitialRequest->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("FormUser %s"), *Settings->ProjectToken));
 
     InitialRequest->SetHeader(TEXT("BetaHub-Project-ID"), Settings->ProjectId);
     InitialRequest->SetHeader(TEXT("Accept"), TEXT("application/json"));
