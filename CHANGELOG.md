@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- CPU profiling instrumentation via `stat BetaHub` console command, allowing developers to measure the plugin's recording cost across game thread, render thread, and background threads
+
+## 1.5.1 - 2026-02-16
+
+### Fixed
+
+- Video encoder crash on PIE (Play In Editor) exit caused by use-after-free when GC destroys the frame buffer
+- Re-entrancy issue where FlushRenderingCommands() could pump queued tasks that restart recording during StopRecording()
+
 ## 1.5.0 - 2026-02-10
 
 ### Changed

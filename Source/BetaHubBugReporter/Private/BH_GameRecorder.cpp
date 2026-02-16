@@ -1,4 +1,5 @@
 #include "BH_GameRecorder.h"
+#include "BH_Stats.h"
 #include "BH_Log.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
@@ -196,11 +197,15 @@ FString UBH_GameRecorder::SaveRecording()
 }
 
 void UBH_GameRecorder::Tick(float DeltaTime)
-{    
+{
+    SCOPE_CYCLE_COUNTER(STAT_BetaHub_Tick);
+
     if (bCopyTextureStarted && CopyTextureFence.IsFenceComplete())
     {
         AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this]()
         {
+            SCOPE_CYCLE_COUNTER(STAT_BetaHub_ProcessFrame);
+
             BH_RawFrameBuffer<uint8>* TextureBuffer = RawFrameBufferQueue.Dequeue();
             if (!TextureBuffer)
             {
@@ -288,6 +293,8 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer)
 {
+    SCOPE_CYCLE_COUNTER(STAT_BetaHub_OnBackBufferReady);
+
     if (bIsStopping)
     {
         return;
@@ -396,6 +403,8 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& 
 
 void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 {
+    SCOPE_CYCLE_COUNTER(STAT_BetaHub_ReadPixels);
+
     if (bIsStopping)
     {
         return;
@@ -437,6 +446,8 @@ void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
     ENQUEUE_RENDER_COMMAND(CopyTextureCommand)(
         [this, BackBuffer](FRHICommandListImmediate& RHICmdList) mutable
         {
+            SCOPE_CYCLE_COUNTER(STAT_BetaHub_CopyBackBuffer);
+
             // Check for the second time, because the viewport state can change
             if (!GEngine || !GEngine->GameViewport) return;
 
@@ -621,6 +632,8 @@ void UBH_GameRecorder::OnBackBufferResized(const FTextureRHIRef& BackBuffer)
 
 void UBH_GameRecorder::SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data)
 {
+    SCOPE_CYCLE_COUNTER(STAT_BetaHub_SetFrameData);
+
     TSharedPtr<FBH_Frame> Frame = MakeShareable(new FBH_Frame(Width, Height));
     Frame->Data = Data;
 
