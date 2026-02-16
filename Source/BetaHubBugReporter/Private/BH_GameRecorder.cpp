@@ -27,6 +27,7 @@ bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint
 UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
     , bIsRecording(false)
+    , bIsStopping(false)
     , bCopyTextureStarted(false)
     , bIsResizing(false)
     , StagingTexture(nullptr)
@@ -45,8 +46,30 @@ UBH_GameRecorder::UBH_GameRecorder(const FObjectInitializer& ObjectInitializer)
     FrameBuffer = ObjectInitializer.CreateDefaultSubobject<UBH_FrameBuffer>(this, TEXT("FrameBuffer"));
 }
 
+void UBH_GameRecorder::BeginDestroy()
+{
+    if (FSlateApplication::IsInitialized())
+    {
+        FSlateApplicationBase::Get().GetRenderer()->OnBackBufferReadyToPresent().RemoveAll(this);
+    }
+
+    if (VideoEncoder.IsValid())
+    {
+        VideoEncoder->StopRecording();
+        VideoEncoder.Reset();
+    }
+
+    Super::BeginDestroy();
+}
+
 void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDuration)
 {
+    if (bIsStopping)
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("StartRecording ignored: stop in progress"));
+        return;
+    }
+
     UE_LOG(LogBetaHub, Log, TEXT("StartRecording called with FPS: %d, Duration: %d seconds"), InTargetFPS, InRecordingDuration);
 
     if (!GEngine)
@@ -90,7 +113,7 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
             return;
         }
 
-        VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, FTimespan(0, 0, InRecordingDuration), FrameWidth, FrameHeight, FrameBuffer));
+        VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, FTimespan(0, 0, InRecordingDuration), FrameWidth, FrameHeight, FrameBuffer->GetFrameSource()));
     }
 
     if (!bIsRecording)
@@ -131,6 +154,8 @@ void UBH_GameRecorder::StopRecording()
 {
     if (VideoEncoder.IsValid())
     {
+        bIsStopping = true;
+
         VideoEncoder->StopRecording();
         bIsRecording = false;
 
@@ -142,12 +167,14 @@ void UBH_GameRecorder::StopRecording()
 
         // Ensure all pending render commands complete before releasing staging texture
         FlushRenderingCommands();
-        
+
         // Remove staging texture
         if (StagingTexture.IsValid())
         {
             StagingTexture.SafeRelease();
         }
+
+        bIsStopping = false;
     }
 }
 
@@ -261,6 +288,11 @@ TStatId UBH_GameRecorder::GetStatId() const
 
 void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer)
 {
+    if (bIsStopping)
+    {
+        return;
+    }
+
     // Validate BackBuffer before proceeding
     if (!BackBuffer.IsValid())
     {
@@ -364,7 +396,12 @@ void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& 
 
 void UBH_GameRecorder::ReadPixels(const FTextureRHIRef& BackBuffer)
 {
-    if (!GEngine || !GEngine->GameViewport) 
+    if (bIsStopping)
+    {
+        return;
+    }
+
+    if (!GEngine || !GEngine->GameViewport)
     {
         UE_LOG(LogBetaHub, Error, TEXT("ReadPixels failed: GEngine (%s) or GameViewport (%s) is null"),
             GEngine ? TEXT("valid") : TEXT("null"),

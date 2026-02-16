@@ -19,6 +19,8 @@ class BETAHUBBUGREPORTER_API UBH_GameRecorder : public UObject, public FTickable
 public:
     UBH_GameRecorder(const FObjectInitializer& ObjectInitializer);
 
+    virtual void BeginDestroy() override;
+
     UFUNCTION(BlueprintCallable, Category="Recording")
     void StartRecording(int32 targetFPS, int32 RecordingDuration);
 
@@ -53,6 +55,7 @@ private:
     FTimespan RecordingDuration;
 
     bool bIsRecording;
+    bool bIsStopping;
 
     bool bCopyTextureStarted;
     FRenderCommandFence CopyTextureFence;

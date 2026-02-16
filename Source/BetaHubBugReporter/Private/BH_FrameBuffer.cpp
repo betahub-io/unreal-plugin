@@ -2,17 +2,15 @@
 
 UBH_FrameBuffer::UBH_FrameBuffer()
 {
-    currentFrame = MakeShareable(new FBH_Frame());
+    FrameSource = MakeShareable(new FBH_FrameSource());
 }
 
 TSharedPtr<FBH_Frame> UBH_FrameBuffer::GetFrame()
 {
-    FScopeLock Lock(&frameMutex);
-    return currentFrame;
+    return FrameSource->GetFrame();
 }
 
 void UBH_FrameBuffer::SetFrame(TSharedPtr<FBH_Frame> frame)
 {
-    FScopeLock Lock(&frameMutex);
-    currentFrame = frame;
+    FrameSource->SetFrame(frame);
 }

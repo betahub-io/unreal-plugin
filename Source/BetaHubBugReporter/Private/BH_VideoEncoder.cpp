@@ -18,12 +18,12 @@ BH_VideoEncoder::BH_VideoEncoder(
     int32 InTargetFPS,
     const FTimespan &InRecordingDuration,
     int32 InScreenWidth, int32 InScreenHeight,
-    UBH_FrameBuffer* InFrameBuffer)
+    TSharedPtr<FBH_FrameSource> InFrameSource)
     :
         targetFPS(InTargetFPS),
         screenWidth(InScreenWidth),
         screenHeight(InScreenHeight),
-        frameBuffer(InFrameBuffer),
+        frameSource(InFrameSource),
         thread(nullptr),
         bIsRecording(false),
         pipeWrite(nullptr),
@@ -88,6 +88,8 @@ BH_VideoEncoder::~BH_VideoEncoder()
 {
     if (thread)
     {
+        Stop();
+        thread->WaitForCompletion();
         delete thread;
         thread = nullptr;
     }
@@ -175,13 +177,13 @@ void BH_VideoEncoder::RunEncoding()
     TSharedPtr<FBH_Frame> firstFrame = nullptr;
     while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
     {
-        if (!frameBuffer)
+        if (!frameSource.IsValid())
         {
-            UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+            UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
             return;
         }
 
-        firstFrame = frameBuffer->GetFrame();
+        firstFrame = frameSource->GetFrame();
         if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
             UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame..."));
@@ -235,13 +237,13 @@ void BH_VideoEncoder::RunEncoding()
     {
         if (!pauseEvent->Wait(0))
         {
-            if (!frameBuffer)
+            if (!frameSource.IsValid())
             {
-                UE_LOG(LogBetaHub, Error, TEXT("Frame buffer is not valid."));
+                UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
                 break;
             }
 
-            TSharedPtr<FBH_Frame> frame = frameBuffer->GetFrame();
+            TSharedPtr<FBH_Frame> frame = frameSource->GetFrame();
             if (frame.IsValid())
             {
                 // Log frame retrieval success

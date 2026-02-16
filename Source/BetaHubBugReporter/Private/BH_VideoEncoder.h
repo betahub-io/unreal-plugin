@@ -21,8 +21,7 @@ private:
     int32 screenHeight;
     static FString PreferredFfmpegOptions;
 
-    UPROPERTY()
-    TObjectPtr<UBH_FrameBuffer> frameBuffer;
+    TSharedPtr<FBH_FrameSource> frameSource;
 
     FEvent* stopEvent;
     FEvent* pauseEvent;
@@ -44,8 +43,8 @@ public:
     BH_VideoEncoder(
         int32 InTargetFPS,
         const FTimespan &InRecordingDuration,
-        int32 InScreenWidth, int32 InScreenHeight,  
-        UBH_FrameBuffer* InFrameBuffer);
+        int32 InScreenWidth, int32 InScreenHeight,
+        TSharedPtr<FBH_FrameSource> InFrameSource);
     virtual ~BH_VideoEncoder();
 
     bool Init() override;
