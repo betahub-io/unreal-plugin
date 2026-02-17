@@ -32,7 +32,13 @@ void UBH_Manager::StartService(UGameInstance* GI)
     }
 
     GI->OnLocalPlayerAddedEvent.AddUObject(this, &UBH_Manager::OnLocalPlayerAdded);
-    
+
+    // Handle local players that already exist (e.g. when StartService is called from Blueprint after game start)
+    for (ULocalPlayer* LP : GI->GetLocalPlayers())
+    {
+        OnLocalPlayerAdded(LP);
+    }
+
     BackgroundService = NewObject<UBH_BackgroundService>(this, UBH_BackgroundService::StaticClass(), TEXT("BH_Manager_BH_BackgroundService0"), RF_Transient);
 
     BackgroundService->StartService();
@@ -73,10 +79,24 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
         UE_LOG(LogBetaHub, Error, TEXT("Background service not initialized. Use StartService() first."));
         return nullptr;
     }
-    
+
     if (Settings->ReportFormWidgetClass)
     {
-        return BackgroundService->SpawnBugReportWidget(CurrentPlayerController.Get(), bTryCaptureMouse);
+        APlayerController* PC = CurrentPlayerController.Get();
+        if (!PC)
+        {
+            // Fallback: get directly from the world if event chain didn't fire
+            if (GEngine && GEngine->GameViewport)
+            {
+                UWorld* World = GEngine->GameViewport->GetWorld();
+                if (World)
+                {
+                    PC = World->GetFirstPlayerController();
+                }
+            }
+        }
+
+        return BackgroundService->SpawnBugReportWidget(PC, bTryCaptureMouse);
     }
     else
     {
@@ -88,10 +108,28 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
 void UBH_Manager::OnLocalPlayerAdded(ULocalPlayer* Player)
 {
     Player->OnPlayerControllerChanged().AddUObject(this, &UBH_Manager::OnPlayerControllerChanged);
+
+    // Handle already-existing player controller
+    if (Player->PlayerController)
+    {
+        OnPlayerControllerChanged(Player->PlayerController);
+    }
 }
 
 void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
 {
+    // Skip if we already have this PC (avoids duplicate input components)
+    if (PC && CurrentPlayerController.Get() == PC)
+    {
+        return;
+    }
+
+    // Clean up old input component from previous PC
+    if (CurrentPlayerController.IsValid() && InputComponent.IsValid())
+    {
+        CurrentPlayerController->PopInputComponent(InputComponent.Get());
+    }
+
     CurrentPlayerController = PC;
 
     if (PC)
