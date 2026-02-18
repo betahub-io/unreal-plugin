@@ -1,15 +1,17 @@
 # Changelog
 
-## 1.5.2 - 2026-02-17
-
-### Added
-
-- CPU profiling instrumentation via `stat BetaHub` console command, allowing developers to measure the plugin's recording cost across game thread, render thread, and background threads
+## 1.5.3 - 2026-02-18
 
 ### Fixed
 
 - PlayerController null error when opening bug report widget, caused by event chain not firing when local players already exist at startup
 - Old input component not cleaned up when PlayerController changes (e.g. during level transitions)
+
+## 1.5.2 - 2026-02-16
+
+### Added
+
+- CPU profiling instrumentation via `stat BetaHub` console command, allowing developers to measure the plugin's recording cost across game thread, render thread, and background threads
 
 ## 1.5.1 - 2026-02-16
 
