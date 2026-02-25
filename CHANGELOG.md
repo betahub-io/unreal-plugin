@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.3 - 2026-02-18
+
+### Fixed
+
+- PlayerController null error when opening bug report widget, caused by event chain not firing when local players already exist at startup
+- Old input component not cleaned up when PlayerController changes (e.g. during level transitions)
+
 ## 1.5.2 - 2026-02-16
 
 ### Added
