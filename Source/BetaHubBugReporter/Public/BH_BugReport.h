@@ -9,6 +9,48 @@
 #include "BH_BugReport.generated.h"
 
 /**
+ * Represents a custom field value for bug report submission.
+ * Supports both single string values and arrays (for multi-select fields).
+ */
+USTRUCT(BlueprintType)
+struct BETAHUBBUGREPORTER_API FBH_CustomFieldValue
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
+    FString Value;
+
+    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
+    TArray<FString> ArrayValue;
+
+    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
+    bool bIsArray = false;
+
+    FBH_CustomFieldValue()
+        : bIsArray(false)
+    {
+    }
+
+    /** Create a single string value (for text, single select, boolean fields) */
+    static FBH_CustomFieldValue FromString(const FString& InValue)
+    {
+        FBH_CustomFieldValue Result;
+        Result.Value = InValue;
+        Result.bIsArray = false;
+        return Result;
+    }
+
+    /** Create an array value (for multi-select fields) */
+    static FBH_CustomFieldValue FromArray(const TArray<FString>& InValues)
+    {
+        FBH_CustomFieldValue Result;
+        Result.ArrayValue = InValues;
+        Result.bIsArray = true;
+        return Result;
+    }
+};
+
+/**
  * Handles the submission of bug reports to BetaHub
  */
 UCLASS()
@@ -45,6 +87,14 @@ public:
      * - Each media file in the arrays can have a custom display name via the Name field
      * - Log files support both file paths (FilePath) and string content (Content)
      * - Videos and Screenshots only support file paths
+     * @param CustomFields          Optional map of custom field values, keyed by field identifier (snake_case).
+     *                              Use FBH_CustomFieldValue::FromString() for text, single select, and boolean fields.
+     *                              Use FBH_CustomFieldValue::FromArray() for multi-select fields.
+     *                              Example:
+     *                                TMap<FString, FBH_CustomFieldValue> Fields;
+     *                                Fields.Add("severity", FBH_CustomFieldValue::FromString("Major"));
+     *                                Fields.Add("platform", FBH_CustomFieldValue::FromString("Steam"));
+     *                                Fields.Add("tags", FBH_CustomFieldValue::FromArray({"Bug", "UI"}));
      */
     void SubmitReportWithMedia(
         UBH_PluginSettings* Settings,
@@ -57,7 +107,8 @@ public:
         TFunction<void()> OnSuccess,
         TFunction<void(const FString&)> OnFailure,
         const FString& ReleaseLabel = TEXT(""),
-        const FString& ReleaseId = TEXT(""));
+        const FString& ReleaseId = TEXT(""),
+        const TMap<FString, FBH_CustomFieldValue>& CustomFields = TMap<FString, FBH_CustomFieldValue>());
 
     /**
      * Submits a bug report to BetaHub (legacy method)
@@ -114,7 +165,8 @@ private:
         TFunction<void()> OnSuccess,
         TFunction<void(const FString&)> OnFailure,
         const FString& ReleaseLabel = TEXT(""),
-        const FString& ReleaseId = TEXT(""));
+        const FString& ReleaseId = TEXT(""),
+        const TMap<FString, FBH_CustomFieldValue>& CustomFields = TMap<FString, FBH_CustomFieldValue>());
 
     void SubmitMedia(
         UBH_PluginSettings* Settings,

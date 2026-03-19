@@ -33,14 +33,15 @@ void UBH_BugReport::SubmitReportWithMedia(
     TFunction<void()> OnSuccess,
     TFunction<void(const FString&)> OnFailure,
     const FString& ReleaseLabel,
-    const FString& ReleaseId
+    const FString& ReleaseId,
+    const TMap<FString, FBH_CustomFieldValue>& CustomFields
 )
 {
     // HTTP requests are already asynchronous, no need for Async wrapper
     // Calling directly avoids UObject lifetime issues with 'this' capture
     SubmitReportWithMediaAsync(Settings, GameRecorder, Description, StepsToReproduce,
         Videos, Screenshots, Logs,
-        OnSuccess, OnFailure, ReleaseLabel, ReleaseId);
+        OnSuccess, OnFailure, ReleaseLabel, ReleaseId, CustomFields);
 }
 
 void UBH_BugReport::SubmitReportWithMediaAsync(
@@ -54,7 +55,8 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
     TFunction<void()> OnSuccess,
     TFunction<void(const FString&)> OnFailure,
     const FString& ReleaseLabel,
-    const FString& ReleaseId
+    const FString& ReleaseId,
+    const TMap<FString, FBH_CustomFieldValue>& CustomFields
     )
 {
     if (!Settings)
@@ -103,6 +105,26 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
     else if (!FinalReleaseLabel.IsEmpty())
     {
         InitialRequest->AddField(TEXT("issue[release_label]"), FinalReleaseLabel);
+    }
+
+    // Add custom fields
+    for (const auto& CustomField : CustomFields)
+    {
+        if (CustomField.Value.bIsArray)
+        {
+            for (const FString& ArrayItem : CustomField.Value.ArrayValue)
+            {
+                InitialRequest->AddField(
+                    FString::Printf(TEXT("issue[custom][%s][]"), *CustomField.Key),
+                    ArrayItem);
+            }
+        }
+        else
+        {
+            InitialRequest->AddField(
+                FString::Printf(TEXT("issue[custom][%s]"), *CustomField.Key),
+                CustomField.Value.Value);
+        }
     }
 
     InitialRequest->FinalizeFormData();
