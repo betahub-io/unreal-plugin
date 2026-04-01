@@ -58,23 +58,15 @@ void UBH_BackgroundService::RetryInitializeService()
                 FViewport* Viewport = GEngine->GameViewport->Viewport;
                 if (Viewport->GetSizeXY().X > 0 && Viewport->GetSizeXY().Y > 0)
                 {
-                    // Final check: ensure viewport is ready for rendering
-                    if (Viewport->GetRenderTargetTexture())
-                    {
-                        // Store viewport size in local variables for UE 5.6 format string validation
-                        FIntPoint ViewportSize = Viewport->GetSizeXY();
-                        UE_LOG(LogBetaHub, Log, TEXT("Viewport fully ready. Initializing service with viewport size: %dx%d"), 
-                            ViewportSize.X, ViewportSize.Y);
-                        
-                        // Viewport is now fully available, clear the timer and initialize the service
-                        GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
-                        InitializeService();
-                        return;
-                    }
-                    else
-                    {
-                        UE_LOG(LogBetaHub, Warning, TEXT("Viewport available but no valid back buffer yet."));
-                    }
+                    // Store viewport size in local variables for UE 5.6 format string validation
+                    FIntPoint ViewportSize = Viewport->GetSizeXY();
+                    UE_LOG(LogBetaHub, Log, TEXT("Viewport fully ready. Initializing service with viewport size: %dx%d"),
+                        ViewportSize.X, ViewportSize.Y);
+
+                    // Viewport is now fully available, clear the timer and initialize the service
+                    GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+                    InitializeService();
+                    return;
                 }
                 else
                 {
