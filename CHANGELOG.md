@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.4 - 2026-04-01
+
+### Fixed
+
+- Packaged build initialization blocked when viewport does not use a separate render target (GetRenderTargetTexture returning null)
+- Plugin content assets (widget blueprints) not cooked in UE 5.4+ due to EngineVersion mismatch in .uplugin
+
 ## 1.5.3 - 2026-02-18
 
 ### Fixed
