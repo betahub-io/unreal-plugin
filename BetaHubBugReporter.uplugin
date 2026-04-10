@@ -9,6 +9,7 @@
 	"CreatedByURL": "https://betahub.io/",
 	"DocsURL": "https://betahub.io/docs/permalinks/unreal-plugin",
 	"MarketplaceURL": "",
+	"FabURL": "com.epicgames.launcher://ue/Fab/product/ad25d037-f241-4dd7-b0d6-2e428cf9d40a",
 	"SupportURL": "https://betahub.io/docs/permalinks/support",
 	"CanContainContent": true,
 	"IsBetaVersion": false,
@@ -23,8 +24,5 @@
 				"Win64"
 			]
 		}
-	],
-	"AdditionalFiles": [
-        "ThirdParty/FFmpeg/Windows/ffmpeg.exe"
-    ]
+	]
 }

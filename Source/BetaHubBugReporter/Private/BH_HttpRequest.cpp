@@ -1,3 +1,4 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_HttpRequest.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"

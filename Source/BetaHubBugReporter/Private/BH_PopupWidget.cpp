@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 
 
 #include "BH_PopupWidget.h"

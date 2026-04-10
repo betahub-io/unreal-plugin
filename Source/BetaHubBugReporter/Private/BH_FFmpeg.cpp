@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 
 
 #include "BH_FFmpeg.h"
@@ -51,6 +51,11 @@ FString BH_FFmpeg::GetFFmpegPath()
 
 BH_FFmpegOptions BH_FFmpeg::GetFFmpegPreferredOptions()
 {
+    if (GetFFmpegPath().IsEmpty())
+    {
+        return {};
+    }
+
     TArray<BH_FFmpegOptions> Options = GetFFmpegAvailableOptions();
 
     // for each
@@ -75,7 +80,14 @@ BH_FFmpegOptions BH_FFmpeg::GetFFmpegPreferredOptions()
 TArray<BH_FFmpegOptions> BH_FFmpeg::GetFFmpegAvailableOptions()
 {
     TArray<BH_FFmpegOptions> Options;
-    FString Output = FBH_Runnable::RunCommand(GetFFmpegPath(), TEXT("-encoders"));
+
+    FString Path = GetFFmpegPath();
+    if (Path.IsEmpty())
+    {
+        return Options;
+    }
+
+    FString Output = FBH_Runnable::RunCommand(Path, TEXT("-encoders"));
 
     if (Output.Contains(TEXT("h264_nvenc")))
     {

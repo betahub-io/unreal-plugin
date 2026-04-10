@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 
 using UnrealBuildTool;
 using System;
@@ -60,6 +60,10 @@ public class BetaHubBugReporter : ModuleRules
 			);
 
 		
-		RuntimeDependencies.Add("$(TargetOutputDir)/bh_ffmpeg.exe", Path.Combine(PluginDirectory, "ThirdParty/FFmpeg/Windows/ffmpeg.exe"));
+		string ffmpegPath = Path.Combine(PluginDirectory, "ThirdParty/FFmpeg/Windows/ffmpeg.exe");
+		if (File.Exists(ffmpegPath))
+		{
+			RuntimeDependencies.Add("$(TargetOutputDir)/bh_ffmpeg.exe", ffmpegPath);
+		}
 	}
 }

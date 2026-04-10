@@ -1,3 +1,4 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_SceneCaptureActor.h"
 
 ABH_SceneCaptureActor::ABH_SceneCaptureActor()

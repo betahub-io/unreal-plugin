@@ -1,5 +1,7 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_BackgroundService.h"
 #include "BH_Log.h"
+#include "BH_FFmpeg.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Blueprint/UserWidget.h"
@@ -101,6 +103,13 @@ void UBH_BackgroundService::InitializeService()
 {
     if (GameRecorder && Settings)
     {
+        // Check if ffmpeg is available for video recording
+        FString FFmpegPath = BH_FFmpeg::GetFFmpegPath();
+        if (FFmpegPath.IsEmpty())
+        {
+            UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg not found. Video recording is disabled. Bug reports will include screenshots but not video. See https://github.com/betahub-io/unreal-plugin/blob/master/FFMPEG_SETUP.md for setup instructions."));
+        }
+
         // Set maximum video dimensions while maintaining aspect ratio
         GameRecorder->SetMaxVideoDimensions(Settings->MaxVideoWidth, Settings->MaxVideoHeight);
         GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);

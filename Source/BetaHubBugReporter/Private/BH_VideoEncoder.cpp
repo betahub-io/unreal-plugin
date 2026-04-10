@@ -1,3 +1,4 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_VideoEncoder.h"
 #include "CoreTypes.h"
 #include "BH_Log.h"

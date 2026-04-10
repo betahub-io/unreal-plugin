@@ -1,0 +1,2 @@
+Repository,Package Manager,Library Name,Version,License,License Type
+unreal-plugin,External (user-provided),ffmpeg,7.1 or later (not bundled),LGPL-2.1/GPL (depends on build config),Copyleft (Weak)

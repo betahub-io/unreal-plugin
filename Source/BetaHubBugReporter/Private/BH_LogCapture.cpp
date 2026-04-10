@@ -1,3 +1,4 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_LogCapture.h"
 
 void UBH_LogCapture::Serialize(const TCHAR* V, ELogVerbosity::Type Verbosity, const class FName& Category)

@@ -1,4 +1,6 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_GameRecorder.h"
+#include "BH_FFmpeg.h"
 #include "BH_Stats.h"
 #include "BH_Log.h"
 #include "Engine/World.h"
@@ -114,12 +116,20 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
             return;
         }
 
-        VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, FTimespan(0, 0, InRecordingDuration), FrameWidth, FrameHeight, FrameBuffer->GetFrameSource()));
+        // Only create VideoEncoder if ffmpeg is available
+        FString FFmpegPath = BH_FFmpeg::GetFFmpegPath();
+        if (!FFmpegPath.IsEmpty() && FPaths::FileExists(FFmpegPath))
+        {
+            VideoEncoder = MakeShareable(new BH_VideoEncoder(InTargetFPS, FTimespan(0, 0, InRecordingDuration), FrameWidth, FrameHeight, FrameBuffer->GetFrameSource()));
+        }
     }
 
     if (!bIsRecording)
     {
-        VideoEncoder->StartRecording();
+        if (VideoEncoder.IsValid())
+        {
+            VideoEncoder->StartRecording();
+        }
         bIsRecording = true;
         TargetFPS = InTargetFPS;
         RecordingDuration = FTimespan(0, 0, InRecordingDuration);

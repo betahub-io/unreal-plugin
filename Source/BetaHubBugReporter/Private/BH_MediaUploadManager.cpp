@@ -1,3 +1,4 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_MediaUploadManager.h"
 #include "BH_MediaTypes.h"
 #include "BH_Log.h"

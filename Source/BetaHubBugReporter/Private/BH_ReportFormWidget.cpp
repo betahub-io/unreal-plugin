@@ -1,3 +1,4 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_ReportFormWidget.h"
 #include "BH_Log.h"
 #include "Components/Button.h"

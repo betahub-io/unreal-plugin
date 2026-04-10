@@ -1,3 +1,4 @@
+// Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_GameInstanceSubsystem.h"
 #include "BH_Log.h"
 #include "BH_Manager.h"
