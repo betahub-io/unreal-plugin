@@ -38,6 +38,10 @@ private:
     bool bWasCursorVisible;
     bool bWasCursorLocked;
     bool bSuppressCursorRestore;
+    bool bIsSubmitting;
+
+    void SetSubmittingState();
+    void ResetSubmitButton();
 
     UFUNCTION()
     void OnCloseClicked();
@@ -54,6 +58,7 @@ private:
 
 protected:
     virtual void NativeOnInitialized() override;
+    virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
 
 public:

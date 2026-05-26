@@ -19,6 +19,7 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     , bWasCursorVisible(false)
     , bWasCursorLocked(false)
     , bSuppressCursorRestore(false)
+    , bIsSubmitting(false)
 {
     SetIsFocusable(true);
 }
@@ -53,6 +54,46 @@ void UBH_ReportFormWidget::NativeOnInitialized()
     SetReportType(EBH_ReportType::Bug);
 }
 
+void UBH_ReportFormWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    // Reset the submit button every time the form is shown. RemoveFromParent() on a
+    // successful submit removes the widget from the viewport but does not destroy it, so a
+    // reused instance would otherwise stay stuck on "Submitting..." the next time it opens.
+    ResetSubmitButton();
+}
+
+void UBH_ReportFormWidget::SetSubmittingState()
+{
+    bIsSubmitting = true;
+
+    if (SubmitButton)
+    {
+        SubmitButton->SetIsEnabled(false);
+    }
+
+    if (SubmitLabel)
+    {
+        SubmitLabel->SetText(FText::FromString("Submitting..."));
+    }
+}
+
+void UBH_ReportFormWidget::ResetSubmitButton()
+{
+    bIsSubmitting = false;
+
+    if (SubmitButton)
+    {
+        SubmitButton->SetIsEnabled(true);
+    }
+
+    if (SubmitLabel)
+    {
+        SubmitLabel->SetText(FText::FromString("Submit"));
+    }
+}
+
 void UBH_ReportFormWidget::Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents,
 bool bTryCaptureMouse)
 {
@@ -78,7 +119,7 @@ void UBH_ReportFormWidget::SubmitReport()
     {
         UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Please set it in Project Settings -> BetaHub."));
         ShowPopup("Error", "Bug reporting is not configured. Please set the Project Token in the BetaHub plugin settings.");
-        SubmitLabel->SetText(FText::FromString("Submit"));
+        ResetSubmitButton();
         return;
     }
 
@@ -154,7 +195,7 @@ void UBH_ReportFormWidget::SubmitReport()
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
                     Self->ShowPopup("Error", ErrorMessage);
-                    Self->SubmitLabel->SetText(FText::FromString("Submit"));
+                    Self->ResetSubmitButton();
                 }
             }
         );
@@ -179,7 +220,7 @@ void UBH_ReportFormWidget::SubmitReport()
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
                     Self->ShowPopup("Error", ErrorMessage);
-                    Self->SubmitLabel->SetText(FText::FromString("Submit"));
+                    Self->ResetSubmitButton();
                 }
             }
         );
@@ -253,7 +294,12 @@ void UBH_ReportFormWidget::NativeDestruct()
 
 void UBH_ReportFormWidget::OnSubmitButtonClicked()
 {
-    SubmitLabel->SetText(FText::FromString("Submitting..."));
+    if (bIsSubmitting)
+    {
+        return;
+    }
+
+    SetSubmittingState();
     SubmitReport();
 }
 

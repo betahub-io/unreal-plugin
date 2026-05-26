@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.5 - 2026-05-26
+
+### Fixed
+
+- Submit button stuck on "Submitting..." and not resetting to "Submit" when the report form is reused after a successful submission (RemoveFromParent does not destroy the widget instance)
+- Submit button remaining clickable while a submission is in progress, allowing duplicate reports to be sent by clicking again
+
 ## 1.5.4 - 2026-04-01
 
 ### Fixed
