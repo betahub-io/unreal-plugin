@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.5 - 2026-05-26
+
+### Fixed
+
+- Submit button stayed clickable while a submission was in progress, so clicking the "Submitting..." button again sent duplicate reports. The button is now disabled and guarded against re-entry until the submission completes.
+- Submit button state is now reset whenever the form is shown, so a form widget instance that is reused (rather than recreated) no longer stays stuck on "Submitting...".
+
 ## 1.5.4 - 2026-04-01
 
 ### Fixed
