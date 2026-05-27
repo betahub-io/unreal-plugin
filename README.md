@@ -6,6 +6,10 @@ The plugin will start a *Background Service* that will record gameplay session a
 
 ## Installation
 
+### From Fab
+
+The plugin is available on the [Fab marketplace](https://www.fab.com/pl/listings/9c76232c-34f6-433c-ad7e-2c4005837e66). Install it directly from Fab into your Unreal Engine project.
+
 ### From GitHub
 
 1. Navigate to your Unreal project directory.
