@@ -115,6 +115,13 @@ bool bTryCaptureMouse)
 
 void UBH_ReportFormWidget::SubmitReport()
 {
+    if (bIsSubmitting)
+    {
+        return;
+    }
+
+    SetSubmittingState();
+
     if (!Settings || Settings->ProjectToken.IsEmpty())
     {
         UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Please set it in Project Settings -> BetaHub."));
@@ -176,6 +183,7 @@ void UBH_ReportFormWidget::SubmitReport()
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
                     Self->bSuppressCursorRestore = true;
+                    Self->ResetSubmitButton();
                     Self->ShowPopup("Success", "Bug report submitted successfully!");
                     Self->RemoveFromParent();
                 }
@@ -211,6 +219,7 @@ void UBH_ReportFormWidget::SubmitReport()
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
                     Self->bSuppressCursorRestore = true;
+                    Self->ResetSubmitButton();
                     Self->ShowPopup("Success", "Suggestion submitted successfully!");
                     Self->RemoveFromParent();
                 }
@@ -294,12 +303,6 @@ void UBH_ReportFormWidget::NativeDestruct()
 
 void UBH_ReportFormWidget::OnSubmitButtonClicked()
 {
-    if (bIsSubmitting)
-    {
-        return;
-    }
-
-    SetSubmittingState();
     SubmitReport();
 }
 
