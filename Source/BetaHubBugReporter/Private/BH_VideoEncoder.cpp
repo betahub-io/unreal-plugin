@@ -58,12 +58,22 @@ BH_VideoEncoder::BH_VideoEncoder(
         UE_LOG(LogBetaHub, Error, TEXT("FFmpeg executable not found at path: %s"), *ffmpegPath);
     }
 
-    // Set up the segments directory in the Saved folder
-    segmentsDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments"));
+    // Set up the segments directory in the Saved folder.
+    // Store it as a fully-qualified absolute path: ffmpeg is handed absolute paths (see RunEncoding /
+    // MergeSegments), and under a debugger the process working directory can differ from the engine
+    // BaseDir that ConvertRelativePathToFull anchors to. Keeping segmentsDir absolute everywhere
+    // guarantees the directory we create, the files IFileManager enumerates, and the paths ffmpeg
+    // reads/writes all resolve to the same place.
+    segmentsDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments")));
     IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
     if (!PlatformFile.DirectoryExists(*segmentsDir))
     {
-        PlatformFile.CreateDirectoryTree(*segmentsDir);
+        if (!PlatformFile.CreateDirectoryTree(*segmentsDir))
+        {
+            // Fail loudly instead of silently: ffmpeg cannot create directories, so if this fails
+            // every segment write and the later merge will fail with a confusing ENOENT.
+            UE_LOG(LogBetaHub, Error, TEXT("Failed to create video segments directory: %s. Video recording will not work (check folder permissions / antivirus / Controlled Folder Access)."), *segmentsDir);
+        }
     }
 
     // Remove all existing segment files
@@ -426,8 +436,9 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         return MergedFilePath;
     }
 
-    // Create the concat file
-    FString ConcatFilePath = segmentsDir / TEXT("concat.txt");
+    // Create the concat file. Build ONE absolute path and use that exact string for both the write
+    // and the ffmpeg argument, so we can never write it to one place and read it from another.
+    FString ConcatFilePath = FPaths::ConvertRelativePathToFull(segmentsDir / TEXT("concat.txt"));
     FString ConcatFileContent;
     for (const FString& SegmentFile : SegmentFiles)
     {
@@ -437,17 +448,26 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
 
         UE_LOG(LogBetaHub, Log, TEXT("Segment file: %s"), *FullPath);
     }
-    FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath);
 
-    // Set the merged file path
-    MergedFilePath = FPaths::Combine(FPaths::ProjectSavedDir(), 
-        FString::Printf(TEXT("Gameplay_%s.mp4"), 
-        *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S"))));
+    // Check the write result. Previously this was ignored: if the write failed (e.g. antivirus /
+    // Controlled Folder Access blocking file creation), ffmpeg was still launched and died with a
+    // misleading "No such file or directory", and the report was published as a success with no video.
+    // Fail fast at the true source instead.
+    if (!FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath))
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to write concat file: %s. Cannot merge video (check folder permissions / antivirus / Controlled Folder Access)."), *ConcatFilePath);
+        return FString();
+    }
+
+    // Set the merged file path (absolute, for the same reason as segmentsDir).
+    MergedFilePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),
+        FString::Printf(TEXT("Gameplay_%s.mp4"),
+        *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S")))));
 
     // FFmpeg command to merge segments
     FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""),
-        *FPaths::ConvertRelativePathToFull(ConcatFilePath),
-        *FPaths::ConvertRelativePathToFull(MergedFilePath));
+        *ConcatFilePath,
+        *MergedFilePath);
 
     // Create and start the runnable for merging
     FBH_Runnable* MergeRunnable = new FBH_Runnable(*ffmpegPath, CommandLine);
@@ -463,8 +483,18 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
 
     if (exitCode == 0)
     {
+        // ffmpeg reported success; confirm the file is actually there before we hand it to the
+        // uploader. A missing file here means "merge said OK but produced nothing" - report it as a
+        // failure rather than returning a path to a non-existent file.
+        if (!FPaths::FileExists(MergedFilePath))
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Merge reported success but output file is missing: %s"), *MergedFilePath);
+            delete MergeRunnable;
+            return FString();
+        }
+
         UE_LOG(LogBetaHub, Log, TEXT("Segments merged successfully."));
-        
+
         // Clean up segment files
         for (const FString& SegmentFile : SegmentFiles)
         {
