@@ -55,6 +55,34 @@ There, you can also configure your shortcut key to open the bug reporter window.
 
 For full docs and guides, please visit the [BetaHub Documentation](https://betahub.io/docs/permalinks/unreal-plugin).
 
+## Custom Fields (C++)
+
+You can attach your own game-specific data (player level, current scene, build number, etc.) to a bug report. Custom fields are **C++ only** — they are passed per submission to `SubmitReportWithMedia` and are not exposed in the bundled report widget or via Blueprint.
+
+```cpp
+#include "BH_BugReport.h"
+
+UBH_PluginSettings* Settings = GetMutableDefault<UBH_PluginSettings>();
+UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
+
+TMap<FString, FBH_CustomFieldValue> CustomFields;
+CustomFields.Add("player_level", FBH_CustomFieldValue::FromString(FString::FromInt(PlayerLevel)));
+CustomFields.Add("tags", FBH_CustomFieldValue::FromArray({ "Bug", "UI" })); // multi-select
+
+TArray<FBH_MediaFile> Videos, Screenshots, Logs;
+
+BugReport->SubmitReportWithMedia(
+    Settings, nullptr,
+    TEXT("Description"), TEXT("Steps to reproduce"),
+    Videos, Screenshots, Logs,
+    []() {}, [](const FString& Error) {},
+    TEXT(""), TEXT(""), CustomFields);
+```
+
+Use `FromString()` for text/single-select/boolean fields and `FromArray()` for multi-select fields. Field keys are snake_case identifiers.
+
+**Project setup:** plain text fields auto-create on first submission, so no setup is needed for them. **Single-select, multi-select, and boolean fields must be pre-created** in your BetaHub project settings — and for select fields, every submitted value must match a predefined option, otherwise the whole report is rejected. See the [custom fields documentation](https://betahub.io/docs/integrations/game-engines/#custom-fields) for details.
+
 ## Development Branch
 
 This repository has an actively maintained `dev` branch which is often more up-to-date than `master`. If you encounter any issues on `master`, we recommend checking whether the problem has already been addressed in the `dev` branch:
