@@ -304,6 +304,14 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                             VideoPath = GameRecorder->SaveRecording();
                             UE_LOG(LogBetaHub, Log, TEXT("SaveRecording returned: %s"), *VideoPath);
 
+                            // Video was requested (a GameRecorder was passed) but the merge produced no
+                            // file. The report will still be submitted, just without the video. Log this
+                            // loudly so a missing video is not mistaken for a fully successful submission.
+                            if (VideoPath.IsEmpty())
+                            {
+                                UE_LOG(LogBetaHub, Warning, TEXT("Video was requested but could not be attached (recording/merge produced no file). Submitting report without video."));
+                            }
+
                             GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
                         }
                         else
