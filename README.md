@@ -33,6 +33,20 @@ The plugin requires FFmpeg for video recording. Place the FFmpeg executable in t
 
 For packaged builds, place the executable (renamed to `bh_ffmpeg` or `bh_ffmpeg.exe`) in `Binaries/<Platform>/`.
 
+## Video Encoder
+
+The plugin can encode the gameplay video with either the bundled FFmpeg (CPU) or a GPU hardware encoder. Choose it under *Project Settings → Plugins → BetaHub Bug Reporter → **Video Encoder Backend***:
+
+| Setting | What it does | Requirements |
+| --- | --- | --- |
+| **FFmpeg** (default) | Encodes on the CPU with the bundled FFmpeg. | None — works on every GPU and platform. |
+| **Hardware** | Encodes on the GPU (NVENC/AMF), keeping encoding off the CPU. | Windows, an NVIDIA or AMD GPU, and a plugin build with hardware-encode support (see below). |
+| **Auto** | Uses the hardware encoder when it is available, otherwise FFmpeg. | Same as Hardware; silently uses FFmpeg when hardware isn't available. |
+
+**Automatic fallback:** *Hardware* and *Auto* always fall back to FFmpeg if the GPU encoder can't start (no supported GPU, driver session limit reached, or the plugin was built without hardware support). The chosen backend is logged at the start of each recording under the `LogBetaHub` category.
+
+**Enabling hardware encode (experimental):** hardware encoding is built on Unreal's Experimental *AVCodecs* plugins and is compiled in only when the plugin is built from source with the `BETAHUB_HWENCODE=1` environment variable set, with the *AVCodecs* (and *NVCodecs*/*AMFCodecs*) plugins enabled in your project. Without that, the *Hardware*/*Auto* settings fall back to FFmpeg.
+
 ## Configuration
 
 All you need to do is to go to your *Player Settings* and in the *BetaHub Bug Reported* section under the *Plugins* category, set your Project ID. You can find your Project ID in your project *General Settings* page.

@@ -19,11 +19,13 @@ BH_VideoEncoder::BH_VideoEncoder(
     int32 InTargetFPS,
     const FTimespan &InRecordingDuration,
     int32 InScreenWidth, int32 InScreenHeight,
-    TSharedPtr<FBH_FrameSource> InFrameSource)
+    TSharedPtr<FBH_FrameSource> InFrameSource,
+    bool bInH264PassThrough)
     :
         targetFPS(InTargetFPS),
         screenWidth(InScreenWidth),
         screenHeight(InScreenHeight),
+        bH264PassThrough(bInH264PassThrough),
         frameSource(InFrameSource),
         thread(nullptr),
         bIsRecording(false),
@@ -74,10 +76,23 @@ BH_VideoEncoder::BH_VideoEncoder(
     }
 
     outputFile = FPaths::Combine(segmentsDir, (segmentPrefix + TEXT("%06d.mp4")));
-    encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
-        FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
-        TEXT(" -r ") + FString::FromInt(targetFPS) +
-        TEXT(" -i - {OPTIONS} -pix_fmt yuv420p -f segment -segment_time 10 -reset_timestamps 1 ");
+    if (bH264PassThrough)
+    {
+        // Already-encoded H.264 Annex-B stream in, remux (no re-encode) into mp4 segments. ffmpeg's mp4
+        // muxer writes SPS/PPS into each segment's avcC from the stream extradata, so segments are
+        // independently decodable as long as the stream carries periodic IDR keyframes (forced by the
+        // hardware encoder). -r sets the assumed input frame rate for timestamp generation.
+        encodingSettings = TEXT("-y -fflags +genpts -f h264 -r ") +
+            FString::FromInt(targetFPS) +
+            TEXT(" -i - -c copy -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 ");
+    }
+    else
+    {
+        encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
+            FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
+            TEXT(" -r ") + FString::FromInt(targetFPS) +
+            TEXT(" -i - {OPTIONS} -pix_fmt yuv420p -f segment -segment_time 10 -reset_timestamps 1 ");
+    }
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -166,6 +181,11 @@ void BH_VideoEncoder::ResumeRecording()
     }
 }
 
+void BH_VideoEncoder::EnqueueEncodedPacket(TArray<uint8>&& Nal)
+{
+    EncodedPacketQueue.Enqueue(MoveTemp(Nal));
+}
+
 void BH_VideoEncoder::RunEncoding()
 {
     if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
@@ -174,27 +194,43 @@ void BH_VideoEncoder::RunEncoding()
         return;
     }
 
-    // Wait for the first valid frame
-    TSharedPtr<FBH_Frame> firstFrame = nullptr;
-    while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
+    if (bH264PassThrough)
     {
-        if (!frameSource.IsValid())
+        // Wait for the first encoded packet before launching ffmpeg.
+        while (EncodedPacketQueue.IsEmpty())
         {
-            UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
-            return;
+            UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first encoded H.264 packet..."));
+            FPlatformProcess::Sleep(0.1f);
+            if (stopEvent->Wait(0))
+            {
+                return;
+            }
         }
-
-        firstFrame = frameSource->GetFrame();
-        if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
+    }
+    else
+    {
+        // Wait for the first valid frame
+        TSharedPtr<FBH_Frame> firstFrame = nullptr;
+        while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
-            UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame..."));
-            FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
-        }
+            if (!frameSource.IsValid())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
+                return;
+            }
 
-        if (stopEvent->Wait(0))
-        {
-            // stop event received, do not proceed any further
-            return;
+            firstFrame = frameSource->GetFrame();
+            if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
+            {
+                UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame..."));
+                FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
+            }
+
+            if (stopEvent->Wait(0))
+            {
+                // stop event received, do not proceed any further
+                return;
+            }
         }
     }
 
@@ -232,51 +268,28 @@ void BH_VideoEncoder::RunEncoding()
 
     const float frameInterval = 1.0f / targetFPS;
 
-    TArray<uint8> byteData;
 
     while (!stopEvent->Wait(0))
     {
         if (!pauseEvent->Wait(0))
         {
-            if (!frameSource.IsValid())
+            if (bH264PassThrough)
             {
-                UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
-                break;
-            }
-
-            TSharedPtr<FBH_Frame> frame = frameSource->GetFrame();
-            if (frame.IsValid())
-            {
-                // Log frame retrieval success
-                // UE_LOG(LogBetaHub, Log, TEXT("Frame retrieved successfully."));
-
-                if (byteData.Num() != frame->Data.Num() * sizeof(FColor))
+                // Drain all encoded packets queued since last iteration and write them straight to
+                // ffmpeg's stdin (remuxed with -c copy — no re-encode).
+                TArray<uint8> Nal;
+                while (EncodedPacketQueue.Dequeue(Nal))
                 {
-                    byteData.SetNum(frame->Data.Num() * sizeof(FColor));
-                }
-
-                // Convert the TArray<FColor> to a byte array
-                if (byteData.Num() > 0)
-                {
-                    FMemory::Memcpy(byteData.GetData(), frame->Data.GetData(), frame->Data.Num() * sizeof(FColor));
-
-                    // Log the data size
-                    // UE_LOG(LogBetaHub, Log, TEXT("Byte data size: %d"), byteData.Num());
-
-                    // Write data to the pipe all at once
-                    ffmpegRunnable->WriteToPipe(byteData);
-
-                    // Read the buffered output
-                    FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
-
-                    if (!ffmpegOutput.IsEmpty())
+                    if (Nal.Num() > 0)
                     {
-                        UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+                        ffmpegRunnable->WriteToPipe(Nal.GetData(), Nal.Num());
                     }
                 }
-                else
+
+                FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+                if (!ffmpegOutput.IsEmpty())
                 {
-                    UE_LOG(LogBetaHub, Warning, TEXT("Byte data size is zero, skipping write."));
+                    UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
                 }
 
                 // Periodic segment removal
@@ -286,9 +299,46 @@ void BH_VideoEncoder::RunEncoding()
                     LastSegmentCheckTime = FDateTime::Now();
                 }
             }
+            else if (!frameSource.IsValid())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
+                break;
+            }
             else
             {
-                UE_LOG(LogBetaHub, Warning, TEXT("Failed to retrieve frame from frame buffer."));
+                TSharedPtr<FBH_Frame> frame = frameSource->GetFrame();
+                if (frame.IsValid())
+                {
+                    // Write the frame's pixels straight to the pipe (BGRA == FColor byte layout), no copy.
+                    const int32 FrameBytes = frame->Data.Num() * (int32)sizeof(FColor);
+                    if (FrameBytes > 0)
+                    {
+                        ffmpegRunnable->WriteToPipe(reinterpret_cast<const uint8*>(frame->Data.GetData()), FrameBytes);
+
+                        // Read the buffered output
+                        FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+
+                        if (!ffmpegOutput.IsEmpty())
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+                        }
+                    }
+                    else
+                    {
+                        UE_LOG(LogBetaHub, Warning, TEXT("Byte data size is zero, skipping write."));
+                    }
+
+                    // Periodic segment removal
+                    if ((FDateTime::Now() - LastSegmentCheckTime) >= SegmentCheckInterval)
+                    {
+                        RemoveOldSegments();
+                        LastSegmentCheckTime = FDateTime::Now();
+                    }
+                }
+                else
+                {
+                    UE_LOG(LogBetaHub, Warning, TEXT("Failed to retrieve frame from frame buffer."));
+                }
             }
             FPlatformProcess::Sleep(frameInterval);
         }
@@ -309,6 +359,21 @@ void BH_VideoEncoder::RunEncoding()
                 UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output is empty."));
             }
             break;
+        }
+    }
+
+    // Final drain: stopEvent breaks the loop above without processing the queue, so write any packets
+    // enqueued after the last iteration (the tail handed over by StopRecording) before closing ffmpeg's
+    // stdin — otherwise the end of a hardware-encoded recording is truncated (worse at low FPS).
+    if (bH264PassThrough)
+    {
+        TArray<uint8> Nal;
+        while (EncodedPacketQueue.Dequeue(Nal))
+        {
+            if (Nal.Num() > 0)
+            {
+                ffmpegRunnable->WriteToPipe(Nal.GetData(), Nal.Num());
+            }
         }
     }
 

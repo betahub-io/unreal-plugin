@@ -18,6 +18,9 @@ UBH_PluginSettings::UBH_PluginSettings()
     MaxRecordingDuration = 60;
     MaxVideoWidth = 2000;
     MaxVideoHeight = 1200;
+    // Default to FFmpeg (unchanged, universal behavior). Switch to Auto/Hardware to offload encoding to
+    // the GPU where available; Auto/Hardware always fall back to FFmpeg if the GPU encoder cannot start.
+    VideoEncoderBackend = EBH_VideoEncoderBackend::FFmpeg;
 
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));

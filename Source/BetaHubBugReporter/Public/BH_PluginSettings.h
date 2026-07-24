@@ -7,6 +7,18 @@
 #include "BH_PopupWidget.h"
 #include "BH_PluginSettings.generated.h"
 
+// Which encoder produces the recorded video.
+UENUM(BlueprintType)
+enum class EBH_VideoEncoderBackend : uint8
+{
+    // Use the GPU hardware encoder when it is available on this machine, otherwise fall back to FFmpeg.
+    Auto      UMETA(DisplayName = "Auto (hardware if available, else FFmpeg)"),
+    // Always use the bundled FFmpeg (CPU) encoder. Works on every GPU/platform.
+    FFmpeg    UMETA(DisplayName = "FFmpeg (CPU)"),
+    // Always use the GPU hardware encoder (NVIDIA/AMD, Windows). Falls back to FFmpeg if it cannot start.
+    Hardware  UMETA(DisplayName = "Hardware (GPU - NVIDIA/AMD)")
+};
+
 UCLASS(Config=Game, defaultconfig)
 class BETAHUBBUGREPORTER_API UBH_PluginSettings : public UObject
 {
@@ -55,9 +67,13 @@ public:
         meta=(ToolTip="The maximum width of the recorded bug report video. The video will be scaled down if the viewport width exceeds this value."))
     int32 MaxVideoWidth;
 
-    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
         meta=(ToolTip="The maximum height of the recorded bug report video. The video will be scaled down if the viewport height exceeds this value."))
     int32 MaxVideoHeight;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
+        meta=(ToolTip="Which encoder produces the recorded video. FFmpeg (CPU) works everywhere. Hardware (GPU, NVIDIA/AMD on Windows) offloads encoding off the CPU. Auto uses hardware when available and falls back to FFmpeg otherwise. Hardware requires the plugin to be built with hardware-encode support; it always falls back to FFmpeg if the GPU encoder cannot start."))
+    EBH_VideoEncoderBackend VideoEncoderBackend;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the bug report form."))
