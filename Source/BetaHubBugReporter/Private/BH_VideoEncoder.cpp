@@ -15,6 +15,32 @@
 const int SEGMENT_DURATION_SECONDS = 10;
 FString BH_VideoEncoder::PreferredFfmpegOptions;
 
+namespace
+{
+    // Enumerate files (names only, mirroring IFileManager::FindFiles) in Dir on the PHYSICAL filesystem
+    // whose name starts with Prefix and ends with Suffix. The whole segment lifecycle uses the physical
+    // layer because ffmpeg (an external process) writes and reads segment/concat files on the real disk;
+    // going through the wrapped IFileManager/FFileHelper could resolve to a virtualized/redirected path
+    // (e.g. a cook-in-editor sandbox) and miss ffmpeg's files entirely.
+    void FindSegmentFilesPhysical(TArray<FString>& OutNames, const FString& Dir, const FString& Prefix, const FString& Suffix)
+    {
+        OutNames.Reset();
+        IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
+        PhysicalFile.IterateDirectory(*Dir, [&OutNames, &Prefix, &Suffix](const TCHAR* FilenameOrDirectory, bool bIsDirectory) -> bool
+        {
+            if (!bIsDirectory)
+            {
+                const FString Name = FPaths::GetCleanFilename(FilenameOrDirectory);
+                if ((Prefix.IsEmpty() || Name.StartsWith(Prefix)) && Name.EndsWith(Suffix))
+                {
+                    OutNames.Add(Name);
+                }
+            }
+            return true;
+        });
+    }
+}
+
 BH_VideoEncoder::BH_VideoEncoder(
     int32 InTargetFPS,
     const FTimespan &InRecordingDuration,
@@ -65,24 +91,52 @@ BH_VideoEncoder::BH_VideoEncoder(
     // guarantees the directory we create, the files IFileManager enumerates, and the paths ffmpeg
     // reads/writes all resolve to the same place.
     segmentsDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments")));
-    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-    if (!PlatformFile.DirectoryExists(*segmentsDir))
+
+    // Use the PHYSICAL platform file, NOT FPlatformFileManager::GetPlatformFile(): the latter can be a
+    // pak/sandbox/virtualization wrapper (e.g. in a cook-in-editor / staged run) whose DirectoryExists and
+    // CreateDirectory operate on a redirected path. ffmpeg is an external process that only sees the real
+    // on-disk filesystem, so our directory and ffmpeg's must be the same real path — otherwise ffmpeg fails
+    // to open its segment files and the recording is doomed. (Confirmed in the field: bypassing the wrapper
+    // via GetPlatformPhysical fixes the missing-directory hang.)
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
+
+    // CreateDirectoryTree is idempotent (no-op if it already exists), so create unconditionally instead of
+    // gating on DirectoryExists — the wrapped DirectoryExists could report a virtualized path as present.
+    PhysicalFile.CreateDirectoryTree(*segmentsDir);
+
+    // Ground truth: DirectoryExists/CreateDirectory can lie (virtualization, or "succeed" without creating).
+    // The only reliable check is to actually create a file where ffmpeg will — that is exactly what ffmpeg
+    // attempts. If this probe fails the recording cannot work, so refuse to start rather than launch ffmpeg
+    // into a state that used to freeze the game on shutdown.
+    bOutputDirWritable = false;
     {
-        if (!PlatformFile.CreateDirectoryTree(*segmentsDir))
+        const FString ProbePath = segmentsDir / TEXT(".bh_write_probe");
+        IFileHandle* ProbeHandle = PhysicalFile.OpenWrite(*ProbePath);
+        if (ProbeHandle)
         {
-            // Fail loudly instead of silently: ffmpeg cannot create directories, so if this fails
-            // every segment write and the later merge will fail with a confusing ENOENT.
-            UE_LOG(LogBetaHub, Error, TEXT("Failed to create video segments directory: %s. Video recording will not work (check folder permissions / antivirus / Controlled Folder Access)."), *segmentsDir);
+            delete ProbeHandle;
+            PhysicalFile.DeleteFile(*ProbePath);
+            bOutputDirWritable = true;
         }
     }
 
-    // Remove all existing segment files
-    IFileManager& FileManager = IFileManager::Get();
+    if (bOutputDirWritable)
+    {
+        UE_LOG(LogBetaHub, Log, TEXT("BetaHub video segments directory ready: %s"), *segmentsDir);
+    }
+    else
+    {
+        // Note: a passing probe proves this process can write here, not that ffmpeg can (Controlled Folder
+        // Access / antivirus can gate ffmpeg.exe specifically). A failing probe, though, is a definite stop.
+        UE_LOG(LogBetaHub, Error, TEXT("BetaHub video segments directory is not writable: %s. Video recording is disabled for this session (check the folder exists and permissions / antivirus / Controlled Folder Access)."), *segmentsDir);
+    }
+
+    // Remove all existing segment files (physical layer — see FindSegmentFilesPhysical note)
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
+    FindSegmentFilesPhysical(SegmentFiles, segmentsDir, segmentPrefix, TEXT(".mp4"));
     for (const FString& SegmentFile : SegmentFiles)
     {
-        FileManager.Delete(*(segmentsDir / SegmentFile));
+        PhysicalFile.DeleteFile(*(segmentsDir / SegmentFile));
     }
 
     outputFile = FPaths::Combine(segmentsDir, (segmentPrefix + TEXT("%06d.mp4")));
@@ -150,6 +204,15 @@ void BH_VideoEncoder::StartRecording()
         return;
     }
 
+    // Fail fast: if the segments directory could not be made writable (probed in the constructor), do not
+    // start the encoder thread. Launching ffmpeg into an unwritable directory produces no video and, with a
+    // full stdin pipe, used to freeze the game thread on stop.
+    if (!bOutputDirWritable)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot start recording. Video segments directory is not writable: %s"), *segmentsDir);
+        return;
+    }
+
     if (!bIsRecording)
     {
         bIsRecording = true;
@@ -201,6 +264,12 @@ void BH_VideoEncoder::RunEncoding()
     if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
     {
         UE_LOG(LogBetaHub, Error, TEXT("Cannot run encoding. FFmpeg executable not found."));
+        return;
+    }
+
+    if (!bOutputDirWritable)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot run encoding. Video segments directory is not writable: %s"), *segmentsDir);
         return;
     }
 
@@ -413,10 +482,11 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         return MergedFilePath;
     }
 
-    // Get the list of segment files
-    IFileManager& FileManager = IFileManager::Get();
+    // Get the list of segment files. Enumerate on the PHYSICAL filesystem — ffmpeg wrote the segments
+    // there, so a wrapped IFileManager could look at a redirected path and find none.
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
+    FindSegmentFilesPhysical(SegmentFiles, segmentsDir, segmentPrefix, TEXT(".mp4"));
 
     // Sort and take the last MaxSegments
     SegmentFiles.Sort();
@@ -449,11 +519,22 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         UE_LOG(LogBetaHub, Log, TEXT("Segment file: %s"), *FullPath);
     }
 
-    // Check the write result. Previously this was ignored: if the write failed (e.g. antivirus /
-    // Controlled Folder Access blocking file creation), ffmpeg was still launched and died with a
-    // misleading "No such file or directory", and the report was published as a success with no video.
-    // Fail fast at the true source instead.
-    if (!FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath))
+    // Write the concat file through the PHYSICAL layer (as UTF-8, no BOM) so it lands exactly where ffmpeg
+    // will read it — FFileHelper::SaveStringToFile goes through the wrapped IFileManager and could write to
+    // a redirected/virtualized path that ffmpeg (real disk) cannot see, producing a misleading ENOENT.
+    // Check the write result: previously a failed write (e.g. antivirus / Controlled Folder Access blocking
+    // file creation) still launched ffmpeg, which died with "No such file or directory" while the report was
+    // published as a success with no video. Fail fast at the true source instead.
+    bool bConcatWritten = false;
+    {
+        FTCHARToUTF8 ConcatUtf8(*ConcatFileContent);
+        if (IFileHandle* ConcatHandle = PhysicalFile.OpenWrite(*ConcatFilePath))
+        {
+            bConcatWritten = ConcatHandle->Write(reinterpret_cast<const uint8*>(ConcatUtf8.Get()), ConcatUtf8.Length());
+            delete ConcatHandle;
+        }
+    }
+    if (!bConcatWritten)
     {
         UE_LOG(LogBetaHub, Error, TEXT("Failed to write concat file: %s. Cannot merge video (check folder permissions / antivirus / Controlled Folder Access)."), *ConcatFilePath);
         return FString();
@@ -479,14 +560,15 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     MergeRunnable->IsProcessRunning(&exitCode);
 
     // Cleanup concat file
-    FileManager.Delete(*ConcatFilePath);
+    PhysicalFile.DeleteFile(*ConcatFilePath);
 
     if (exitCode == 0)
     {
         // ffmpeg reported success; confirm the file is actually there before we hand it to the
         // uploader. A missing file here means "merge said OK but produced nothing" - report it as a
-        // failure rather than returning a path to a non-existent file.
-        if (!FPaths::FileExists(MergedFilePath))
+        // failure rather than returning a path to a non-existent file. Check the physical layer since
+        // that is where ffmpeg wrote it.
+        if (!PhysicalFile.FileExists(*MergedFilePath))
         {
             UE_LOG(LogBetaHub, Error, TEXT("Merge reported success but output file is missing: %s"), *MergedFilePath);
             delete MergeRunnable;
@@ -498,7 +580,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         // Clean up segment files
         for (const FString& SegmentFile : SegmentFiles)
         {
-            FileManager.Delete(*(segmentsDir / SegmentFile));
+            PhysicalFile.DeleteFile(*(segmentsDir / SegmentFile));
         }
 
         delete MergeRunnable;
@@ -518,9 +600,9 @@ void BH_VideoEncoder::RemoveOldSegments()
     // Removing by count instead of age, because video can be paused and we don't
     // want to remove paused segments
     
-    IFileManager& FileManager = IFileManager::Get();
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
+    FindSegmentFilesPhysical(SegmentFiles, segmentsDir, segmentPrefix, TEXT(".mp4"));
 
     // Sort segment files based on their numerical part
     SegmentFiles.Sort([](const FString& A, const FString& B)
@@ -536,7 +618,7 @@ void BH_VideoEncoder::RemoveOldSegments()
     {
         FString SegmentFilePath = segmentsDir / SegmentFiles[i];
         UE_LOG(LogBetaHub, Log, TEXT("Removing old segment: %s"), *SegmentFilePath);
-        FileManager.Delete(*SegmentFilePath);
+        PhysicalFile.DeleteFile(*SegmentFilePath);
     }
 }
 
@@ -547,9 +629,9 @@ int32 BH_VideoEncoder::GetSegmentCountToKeep()
 
 void BH_VideoEncoder::RemoveOldFiles()
 {
-    IFileManager& FileManager = IFileManager::Get();
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
     TArray<FString> Files;
-    FileManager.FindFiles(Files, *(segmentsDir / TEXT("*.mp4")), true, false);
+    FindSegmentFilesPhysical(Files, segmentsDir, FString(), TEXT(".mp4"));
 
     FDateTime CurrentTime = FDateTime::UtcNow();
     FTimespan MaxAge = FTimespan::FromHours(24);
@@ -557,14 +639,14 @@ void BH_VideoEncoder::RemoveOldFiles()
     for (const FString& File : Files)
     {
         FString FilePath = FPaths::Combine(segmentsDir, File);
-        FFileStatData StatData = FileManager.GetStatData(*FilePath);
+        FFileStatData StatData = PhysicalFile.GetStatData(*FilePath);
         if (StatData.bIsValid)
         {
             FDateTime LastWriteTime = StatData.ModificationTime;
             if ((CurrentTime - LastWriteTime) > MaxAge)
             {
                 UE_LOG(LogBetaHub, Log, TEXT("Removing old file: %s"), *FilePath);
-                FileManager.Delete(*FilePath);
+                PhysicalFile.DeleteFile(*FilePath);
             }
         }
     }

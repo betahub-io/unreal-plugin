@@ -92,6 +92,19 @@ uint32 FBH_Runnable::Run()
         return 1;
     }
 
+    // Close the PARENT's copy of the child's stdin READ handle now that the child has inherited its own.
+    // This is the canonical Win32 pattern (see MS "Creating a Child Process with Redirected Input/Output").
+    // Critical: if the parent keeps a read handle open, an anonymous pipe is never considered "broken" while
+    // any read handle exists — so if the child (ffmpeg) exits unexpectedly (crash, missing output dir, killed
+    // by antivirus), a WriteToPipe blocked on a full buffer would NEVER return, hanging the encoder thread and
+    // any game-thread join that waits on it. Dropping our read handle lets that write fail with a broken pipe
+    // instead. EOF-on-shutdown still works: it is signalled by closing the WRITE end (StdInWritePipe).
+    if (StdInReadPipe)
+    {
+        FPlatformProcess::ClosePipe(StdInReadPipe, nullptr);
+        StdInReadPipe = nullptr;
+    }
+
     bool bExitedGracefully = false;
 
     while (StopTaskCounter.GetValue() == 0)

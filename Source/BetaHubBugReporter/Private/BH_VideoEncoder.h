@@ -35,6 +35,10 @@ private:
 
     FRunnableThread* thread;
     bool bIsRecording;
+    // Set in the constructor after a real write-probe of segmentsDir through the PHYSICAL platform file.
+    // If false, the directory ffmpeg must write into is not usable, so recording is refused rather than
+    // launching ffmpeg into a doomed state (which used to hang the game thread on shutdown).
+    bool bOutputDirWritable = false;
 	void* pipeWrite;
 
     FTimespan RecordingDuration;
