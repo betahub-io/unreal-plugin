@@ -12,6 +12,15 @@
 #include "BH_Runnable.h"
 #include "BH_FFmpeg.h"
 
+// windows.h (pulled in transitively on some engine versions, notably UE 5.3) defines DeleteFile as a
+// macro aliasing DeleteFileW, which collides with IPlatformFile::DeleteFile and fails to compile. Undo
+// it so our physical-layer deletes resolve to the real method on every engine version. Harmless no-op
+// where the macro is not defined (5.4+). CreateDirectoryTree is used instead of CreateDirectory for the
+// same reason (CreateDirectory is likewise a windows.h macro).
+#ifdef DeleteFile
+#undef DeleteFile
+#endif
+
 const int SEGMENT_DURATION_SECONDS = 10;
 FString BH_VideoEncoder::PreferredFfmpegOptions;
 
