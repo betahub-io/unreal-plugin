@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Tickable.h"
 #include "HAL/CriticalSection.h"
 #include "BH_VideoEncoder.h"
@@ -90,7 +91,16 @@ private:
     void SetFrameData(int32 Width, int32 Height, const TArray<FColor>& Data);
     void ResizeImageToFrame(const TArray<FColor>& ImageData, uint32 ImageWidth, uint32 ImageHeight, uint32 FrameWidth, uint32 FrameHeight, TArray<FColor>& ResizedData);
 
+    // UE 5.8 changed FOnBackBufferReadyToPresent's second parameter from the backbuffer
+    // texture to ISlateViewportProvider&, which exposes it via GetBackBufferResource().
+#if ENGINE_MINOR_VERSION >= 8
+    void OnBackBufferReady(SWindow& Window, class ISlateViewportProvider& ViewportProvider);
+#else
     void OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer);
+#endif
+
+    // Shared capture path both delegate signatures forward to.
+    void CaptureBackBuffer(SWindow& Window, const FTextureRHIRef& BackBuffer);
 
     void OnBackBufferResized(const FTextureRHIRef& BackBuffer);
 

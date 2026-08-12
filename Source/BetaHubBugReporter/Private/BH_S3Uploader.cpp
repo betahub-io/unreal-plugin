@@ -241,7 +241,9 @@ void BH_S3Uploader::UploadToS3(
             FString HeaderValue;
             if (Pair.Value->TryGetString(HeaderValue))
             {
-                Request->SetHeader(Pair.Key, HeaderValue);
+                // UE 5.8 keys FJsonObject::Values by UE::FSharedString rather than FString;
+                // dereferencing yields const TCHAR* on every supported version.
+                Request->SetHeader(FString(*Pair.Key), HeaderValue);
                 UE_LOG(LogBetaHub, Verbose, TEXT("S3 Upload Header: %s = %s"), *Pair.Key, *HeaderValue);
             }
         }

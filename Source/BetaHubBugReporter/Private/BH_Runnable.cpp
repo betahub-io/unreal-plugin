@@ -1,7 +1,10 @@
 // Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_Runnable.h"
 
-#include <windows.h>
+// Raw <windows.h> leaks macros that collide with engine identifiers -- notably Yield(), which
+// breaks FPlatformProcess::Yield() in Core headers pulled in after it (UE 5.8, FAAArrayQueue.h).
+// WindowsHWrapper.h includes the same API and then undoes the macros (Windows/PostWindowsApi.h).
+#include "Windows/WindowsHWrapper.h"
 
 #include "BH_Log.h"
 #include "Misc/Paths.h"

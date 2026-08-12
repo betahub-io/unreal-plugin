@@ -23,6 +23,10 @@
 #include "Slate/SceneViewport.h"
 #include "Framework/Application/SlateApplication.h"
 
+#if ENGINE_MINOR_VERSION >= 8
+#include "Slate/SlateViewportProvider.h"
+#endif
+
 #if ENGINE_MINOR_VERSION < 4
 bool ConvertRAWSurfaceDataToFLinearColor(EPixelFormat Format, uint32 Width, uint32 Height, uint8 *In, uint32 SrcPitch, FLinearColor* Out, FReadSurfaceDataFlags InFlags);
 #endif
@@ -301,7 +305,26 @@ TStatId UBH_GameRecorder::GetStatId() const
     RETURN_QUICK_DECLARE_CYCLE_STAT(UBH_GameRecorder, STATGROUP_Tickables);
 }
 
+#if ENGINE_MINOR_VERSION >= 8
+void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, ISlateViewportProvider& ViewportProvider)
+{
+    FRHITexture* BackBufferResource = ViewportProvider.GetBackBufferResource();
+    if (!BackBufferResource)
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("OnBackBufferReady called with no backbuffer resource"));
+        return;
+    }
+
+    CaptureBackBuffer(Window, BackBufferResource);
+}
+#else
 void UBH_GameRecorder::OnBackBufferReady(SWindow& Window, const FTextureRHIRef& BackBuffer)
+{
+    CaptureBackBuffer(Window, BackBuffer);
+}
+#endif
+
+void UBH_GameRecorder::CaptureBackBuffer(SWindow& Window, const FTextureRHIRef& BackBuffer)
 {
     SCOPE_CYCLE_COUNTER(STAT_BetaHub_OnBackBufferReady);
 
