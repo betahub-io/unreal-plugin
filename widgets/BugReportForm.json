@@ -1,0 +1,664 @@
+{
+  "$schema": "betahub-umg-widget/1",
+  "asset": "BugReportForm",
+  "parentClass": "BH_ReportFormWidget",
+  "root": {
+    "name": "CanvasPanel_48",
+    "class": "CanvasPanel",
+    "properties": {},
+    "children": [
+      {
+        "name": "Border_0",
+        "class": "Border",
+        "properties": {
+          "Padding": {
+            "Left": 20.0,
+            "Top": 20.0,
+            "Right": 20.0,
+            "Bottom": 20.0
+          },
+          "BrushColor": {
+            "R": 0.067708,
+            "G": 0.067708,
+            "B": 0.067708,
+            "A": 1.0
+          }
+        },
+        "children": [
+          {
+            "name": "Overlay_515",
+            "class": "Overlay",
+            "properties": {},
+            "children": [
+              {
+                "name": "VerticalBox_0",
+                "class": "VerticalBox",
+                "properties": {},
+                "children": [
+                  {
+                    "name": "TextBlock_0",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Text": {
+                        "__text__": "Submit Feedback",
+                        "__key__": "90EDE48C45A7739D28726794FC130B93"
+                      },
+                      "Font": {
+                        "Size": 36.0
+                      }
+                    },
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Padding": {
+                          "Bottom": 10.0
+                        },
+                        "HorizontalAlignment": "HAlign_Center"
+                      }
+                    }
+                  },
+                  {
+                    "name": "HorizontalBox_71",
+                    "class": "HorizontalBox",
+                    "properties": {},
+                    "children": [
+                      {
+                        "name": "HorizontalBox_151",
+                        "class": "HorizontalBox",
+                        "properties": {},
+                        "children": [
+                          {
+                            "name": "BugReportCheckBox",
+                            "class": "CheckBox",
+                            "properties": {
+                              "RenderTransform": {
+                                "Scale": {
+                                  "X": 2.0,
+                                  "Y": 2.0
+                                }
+                              }
+                            },
+                            "slot": {
+                              "class": "HorizontalBoxSlot",
+                              "properties": {
+                                "Padding": {
+                                  "Left": 10.0,
+                                  "Top": 10.0,
+                                  "Right": 10.0,
+                                  "Bottom": 10.0
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "name": "TextBlock_91",
+                            "class": "TextBlock",
+                            "properties": {
+                              "Text": {
+                                "__text__": "Bug Report",
+                                "__key__": "C8D87603441DBBA7F22A0C8CD9152F45"
+                              }
+                            },
+                            "slot": {
+                              "class": "HorizontalBoxSlot",
+                              "properties": {}
+                            }
+                          }
+                        ],
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {}
+                        }
+                      },
+                      {
+                        "name": "ExpandableArea_227",
+                        "class": "ExpandableArea",
+                        "properties": {
+                          "bIsVariable": false,
+                          "Visibility": "Hidden"
+                        },
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {
+                            "Padding": {
+                              "Left": 20.0,
+                              "Right": 20.0
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "name": "HorizontalBox_213",
+                        "class": "HorizontalBox",
+                        "properties": {},
+                        "children": [
+                          {
+                            "name": "SuggestionCheckBox",
+                            "class": "CheckBox",
+                            "properties": {
+                              "RenderTransform": {
+                                "Scale": {
+                                  "X": 2.0,
+                                  "Y": 2.0
+                                }
+                              }
+                            },
+                            "slot": {
+                              "class": "HorizontalBoxSlot",
+                              "properties": {
+                                "Padding": {
+                                  "Left": 10.0,
+                                  "Top": 10.0,
+                                  "Right": 10.0,
+                                  "Bottom": 10.0
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "name": "TextBlock_149",
+                            "class": "TextBlock",
+                            "properties": {
+                              "Text": {
+                                "__text__": "Suggestion",
+                                "__key__": "98CB2C534E817B2E3ED07EAEDB20EE75"
+                              }
+                            },
+                            "slot": {
+                              "class": "HorizontalBoxSlot",
+                              "properties": {}
+                            }
+                          }
+                        ],
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "HorizontalAlignment": "HAlign_Center"
+                      }
+                    }
+                  },
+                  {
+                    "name": "TextBlock_1",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Text": {
+                        "__text__": "Description",
+                        "__key__": "8292A1DF461C7AA20A907098BFC39451"
+                      }
+                    },
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Padding": {
+                          "Top": 10.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "BugDescriptionEdit",
+                    "class": "MultiLineEditableTextBox",
+                    "properties": {
+                      "HintText": {
+                        "__text__": "What is the issue?",
+                        "__key__": "4A752D79414CA42F897F71822A5DD17C"
+                      },
+                      "WidgetStyle": {
+                        "TextStyle": {
+                          "Font": {
+                            "FontObject": {
+                              "__ref__": "/Engine/EngineFonts/Roboto.Roboto",
+                              "__class__": "/Script/Engine.Font"
+                            },
+                            "Size": 15.0
+                          },
+                          "ColorAndOpacity": {
+                            "SpecifiedColor": {
+                              "R": 0.0,
+                              "G": 0.0,
+                              "B": 0.0,
+                              "A": 1.0
+                            },
+                            "ColorUseRule": "UseColor_Specified"
+                          }
+                        }
+                      }
+                    },
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Size": {
+                          "SizeRule": "Fill"
+                        },
+                        "Padding": {
+                          "Top": 10.0,
+                          "Bottom": 20.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "StepsToReproduceLabel",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Text": {
+                        "__text__": "Reproduction Steps",
+                        "__key__": "27AE8FA54C08F602459FFF8D4B2C14CB"
+                      },
+                      "bIsVariable": true
+                    },
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {}
+                    }
+                  },
+                  {
+                    "name": "StepsToReproduceEdit",
+                    "class": "MultiLineEditableTextBox",
+                    "properties": {
+                      "HintText": {
+                        "__text__": "How to repeat it?\r\n\r\n1. Step one\r\n2. Step two\r\n3. Step three",
+                        "__key__": "4204D4744E30C7A8743177AA884D0A6A"
+                      },
+                      "WidgetStyle": {
+                        "TextStyle": {
+                          "Font": {
+                            "FontObject": {
+                              "__ref__": "/Engine/EngineFonts/Roboto.Roboto",
+                              "__class__": "/Script/Engine.Font"
+                            },
+                            "Size": 15.0
+                          },
+                          "ColorAndOpacity": {
+                            "SpecifiedColor": {
+                              "R": 0.0,
+                              "G": 0.0,
+                              "B": 0.0,
+                              "A": 1.0
+                            },
+                            "ColorUseRule": "UseColor_Specified"
+                          }
+                        }
+                      }
+                    },
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Size": {
+                          "SizeRule": "Fill"
+                        },
+                        "Padding": {
+                          "Top": 10.0,
+                          "Bottom": 20.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "TextBlock_376",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Text": {
+                        "__text__": "Attach:",
+                        "__key__": "D610909442C7A13AC35E8E80CC3171C4"
+                      },
+                      "Font": {
+                        "Size": 20.0
+                      }
+                    },
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Padding": {
+                          "Bottom": 10.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "IncludeGameplayVideoContainer",
+                    "class": "HorizontalBox",
+                    "properties": {
+                      "bIsVariable": true
+                    },
+                    "children": [
+                      {
+                        "name": "IncludeVideoCheckbox",
+                        "class": "CheckBox",
+                        "properties": {
+                          "CheckedState": "Checked",
+                          "RenderTransform": {
+                            "Scale": {
+                              "X": 1.5,
+                              "Y": 1.5
+                            }
+                          }
+                        },
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {
+                            "Padding": {
+                              "Left": 5.0,
+                              "Right": 10.0
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "name": "TextBlock_201",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Text": {
+                            "__text__": "Gameplay Video (Last 60 Seconds)",
+                            "__key__": "046DCC8948F3D67ACDD212A044DFC9BC"
+                          },
+                          "Font": {
+                            "TypefaceFontName": "Regular",
+                            "Size": 16.0
+                          }
+                        },
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Padding": {
+                          "Bottom": 10.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "IncludeScreenshotContainer",
+                    "class": "HorizontalBox",
+                    "properties": {
+                      "bIsVariable": true
+                    },
+                    "children": [
+                      {
+                        "name": "IncludeScreenshotCheckbox",
+                        "class": "CheckBox",
+                        "properties": {
+                          "CheckedState": "Checked",
+                          "RenderTransform": {
+                            "Scale": {
+                              "X": 1.5,
+                              "Y": 1.5
+                            }
+                          }
+                        },
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {
+                            "Padding": {
+                              "Left": 5.0,
+                              "Right": 10.0
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "name": "TextBlock",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Text": {
+                            "__text__": "Screenshot",
+                            "__key__": "D32F69394CDEF2FC04F956AD474D0798"
+                          },
+                          "Font": {
+                            "TypefaceFontName": "Regular",
+                            "Size": 16.0
+                          }
+                        },
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Padding": {
+                          "Bottom": 10.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "IncludeLogsContainer",
+                    "class": "HorizontalBox",
+                    "properties": {
+                      "bIsVariable": true
+                    },
+                    "children": [
+                      {
+                        "name": "IncludeLogsCheckbox",
+                        "class": "CheckBox",
+                        "properties": {
+                          "CheckedState": "Checked",
+                          "RenderTransform": {
+                            "Scale": {
+                              "X": 1.5,
+                              "Y": 1.5
+                            }
+                          }
+                        },
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {
+                            "Padding": {
+                              "Left": 5.0,
+                              "Right": 10.0
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "name": "TextBlock_4",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Text": {
+                            "__text__": "Unreal Engine Logs",
+                            "__key__": "36DAAFC746BB9D9989F171976DCB5EAE"
+                          },
+                          "Font": {
+                            "TypefaceFontName": "Regular",
+                            "Size": 16.0
+                          }
+                        },
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {
+                        "Padding": {
+                          "Bottom": 10.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "HorizontalBox_150",
+                    "class": "HorizontalBox",
+                    "properties": {},
+                    "children": [
+                      {
+                        "name": "Spacer_103",
+                        "class": "Spacer",
+                        "properties": {},
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {
+                            "Size": {
+                              "SizeRule": "Fill"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "name": "SubmitButton",
+                        "class": "Button",
+                        "properties": {},
+                        "children": [
+                          {
+                            "name": "SubmitLabel",
+                            "class": "TextBlock",
+                            "properties": {
+                              "Text": {
+                                "__text__": "Submit",
+                                "__key__": "A1F6F32D4BF0618AF3AA27B5F375F6DD"
+                              },
+                              "ColorAndOpacity": {
+                                "SpecifiedColor": {
+                                  "R": 0.0,
+                                  "G": 0.0,
+                                  "B": 0.0,
+                                  "A": 1.0
+                                }
+                              },
+                              "Font": {
+                                "Size": 20.0
+                              }
+                            },
+                            "slot": {
+                              "class": "ButtonSlot",
+                              "properties": {
+                                "Padding": {
+                                  "Left": 20.0,
+                                  "Top": 10.0,
+                                  "Right": 20.0,
+                                  "Bottom": 10.0
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        "slot": {
+                          "class": "HorizontalBoxSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {}
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "OverlaySlot",
+                  "properties": {
+                    "HorizontalAlignment": "HAlign_Fill",
+                    "VerticalAlignment": "VAlign_Fill"
+                  }
+                }
+              },
+              {
+                "name": "CloseButton",
+                "class": "Button",
+                "properties": {},
+                "children": [
+                  {
+                    "name": "TextBlock_757",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Text": {
+                        "__text__": "X",
+                        "__key__": "2CC23D2347AE18F1C29C6081EDD12640"
+                      },
+                      "ColorAndOpacity": {
+                        "SpecifiedColor": {
+                          "R": 0.0,
+                          "G": 0.0,
+                          "B": 0.0,
+                          "A": 1.0
+                        }
+                      },
+                      "RenderTransform": {
+                        "Scale": {
+                          "X": 1.0,
+                          "Y": 0.7
+                        }
+                      }
+                    },
+                    "slot": {
+                      "class": "ButtonSlot",
+                      "properties": {
+                        "Padding": {
+                          "Left": 2.0,
+                          "Right": 2.0
+                        }
+                      }
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "OverlaySlot",
+                  "properties": {
+                    "HorizontalAlignment": "HAlign_Right"
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "BorderSlot",
+              "properties": {
+                "Padding": {
+                  "Left": 20.0,
+                  "Top": 20.0,
+                  "Right": 20.0,
+                  "Bottom": 20.0
+                }
+              }
+            }
+          }
+        ],
+        "slot": {
+          "class": "CanvasPanelSlot",
+          "properties": {
+            "LayoutData": {
+              "Offsets": {
+                "Right": 814.047424,
+                "Bottom": 765.169617
+              },
+              "Anchors": {
+                "Minimum": {
+                  "X": 0.5,
+                  "Y": 0.5
+                },
+                "Maximum": {
+                  "X": 0.5,
+                  "Y": 0.5
+                }
+              },
+              "Alignment": {
+                "X": 0.5,
+                "Y": 0.5
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "_stats": {
+    "widgetsReachable": 33,
+    "widgetsInTree": 33,
+    "slots": 32
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "$schema": "betahub-umg-widget/1",
+  "asset": "BugReportFormPopup",
+  "parentClass": "BH_PopupWidget",
+  "root": {
+    "name": "CanvasPanel_63",
+    "class": "CanvasPanel",
+    "properties": {},
+    "children": [
+      {
+        "name": "Border_0",
+        "class": "Border",
+        "properties": {
+          "Padding": {
+            "Left": 10.0,
+            "Top": 10.0,
+            "Right": 10.0,
+            "Bottom": 10.0
+          },
+          "BrushColor": {
+            "R": 0.0625,
+            "G": 0.0625,
+            "B": 0.0625,
+            "A": 1.0
+          }
+        },
+        "children": [
+          {
+            "name": "VerticalBox_0",
+            "class": "VerticalBox",
+            "properties": {},
+            "children": [
+              {
+                "name": "Title",
+                "class": "TextBlock",
+                "properties": {
+                  "Text": {
+                    "__text__": "Title",
+                    "__key__": "5204E8EC411B03CD0567459CC0314FE9"
+                  }
+                },
+                "slot": {
+                  "class": "VerticalBoxSlot",
+                  "properties": {
+                    "Padding": {
+                      "Bottom": 20.0
+                    }
+                  }
+                }
+              },
+              {
+                "name": "ScrollBox_283",
+                "class": "ScrollBox",
+                "properties": {},
+                "children": [
+                  {
+                    "name": "Description",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Text": {
+                        "__text__": "Description",
+                        "__key__": "C1EB440442A7B7FE2691778114629F47"
+                      },
+                      "Font": {
+                        "TypefaceFontName": "Regular",
+                        "Size": 15.0
+                      }
+                    },
+                    "slot": {
+                      "class": "ScrollBoxSlot",
+                      "properties": {
+                        "Size": {
+                          "SizeRule": "Fill"
+                        }
+                      }
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "VerticalBoxSlot",
+                  "properties": {
+                    "Size": {
+                      "SizeRule": "Fill"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "HorizontalBox_128",
+                "class": "HorizontalBox",
+                "properties": {},
+                "children": [
+                  {
+                    "name": "Spacer_127",
+                    "class": "Spacer",
+                    "properties": {},
+                    "slot": {
+                      "class": "HorizontalBoxSlot",
+                      "properties": {
+                        "Size": {
+                          "SizeRule": "Fill"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "CloseButton",
+                    "class": "Button",
+                    "properties": {},
+                    "children": [
+                      {
+                        "name": "TextBlock_383",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Text": {
+                            "__text__": "Close",
+                            "__key__": "8108E1394C8ABE1470FC60892BBA9DDD"
+                          },
+                          "ColorAndOpacity": {
+                            "SpecifiedColor": {
+                              "R": 0.0,
+                              "G": 0.0,
+                              "B": 0.0,
+                              "A": 1.0
+                            }
+                          },
+                          "Font": {
+                            "Size": 18.0
+                          }
+                        },
+                        "slot": {
+                          "class": "ButtonSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "HorizontalBoxSlot",
+                      "properties": {}
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "VerticalBoxSlot",
+                  "properties": {}
+                }
+              }
+            ],
+            "slot": {
+              "class": "BorderSlot",
+              "properties": {
+                "Padding": {
+                  "Left": 10.0,
+                  "Top": 10.0,
+                  "Right": 10.0,
+                  "Bottom": 10.0
+                }
+              }
+            }
+          }
+        ],
+        "slot": {
+          "class": "CanvasPanelSlot",
+          "properties": {
+            "LayoutData": {
+              "Offsets": {
+                "Right": 573.973999,
+                "Bottom": 279.739746
+              },
+              "Anchors": {
+                "Minimum": {
+                  "X": 0.5,
+                  "Y": 0.5
+                },
+                "Maximum": {
+                  "X": 0.5,
+                  "Y": 0.5
+                }
+              },
+              "Alignment": {
+                "X": 0.5,
+                "Y": 0.5
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "_stats": {
+    "widgetsReachable": 10,
+    "widgetsInTree": 10,
+    "slots": 9
+  }
+}

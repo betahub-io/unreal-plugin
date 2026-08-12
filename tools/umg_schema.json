@@ -1,0 +1,587 @@
+{
+  "_log": [
+    "found 96 widget classes",
+    "slot probe failed for ContentWidget: new_object: Class 'ContentWidget' is abstract",
+    "slot probe failed for PanelWidget: new_object: Class 'PanelWidget' is abstract",
+    "panels: 29, of which slot class resolved: 27"
+  ],
+  "engine": "5.3.2-29314046+++UE5+Release-5.3",
+  "widgets": {
+    "AssetThumbnailWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioFrequencyRadialSlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioFrequencySlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioMeter": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioRadialSlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioSlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioSliderBase": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioVolumeRadialSlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "AudioVolumeSlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "BH_PopupWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "BH_ReportFormWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "BackgroundBlur": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "BackgroundBlurSlot"
+    },
+    "BackgroundBlurWidget": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "BackgroundBlurSlot"
+    },
+    "Border": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "BorderSlot"
+    },
+    "Button": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "ButtonSlot"
+    },
+    "CanvasPanel": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "CanvasPanelSlot"
+    },
+    "CheckBox": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "PanelSlot"
+    },
+    "CircularThrobber": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ComboBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ComboBoxKey": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ComboBoxString": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ContentWidget": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": null
+    },
+    "DetailsView": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "DynamicEntryBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "DynamicEntryBoxBase": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditableText": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditableTextBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityButton": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "ButtonSlot"
+    },
+    "EditorUtilityCheckBox": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "PanelSlot"
+    },
+    "EditorUtilityCircularThrobber": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityComboBoxKey": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityComboBoxString": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityEditableText": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityEditableTextBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityExpandableArea": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityInputKeySelector": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityListView": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityMultiLineEditableText": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityMultiLineEditableTextBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityProgressBar": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityScrollBar": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityScrollBox": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "ScrollBoxSlot"
+    },
+    "EditorUtilitySlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilitySpinBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityThrobber": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityTreeView": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "EditorUtilityWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ExpandableArea": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "GridPanel": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "GridSlot"
+    },
+    "HorizontalBox": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "HorizontalBoxSlot"
+    },
+    "Image": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "InputKeySelector": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "InvalidationBox": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "PanelSlot"
+    },
+    "LevelSequenceBurnIn": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ListView": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ListViewBase": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "MenuAnchor": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "PanelSlot"
+    },
+    "MultiLineEditableText": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "MultiLineEditableTextBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "NamedSlot": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "PanelSlot"
+    },
+    "NativeWidgetHost": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ObjectMixerEditorUWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "Overlay": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "OverlaySlot"
+    },
+    "PanelWidget": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": null
+    },
+    "ProgressBar": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "PropertyViewBase": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "RadialSlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "RetainerBox": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "PanelSlot"
+    },
+    "RichTextBlock": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "SafeZone": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "SafeZoneSlot"
+    },
+    "ScaleBox": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "ScaleBoxSlot"
+    },
+    "ScrollBar": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "ScrollBox": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "ScrollBoxSlot"
+    },
+    "SinglePropertyView": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "SizeBox": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "SizeBoxSlot"
+    },
+    "Slider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "Spacer": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "SpinBox": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "StackBox": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "StackBoxSlot"
+    },
+    "Synth2DSlider": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "SynthKnob": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "TakeRecorderOverlayWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "TextBlock": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "TextLayoutWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "Throbber": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "TileView": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "TreeView": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "UniformGridPanel": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "UniformGridSlot"
+    },
+    "UserWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "VREditorBaseUserWidget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "VerticalBox": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "VerticalBoxSlot"
+    },
+    "Viewport": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "PanelSlot"
+    },
+    "Widget": {
+      "isContent": false,
+      "isPanel": false,
+      "maxChildren": 0,
+      "slotClass": null
+    },
+    "WidgetSwitcher": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "WidgetSwitcherSlot"
+    },
+    "WindowTitleBarArea": {
+      "isContent": true,
+      "isPanel": true,
+      "maxChildren": 1,
+      "slotClass": "WindowTitleBarAreaSlot"
+    },
+    "WrapBox": {
+      "isContent": false,
+      "isPanel": true,
+      "maxChildren": -1,
+      "slotClass": "WrapBoxSlot"
+    }
+  }
+}

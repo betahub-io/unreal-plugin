@@ -47,5 +47,9 @@ $RECYCLE.BIN/
 *.suo
 *.tmp
 
+# Ignore Python caches from tools/
+__pycache__/
+*.pyc
+
 # Ignore other files and directories
 .git_/
