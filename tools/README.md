@@ -38,6 +38,8 @@ python3 tools/validate_widget_json.py widgets/BugReportForm.json
 | `ue_generate_widgets.py` | **UE 5.3 only** | Generate only. Also importable — `ue_build_widgets` calls its `run()`. |
 | `ue_render_widgets.py` | **UE 5.3 only** | Render + geometry only, for assets you did not just generate. |
 | `compare_renders.py` | anywhere | Pixel + geometry diff of two renders. Needs Pillow for the pixel half. |
+| `verify_widgets.py` | anywhere | **Pre-release check**: asset format version, and drift between `widgets/*.json` and the real `.uasset`. |
+| `ue_verify_widgets.py` | **UE 5.3 only** | Engine half of the check: blueprints compile, every required `BindWidget` resolves. Commandlet, no Slate needed. |
 | `compare_widget_json.py` | anywhere | Semantic diff of two widget trees. The regeneration gate. |
 | `json_to_html.py` | anywhere | Approximate visual sketch for fast iteration. **Not verification** — see below. |
 | `ue_dump_umg_schema.py` | UE editor | Regenerates `umg_schema.json`. Only needed when changing engine version. |
@@ -123,6 +125,24 @@ regenerated asset.
 
 Note: headless browsers block `file://`. To screenshot the preview, serve it first
 (`python3 -m http.server` in the output directory) — a normal browser opens the file fine.
+
+## Before a release
+
+```sh
+python3 tools/verify_widgets.py --emit-config /tmp/bh_verify_config.json
+# copy that next to the tools on the build box, run the engine half as a
+# commandlet, bring back its .T3D exports, then:
+python3 tools/verify_widgets.py --exports <dir-with-the-T3D-exports>
+```
+
+Four things get checked, and each has been confirmed to actually fail when it should:
+
+| Check | Catches |
+|---|---|
+| `FileVersionUE5 == 1009` | an asset saved by a newer engine, which UE 5.3 cannot load |
+| JSON vs `.uasset` drift | someone editing one without the other |
+| Blueprints compile | a broken asset |
+| Required `BindWidget` resolves | a rename that compiles and then nulls at runtime |
 
 ## Tests
 

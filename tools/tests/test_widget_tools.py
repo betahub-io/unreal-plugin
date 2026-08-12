@@ -23,6 +23,7 @@ sys.path.insert(0, TOOLS)
 import t3d_to_json  # noqa: E402
 import compare_widget_json as cmp_tool  # noqa: E402
 import validate_widget_json as val_tool  # noqa: E402
+import verify_widgets as verify_tool  # noqa: E402
 
 
 def _obj(cls, name, parent_path, body=""):
@@ -240,6 +241,49 @@ class ValidatorTests(unittest.TestCase):
         self.assertIn("SubmitLabel", binds)
         self.assertIn("SuggestionCheckBox", binds)
         self.assertEqual(binds["SubmitLabel"]["type"], "TextBlock")
+
+
+class AssetVersionTests(unittest.TestCase):
+    """The version check is the last line of defence against shipping an asset
+    UE 5.3 cannot load, so it gets tested against fabricated headers rather
+    than only against files that happen to be correct."""
+
+    @staticmethod
+    def header(ue4, ue5, legacy=-8, tag=0x9E2A83C1):
+        import struct
+        return (struct.pack("<Ii", tag, legacy) + struct.pack("<i", 0)
+                + struct.pack("<ii", ue4, ue5) + b"\x00" * 32)
+
+    def write(self, blob):
+        import tempfile
+        fh = tempfile.NamedTemporaryFile(suffix=".uasset", delete=False)
+        fh.write(blob)
+        fh.close()
+        self.addCleanup(os.unlink, fh.name)
+        return fh.name
+
+    def test_reads_a_53_header(self):
+        path = self.write(self.header(522, 1009))
+        self.assertEqual(verify_tool.asset_versions(path), (522, 1009))
+
+    def test_reads_a_newer_header(self):
+        path = self.write(self.header(522, 1012))
+        _ue4, ue5 = verify_tool.asset_versions(path)
+        self.assertNotEqual(ue5, verify_tool.EXPECTED_UE5_VERSION)
+
+    def test_rejects_a_non_uasset(self):
+        path = self.write(b"not an unreal asset at all, no magic here......")
+        with self.assertRaises(ValueError):
+            verify_tool.asset_versions(path)
+
+    def test_real_assets_are_at_the_53_floor(self):
+        import glob
+        assets = glob.glob(os.path.join(REPO, "Content", "*.uasset"))
+        self.assertTrue(assets, "no assets found to check")
+        for path in assets:
+            _ue4, ue5 = verify_tool.asset_versions(path)
+            self.assertEqual(ue5, verify_tool.EXPECTED_UE5_VERSION,
+                             "%s was saved by a newer engine" % path)
 
 
 if __name__ == "__main__":

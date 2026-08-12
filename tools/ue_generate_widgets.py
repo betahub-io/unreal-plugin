@@ -321,11 +321,20 @@ def run(cfg=None):
         log("seed asset   : %s" % seed)
         log("target asset : %s" % target)
 
-        if unreal.EditorAssetLibrary.does_asset_exist(target):
-            unreal.EditorAssetLibrary.delete_asset(target)
-        bp = unreal.EditorAssetLibrary.duplicate_asset(seed, target)
-        if bp is None:
-            raise RuntimeError("could not duplicate %s -> %s" % (seed, target))
+        if target == seed:
+            # In-place regeneration: the asset is its own seed. This is how the
+            # real Content/*.uasset are produced - the root survives (RootWidget
+            # cannot be written from Python) and everything below it is rebuilt.
+            bp = unreal.load_asset(target)
+            if bp is None:
+                raise RuntimeError("could not load %s for in-place rebuild" % target)
+            log("in-place regeneration (seed == target)")
+        else:
+            if unreal.EditorAssetLibrary.does_asset_exist(target):
+                unreal.EditorAssetLibrary.delete_asset(target)
+            bp = unreal.EditorAssetLibrary.duplicate_asset(seed, target)
+            if bp is None:
+                raise RuntimeError("could not duplicate %s -> %s" % (seed, target))
 
         asset_name = target.rsplit("/", 1)[-1]
         tree = unreal.load_object(None, "%s.%s:WidgetTree" % (target, asset_name))
