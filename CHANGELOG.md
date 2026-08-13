@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.6 - 2026-08-13
+
+### Added
+
+- Optional **Debug Prefill Form** setting (Project Settings -> BetaHub -> Debug). When enabled, the feedback form opens with sample text already filled in, so a submission can be tested without typing anything. The sample text is prefixed `[BetaHub debug prefill]` so test reports are recognisable, and it only replaces fields you have not typed in yourself. Has no effect in Shipping builds - the code is compiled out - but a report submitted with it enabled is still a real report.
+
 ## 1.5.5 - 2026-05-26
 
 ### Fixed
