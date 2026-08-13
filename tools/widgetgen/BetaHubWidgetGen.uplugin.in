@@ -1,0 +1,22 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "BetaHub Widget Generator (developer tool)",
+	"Description": "Editor-only helper for regenerating BetaHub UMG widgets from JSON. NOT part of the shipped BetaHub Bug Reporter plugin - never distribute this.",
+	"Category": "Other",
+	"CreatedBy": "Upsoft sp. z o. o.",
+	"EnabledByDefault": true,
+	"Installed": false,
+	"CanContainContent": false,
+	"Modules": [
+		{
+			"Name": "BetaHubWidgetGen",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64"
+			]
+		}
+	]
+}

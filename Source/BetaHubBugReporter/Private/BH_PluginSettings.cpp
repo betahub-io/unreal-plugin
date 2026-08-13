@@ -18,6 +18,7 @@ UBH_PluginSettings::UBH_PluginSettings()
     MaxRecordingDuration = 60;
     MaxVideoWidth = 2000;
     MaxVideoHeight = 1200;
+    bDebugPrefillForm = false;
 
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));

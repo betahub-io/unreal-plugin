@@ -59,7 +59,11 @@ public:
         meta=(ToolTip="The maximum height of the recorded bug report video. The video will be scaled down if the viewport height exceeds this value."))
     int32 MaxVideoHeight;
 
-    UPROPERTY(EditAnywhere, Config, Category="Settings", 
+    UPROPERTY(EditAnywhere, Config, Category="Debug",
+        meta=(ToolTip="Developer aid: fills the feedback form with sample text when it opens, so you do not have to type anything to test a submission. Has no effect in Shipping builds - the code is compiled out - but any report submitted with this on is still a real report on BetaHub."))
+    bool bDebugPrefillForm;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
         meta=(ToolTip="The path to the widget that will be used to display the bug report form."))
     TSubclassOf<UBH_ReportFormWidget> ReportFormWidgetClass;
 

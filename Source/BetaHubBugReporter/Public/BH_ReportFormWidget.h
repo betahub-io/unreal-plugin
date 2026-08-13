@@ -56,6 +56,9 @@ private:
     void UpdateFormForReportType();
     void ShowPopup(const FString& Title, const FString& Description);
 
+    // Developer aid, gated by bDebugPrefillForm. Compiled out in Shipping builds.
+    void ApplyDebugPrefill();
+
 protected:
     virtual void NativeOnInitialized() override;
     virtual void NativeConstruct() override;

@@ -111,6 +111,8 @@ bool bTryCaptureMouse)
     {
         GameRecorder->StopRecording();
     }
+
+    ApplyDebugPrefill();
 }
 
 void UBH_ReportFormWidget::SubmitReport()
@@ -358,6 +360,59 @@ void UBH_ReportFormWidget::OnSuggestionCheckBoxChanged(bool bIsChecked)
     }
 }
 
+#if !UE_BUILD_SHIPPING
+namespace
+{
+    // Deliberately obvious placeholder text, so a report submitted while the
+    // debug setting is on is recognisable as a test on the BetaHub side.
+    const FString DebugBugDescription =
+        TEXT("[BetaHub debug prefill] The game crashes when the sound settings are opened. "
+             "It happens from the main menu and from the pause menu.");
+    const FString DebugBugSteps =
+        TEXT("1. Open the main menu\n2. Press Settings\n3. Press Sound\n4. The game crashes");
+    const FString DebugSuggestionDescription =
+        TEXT("[BetaHub debug prefill] It would help to have a key binding that hides the HUD "
+             "while taking screenshots.");
+
+    // Only replace text the tester has not typed themselves.
+    bool IsUntouched(const FString& Current)
+    {
+        return Current.IsEmpty()
+            || Current == DebugBugDescription
+            || Current == DebugBugSteps
+            || Current == DebugSuggestionDescription;
+    }
+}
+#endif
+
+void UBH_ReportFormWidget::ApplyDebugPrefill()
+{
+#if !UE_BUILD_SHIPPING
+    if (Settings == nullptr || !Settings->bDebugPrefillForm)
+    {
+        return;
+    }
+
+    const bool bIsBugReport = (CurrentReportType == EBH_ReportType::Bug);
+
+    if (BugDescriptionEdit && IsUntouched(BugDescriptionEdit->GetText().ToString()))
+    {
+        BugDescriptionEdit->SetText(FText::FromString(
+            bIsBugReport ? DebugBugDescription : DebugSuggestionDescription));
+    }
+
+    if (bIsBugReport && StepsToReproduceEdit
+        && IsUntouched(StepsToReproduceEdit->GetText().ToString()))
+    {
+        StepsToReproduceEdit->SetText(FText::FromString(DebugBugSteps));
+    }
+
+    UE_LOG(LogBetaHub, Warning,
+           TEXT("Debug prefill is on (BetaHub setting bDebugPrefillForm). Anything submitted "
+                "from this form is still a real report on BetaHub."));
+#endif
+}
+
 void UBH_ReportFormWidget::SetReportType(EBH_ReportType NewType)
 {
     CurrentReportType = NewType;
@@ -374,6 +429,7 @@ void UBH_ReportFormWidget::SetReportType(EBH_ReportType NewType)
     }
 
     UpdateFormForReportType();
+    ApplyDebugPrefill();
 }
 
 void UBH_ReportFormWidget::UpdateFormForReportType()

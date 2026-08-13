@@ -1,0 +1,10 @@
+# Developer-only tooling: excluded from `git archive` and from GitHub's
+# generated source archives so it does not reach customers downloading a
+# release. Kept in the repository because it is how Content/*.uasset is
+# produced - see tools/README.md.
+#
+# Note the /** suffix: unlike .gitignore, a .gitattributes pattern that
+# matches a directory does NOT apply to the paths inside it.
+/tools/**       export-ignore
+/widgets/**     export-ignore
+/.gitattributes export-ignore
