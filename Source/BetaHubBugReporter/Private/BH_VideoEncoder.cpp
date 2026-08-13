@@ -12,18 +12,55 @@
 #include "BH_Runnable.h"
 #include "BH_FFmpeg.h"
 
+// windows.h (pulled in transitively on some engine versions, notably UE 5.3) defines DeleteFile as a
+// macro aliasing DeleteFileW, which collides with IPlatformFile::DeleteFile and fails to compile. Undo
+// it so our physical-layer deletes resolve to the real method on every engine version. Harmless no-op
+// where the macro is not defined (5.4+). CreateDirectoryTree is used instead of CreateDirectory for the
+// same reason (CreateDirectory is likewise a windows.h macro).
+#ifdef DeleteFile
+#undef DeleteFile
+#endif
+
 const int SEGMENT_DURATION_SECONDS = 10;
 FString BH_VideoEncoder::PreferredFfmpegOptions;
+
+namespace
+{
+    // Enumerate files (names only, mirroring IFileManager::FindFiles) in Dir on the PHYSICAL filesystem
+    // whose name starts with Prefix and ends with Suffix. The whole segment lifecycle uses the physical
+    // layer because ffmpeg (an external process) writes and reads segment/concat files on the real disk;
+    // going through the wrapped IFileManager/FFileHelper could resolve to a virtualized/redirected path
+    // (e.g. a cook-in-editor sandbox) and miss ffmpeg's files entirely.
+    void FindSegmentFilesPhysical(TArray<FString>& OutNames, const FString& Dir, const FString& Prefix, const FString& Suffix)
+    {
+        OutNames.Reset();
+        IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
+        PhysicalFile.IterateDirectory(*Dir, [&OutNames, &Prefix, &Suffix](const TCHAR* FilenameOrDirectory, bool bIsDirectory) -> bool
+        {
+            if (!bIsDirectory)
+            {
+                const FString Name = FPaths::GetCleanFilename(FilenameOrDirectory);
+                if ((Prefix.IsEmpty() || Name.StartsWith(Prefix)) && Name.EndsWith(Suffix))
+                {
+                    OutNames.Add(Name);
+                }
+            }
+            return true;
+        });
+    }
+}
 
 BH_VideoEncoder::BH_VideoEncoder(
     int32 InTargetFPS,
     const FTimespan &InRecordingDuration,
     int32 InScreenWidth, int32 InScreenHeight,
-    TSharedPtr<FBH_FrameSource> InFrameSource)
+    TSharedPtr<FBH_FrameSource> InFrameSource,
+    bool bInH264PassThrough)
     :
         targetFPS(InTargetFPS),
         screenWidth(InScreenWidth),
         screenHeight(InScreenHeight),
+        bH264PassThrough(bInH264PassThrough),
         frameSource(InFrameSource),
         thread(nullptr),
         bIsRecording(false),
@@ -56,28 +93,79 @@ BH_VideoEncoder::BH_VideoEncoder(
         UE_LOG(LogBetaHub, Error, TEXT("FFmpeg executable not found at path: %s"), *ffmpegPath);
     }
 
-    // Set up the segments directory in the Saved folder
-    segmentsDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments"));
-    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-    if (!PlatformFile.DirectoryExists(*segmentsDir))
+    // Set up the segments directory in the Saved folder.
+    // Store it as a fully-qualified absolute path: ffmpeg is handed absolute paths (see RunEncoding /
+    // MergeSegments), and under a debugger the process working directory can differ from the engine
+    // BaseDir that ConvertRelativePathToFull anchors to. Keeping segmentsDir absolute everywhere
+    // guarantees the directory we create, the files IFileManager enumerates, and the paths ffmpeg
+    // reads/writes all resolve to the same place.
+    segmentsDir = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_VideoSegments")));
+
+    // Use the PHYSICAL platform file, NOT FPlatformFileManager::GetPlatformFile(): the latter can be a
+    // pak/sandbox/virtualization wrapper (e.g. in a cook-in-editor / staged run) whose DirectoryExists and
+    // CreateDirectory operate on a redirected path. ffmpeg is an external process that only sees the real
+    // on-disk filesystem, so our directory and ffmpeg's must be the same real path — otherwise ffmpeg fails
+    // to open its segment files and the recording is doomed. (Confirmed in the field: bypassing the wrapper
+    // via GetPlatformPhysical fixes the missing-directory hang.)
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
+
+    // CreateDirectoryTree is idempotent (no-op if it already exists), so create unconditionally instead of
+    // gating on DirectoryExists — the wrapped DirectoryExists could report a virtualized path as present.
+    PhysicalFile.CreateDirectoryTree(*segmentsDir);
+
+    // Ground truth: DirectoryExists/CreateDirectory can lie (virtualization, or "succeed" without creating).
+    // The only reliable check is to actually create a file where ffmpeg will — that is exactly what ffmpeg
+    // attempts. If this probe fails the recording cannot work, so refuse to start rather than launch ffmpeg
+    // into a state that used to freeze the game on shutdown.
+    bOutputDirWritable = false;
     {
-        PlatformFile.CreateDirectoryTree(*segmentsDir);
+        const FString ProbePath = segmentsDir / TEXT(".bh_write_probe");
+        IFileHandle* ProbeHandle = PhysicalFile.OpenWrite(*ProbePath);
+        if (ProbeHandle)
+        {
+            delete ProbeHandle;
+            PhysicalFile.DeleteFile(*ProbePath);
+            bOutputDirWritable = true;
+        }
     }
 
-    // Remove all existing segment files
-    IFileManager& FileManager = IFileManager::Get();
+    if (bOutputDirWritable)
+    {
+        UE_LOG(LogBetaHub, Log, TEXT("BetaHub video segments directory ready: %s"), *segmentsDir);
+    }
+    else
+    {
+        // Note: a passing probe proves this process can write here, not that ffmpeg can (Controlled Folder
+        // Access / antivirus can gate ffmpeg.exe specifically). A failing probe, though, is a definite stop.
+        UE_LOG(LogBetaHub, Error, TEXT("BetaHub video segments directory is not writable: %s. Video recording is disabled for this session (check the folder exists and permissions / antivirus / Controlled Folder Access)."), *segmentsDir);
+    }
+
+    // Remove all existing segment files (physical layer — see FindSegmentFilesPhysical note)
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
+    FindSegmentFilesPhysical(SegmentFiles, segmentsDir, segmentPrefix, TEXT(".mp4"));
     for (const FString& SegmentFile : SegmentFiles)
     {
-        FileManager.Delete(*(segmentsDir / SegmentFile));
+        PhysicalFile.DeleteFile(*(segmentsDir / SegmentFile));
     }
 
     outputFile = FPaths::Combine(segmentsDir, (segmentPrefix + TEXT("%06d.mp4")));
-    encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
-        FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
-        TEXT(" -r ") + FString::FromInt(targetFPS) +
-        TEXT(" -i - {OPTIONS} -pix_fmt yuv420p -f segment -segment_time 10 -reset_timestamps 1 ");
+    if (bH264PassThrough)
+    {
+        // Already-encoded H.264 Annex-B stream in, remux (no re-encode) into mp4 segments. ffmpeg's mp4
+        // muxer writes SPS/PPS into each segment's avcC from the stream extradata, so segments are
+        // independently decodable as long as the stream carries periodic IDR keyframes (forced by the
+        // hardware encoder). -r sets the assumed input frame rate for timestamp generation.
+        encodingSettings = TEXT("-y -fflags +genpts -f h264 -r ") +
+            FString::FromInt(targetFPS) +
+            TEXT(" -i - -c copy -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 ");
+    }
+    else
+    {
+        encodingSettings = TEXT("-y -f rawvideo -pix_fmt bgra -s ") +
+            FString::FromInt(screenWidth) + TEXT("x") + FString::FromInt(screenHeight) +
+            TEXT(" -r ") + FString::FromInt(targetFPS) +
+            TEXT(" -i - {OPTIONS} -pix_fmt yuv420p -f segment -segment_time 10 -reset_timestamps 1 ");
+    }
 
     stopEvent = FPlatformProcess::GetSynchEventFromPool(false);
     pauseEvent = FPlatformProcess::GetSynchEventFromPool(false);
@@ -125,6 +213,15 @@ void BH_VideoEncoder::StartRecording()
         return;
     }
 
+    // Fail fast: if the segments directory could not be made writable (probed in the constructor), do not
+    // start the encoder thread. Launching ffmpeg into an unwritable directory produces no video and, with a
+    // full stdin pipe, used to freeze the game thread on stop.
+    if (!bOutputDirWritable)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot start recording. Video segments directory is not writable: %s"), *segmentsDir);
+        return;
+    }
+
     if (!bIsRecording)
     {
         bIsRecording = true;
@@ -166,6 +263,11 @@ void BH_VideoEncoder::ResumeRecording()
     }
 }
 
+void BH_VideoEncoder::EnqueueEncodedPacket(TArray<uint8>&& Nal)
+{
+    EncodedPacketQueue.Enqueue(MoveTemp(Nal));
+}
+
 void BH_VideoEncoder::RunEncoding()
 {
     if (ffmpegPath.IsEmpty() || !FPaths::FileExists(ffmpegPath))
@@ -174,27 +276,49 @@ void BH_VideoEncoder::RunEncoding()
         return;
     }
 
-    // Wait for the first valid frame
-    TSharedPtr<FBH_Frame> firstFrame = nullptr;
-    while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
+    if (!bOutputDirWritable)
     {
-        if (!frameSource.IsValid())
-        {
-            UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
-            return;
-        }
+        UE_LOG(LogBetaHub, Error, TEXT("Cannot run encoding. Video segments directory is not writable: %s"), *segmentsDir);
+        return;
+    }
 
-        firstFrame = frameSource->GetFrame();
-        if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
+    if (bH264PassThrough)
+    {
+        // Wait for the first encoded packet before launching ffmpeg.
+        while (EncodedPacketQueue.IsEmpty())
         {
-            UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame..."));
-            FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
+            UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first encoded H.264 packet..."));
+            FPlatformProcess::Sleep(0.1f);
+            if (stopEvent->Wait(0))
+            {
+                return;
+            }
         }
-
-        if (stopEvent->Wait(0))
+    }
+    else
+    {
+        // Wait for the first valid frame
+        TSharedPtr<FBH_Frame> firstFrame = nullptr;
+        while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
-            // stop event received, do not proceed any further
-            return;
+            if (!frameSource.IsValid())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
+                return;
+            }
+
+            firstFrame = frameSource->GetFrame();
+            if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
+            {
+                UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame..."));
+                FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
+            }
+
+            if (stopEvent->Wait(0))
+            {
+                // stop event received, do not proceed any further
+                return;
+            }
         }
     }
 
@@ -232,51 +356,28 @@ void BH_VideoEncoder::RunEncoding()
 
     const float frameInterval = 1.0f / targetFPS;
 
-    TArray<uint8> byteData;
 
     while (!stopEvent->Wait(0))
     {
         if (!pauseEvent->Wait(0))
         {
-            if (!frameSource.IsValid())
+            if (bH264PassThrough)
             {
-                UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
-                break;
-            }
-
-            TSharedPtr<FBH_Frame> frame = frameSource->GetFrame();
-            if (frame.IsValid())
-            {
-                // Log frame retrieval success
-                // UE_LOG(LogBetaHub, Log, TEXT("Frame retrieved successfully."));
-
-                if (byteData.Num() != frame->Data.Num() * sizeof(FColor))
+                // Drain all encoded packets queued since last iteration and write them straight to
+                // ffmpeg's stdin (remuxed with -c copy — no re-encode).
+                TArray<uint8> Nal;
+                while (EncodedPacketQueue.Dequeue(Nal))
                 {
-                    byteData.SetNum(frame->Data.Num() * sizeof(FColor));
-                }
-
-                // Convert the TArray<FColor> to a byte array
-                if (byteData.Num() > 0)
-                {
-                    FMemory::Memcpy(byteData.GetData(), frame->Data.GetData(), frame->Data.Num() * sizeof(FColor));
-
-                    // Log the data size
-                    // UE_LOG(LogBetaHub, Log, TEXT("Byte data size: %d"), byteData.Num());
-
-                    // Write data to the pipe all at once
-                    ffmpegRunnable->WriteToPipe(byteData);
-
-                    // Read the buffered output
-                    FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
-
-                    if (!ffmpegOutput.IsEmpty())
+                    if (Nal.Num() > 0)
                     {
-                        UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+                        ffmpegRunnable->WriteToPipe(Nal.GetData(), Nal.Num());
                     }
                 }
-                else
+
+                FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+                if (!ffmpegOutput.IsEmpty())
                 {
-                    UE_LOG(LogBetaHub, Warning, TEXT("Byte data size is zero, skipping write."));
+                    UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
                 }
 
                 // Periodic segment removal
@@ -286,9 +387,46 @@ void BH_VideoEncoder::RunEncoding()
                     LastSegmentCheckTime = FDateTime::Now();
                 }
             }
+            else if (!frameSource.IsValid())
+            {
+                UE_LOG(LogBetaHub, Error, TEXT("Frame source is not valid."));
+                break;
+            }
             else
             {
-                UE_LOG(LogBetaHub, Warning, TEXT("Failed to retrieve frame from frame buffer."));
+                TSharedPtr<FBH_Frame> frame = frameSource->GetFrame();
+                if (frame.IsValid())
+                {
+                    // Write the frame's pixels straight to the pipe (BGRA == FColor byte layout), no copy.
+                    const int32 FrameBytes = frame->Data.Num() * (int32)sizeof(FColor);
+                    if (FrameBytes > 0)
+                    {
+                        ffmpegRunnable->WriteToPipe(reinterpret_cast<const uint8*>(frame->Data.GetData()), FrameBytes);
+
+                        // Read the buffered output
+                        FString ffmpegOutput = ffmpegRunnable->GetBufferedOutput();
+
+                        if (!ffmpegOutput.IsEmpty())
+                        {
+                            UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output: %s"), *ffmpegOutput);
+                        }
+                    }
+                    else
+                    {
+                        UE_LOG(LogBetaHub, Warning, TEXT("Byte data size is zero, skipping write."));
+                    }
+
+                    // Periodic segment removal
+                    if ((FDateTime::Now() - LastSegmentCheckTime) >= SegmentCheckInterval)
+                    {
+                        RemoveOldSegments();
+                        LastSegmentCheckTime = FDateTime::Now();
+                    }
+                }
+                else
+                {
+                    UE_LOG(LogBetaHub, Warning, TEXT("Failed to retrieve frame from frame buffer."));
+                }
             }
             FPlatformProcess::Sleep(frameInterval);
         }
@@ -309,6 +447,21 @@ void BH_VideoEncoder::RunEncoding()
                 UE_LOG(LogBetaHub, Warning, TEXT("FFmpeg Output is empty."));
             }
             break;
+        }
+    }
+
+    // Final drain: stopEvent breaks the loop above without processing the queue, so write any packets
+    // enqueued after the last iteration (the tail handed over by StopRecording) before closing ffmpeg's
+    // stdin — otherwise the end of a hardware-encoded recording is truncated (worse at low FPS).
+    if (bH264PassThrough)
+    {
+        TArray<uint8> Nal;
+        while (EncodedPacketQueue.Dequeue(Nal))
+        {
+            if (Nal.Num() > 0)
+            {
+                ffmpegRunnable->WriteToPipe(Nal.GetData(), Nal.Num());
+            }
         }
     }
 
@@ -338,10 +491,11 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         return MergedFilePath;
     }
 
-    // Get the list of segment files
-    IFileManager& FileManager = IFileManager::Get();
+    // Get the list of segment files. Enumerate on the PHYSICAL filesystem — ffmpeg wrote the segments
+    // there, so a wrapped IFileManager could look at a redirected path and find none.
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
+    FindSegmentFilesPhysical(SegmentFiles, segmentsDir, segmentPrefix, TEXT(".mp4"));
 
     // Sort and take the last MaxSegments
     SegmentFiles.Sort();
@@ -361,8 +515,9 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         return MergedFilePath;
     }
 
-    // Create the concat file
-    FString ConcatFilePath = segmentsDir / TEXT("concat.txt");
+    // Create the concat file. Build ONE absolute path and use that exact string for both the write
+    // and the ffmpeg argument, so we can never write it to one place and read it from another.
+    FString ConcatFilePath = FPaths::ConvertRelativePathToFull(segmentsDir / TEXT("concat.txt"));
     FString ConcatFileContent;
     for (const FString& SegmentFile : SegmentFiles)
     {
@@ -372,17 +527,37 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
 
         UE_LOG(LogBetaHub, Log, TEXT("Segment file: %s"), *FullPath);
     }
-    FFileHelper::SaveStringToFile(ConcatFileContent, *ConcatFilePath);
 
-    // Set the merged file path
-    MergedFilePath = FPaths::Combine(FPaths::ProjectSavedDir(), 
-        FString::Printf(TEXT("Gameplay_%s.mp4"), 
-        *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S"))));
+    // Write the concat file through the PHYSICAL layer (as UTF-8, no BOM) so it lands exactly where ffmpeg
+    // will read it — FFileHelper::SaveStringToFile goes through the wrapped IFileManager and could write to
+    // a redirected/virtualized path that ffmpeg (real disk) cannot see, producing a misleading ENOENT.
+    // Check the write result: previously a failed write (e.g. antivirus / Controlled Folder Access blocking
+    // file creation) still launched ffmpeg, which died with "No such file or directory" while the report was
+    // published as a success with no video. Fail fast at the true source instead.
+    bool bConcatWritten = false;
+    {
+        FTCHARToUTF8 ConcatUtf8(*ConcatFileContent);
+        if (IFileHandle* ConcatHandle = PhysicalFile.OpenWrite(*ConcatFilePath))
+        {
+            bConcatWritten = ConcatHandle->Write(reinterpret_cast<const uint8*>(ConcatUtf8.Get()), ConcatUtf8.Length());
+            delete ConcatHandle;
+        }
+    }
+    if (!bConcatWritten)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("Failed to write concat file: %s. Cannot merge video (check folder permissions / antivirus / Controlled Folder Access)."), *ConcatFilePath);
+        return FString();
+    }
+
+    // Set the merged file path (absolute, for the same reason as segmentsDir).
+    MergedFilePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),
+        FString::Printf(TEXT("Gameplay_%s.mp4"),
+        *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S")))));
 
     // FFmpeg command to merge segments
     FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""),
-        *FPaths::ConvertRelativePathToFull(ConcatFilePath),
-        *FPaths::ConvertRelativePathToFull(MergedFilePath));
+        *ConcatFilePath,
+        *MergedFilePath);
 
     // Create and start the runnable for merging
     FBH_Runnable* MergeRunnable = new FBH_Runnable(*ffmpegPath, CommandLine);
@@ -394,16 +569,27 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
     MergeRunnable->IsProcessRunning(&exitCode);
 
     // Cleanup concat file
-    FileManager.Delete(*ConcatFilePath);
+    PhysicalFile.DeleteFile(*ConcatFilePath);
 
     if (exitCode == 0)
     {
+        // ffmpeg reported success; confirm the file is actually there before we hand it to the
+        // uploader. A missing file here means "merge said OK but produced nothing" - report it as a
+        // failure rather than returning a path to a non-existent file. Check the physical layer since
+        // that is where ffmpeg wrote it.
+        if (!PhysicalFile.FileExists(*MergedFilePath))
+        {
+            UE_LOG(LogBetaHub, Error, TEXT("Merge reported success but output file is missing: %s"), *MergedFilePath);
+            delete MergeRunnable;
+            return FString();
+        }
+
         UE_LOG(LogBetaHub, Log, TEXT("Segments merged successfully."));
-        
+
         // Clean up segment files
         for (const FString& SegmentFile : SegmentFiles)
         {
-            FileManager.Delete(*(segmentsDir / SegmentFile));
+            PhysicalFile.DeleteFile(*(segmentsDir / SegmentFile));
         }
 
         delete MergeRunnable;
@@ -423,9 +609,9 @@ void BH_VideoEncoder::RemoveOldSegments()
     // Removing by count instead of age, because video can be paused and we don't
     // want to remove paused segments
     
-    IFileManager& FileManager = IFileManager::Get();
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
     TArray<FString> SegmentFiles;
-    FileManager.FindFiles(SegmentFiles, *(segmentsDir / (segmentPrefix + TEXT("*.mp4"))), true, false);
+    FindSegmentFilesPhysical(SegmentFiles, segmentsDir, segmentPrefix, TEXT(".mp4"));
 
     // Sort segment files based on their numerical part
     SegmentFiles.Sort([](const FString& A, const FString& B)
@@ -441,7 +627,7 @@ void BH_VideoEncoder::RemoveOldSegments()
     {
         FString SegmentFilePath = segmentsDir / SegmentFiles[i];
         UE_LOG(LogBetaHub, Log, TEXT("Removing old segment: %s"), *SegmentFilePath);
-        FileManager.Delete(*SegmentFilePath);
+        PhysicalFile.DeleteFile(*SegmentFilePath);
     }
 }
 
@@ -452,9 +638,9 @@ int32 BH_VideoEncoder::GetSegmentCountToKeep()
 
 void BH_VideoEncoder::RemoveOldFiles()
 {
-    IFileManager& FileManager = IFileManager::Get();
+    IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
     TArray<FString> Files;
-    FileManager.FindFiles(Files, *(segmentsDir / TEXT("*.mp4")), true, false);
+    FindSegmentFilesPhysical(Files, segmentsDir, FString(), TEXT(".mp4"));
 
     FDateTime CurrentTime = FDateTime::UtcNow();
     FTimespan MaxAge = FTimespan::FromHours(24);
@@ -462,14 +648,14 @@ void BH_VideoEncoder::RemoveOldFiles()
     for (const FString& File : Files)
     {
         FString FilePath = FPaths::Combine(segmentsDir, File);
-        FFileStatData StatData = FileManager.GetStatData(*FilePath);
+        FFileStatData StatData = PhysicalFile.GetStatData(*FilePath);
         if (StatData.bIsValid)
         {
             FDateTime LastWriteTime = StatData.ModificationTime;
             if ((CurrentTime - LastWriteTime) > MaxAge)
             {
                 UE_LOG(LogBetaHub, Log, TEXT("Removing old file: %s"), *FilePath);
-                FileManager.Delete(*FilePath);
+                PhysicalFile.DeleteFile(*FilePath);
             }
         }
     }

@@ -47,9 +47,31 @@ public class BetaHubBugReporter : ModuleRules
 				"JsonUtilities",
 				"RenderCore",
 				"RHI",
-				// ... add private dependencies that you statically link with here ...	
+				// ... add private dependencies that you statically link with here ...
 			}
 			);
+
+		// Optional hardware video encode via the engine's AVCodecs plugins (Experimental).
+		// Default OFF, so the shipped plugin has NO dependency on Experimental engine plugins
+		// and the ffmpeg path is the only backend. Opt in by setting the environment variable
+		// BETAHUB_HWENCODE=1 at build time AND enabling the AVCodecs/NVCodecs plugins in your
+		// .uproject. All hardware-encode code is compiled out unless WITH_BETAHUB_HWENCODE=1.
+		bool bEnableHardwareEncode = Environment.GetEnvironmentVariable("BETAHUB_HWENCODE") == "1";
+		if (bEnableHardwareEncode)
+		{
+			PrivateDependencyModuleNames.AddRange(
+				new string[]
+				{
+					"AVCodecsCore",
+					"AVCodecsCoreRHI",
+				}
+				);
+			PrivateDefinitions.Add("WITH_BETAHUB_HWENCODE=1");
+		}
+		else
+		{
+			PrivateDefinitions.Add("WITH_BETAHUB_HWENCODE=0");
+		}
 		
 		
 		DynamicallyLoadedModuleNames.AddRange(
