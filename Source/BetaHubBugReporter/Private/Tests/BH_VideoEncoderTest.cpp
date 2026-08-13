@@ -120,9 +120,15 @@ bool FBHVideoEncoderFailFastTest::RunTest(const FString& Parameters)
 {
     // The product correctly logs errors when it refuses to record into an unwritable dir. The automation
     // framework fails any test that emits a LogError, so declare those messages as expected - they are the
-    // proof the fail-fast path fired, not a test failure. This single pattern matches both the
-    // "video segments directory is not writable" and "Cannot start recording..." lines (case-insensitive).
-    AddExpectedError(TEXT("video segments directory is not writable"), EAutomationExpectedErrorFlags::Contains, 0);
+    // proof the fail-fast path fired, not a test failure.
+    //
+    // The pattern is compiled to a regex, and UE 5.3 matches it CASE-SENSITIVELY (later versions do not),
+    // so it must not span a letter whose case differs between messages. The product logs three variants:
+    //   "BetaHub video segments directory is not writable: ..."
+    //   "Cannot start recording. Video segments directory is not writable: ..."
+    //   "Cannot run encoding. Video segments directory is not writable: ..."
+    // Starting the pattern after that v/V is what makes one declaration cover all three on every version.
+    AddExpectedError(TEXT("segments directory is not writable"), EAutomationExpectedErrorFlags::Contains, 0);
 
     IPlatformFile& Phys = IPlatformFile::GetPlatformPhysical();
     const FString SegDir = SegmentsDirPath();
