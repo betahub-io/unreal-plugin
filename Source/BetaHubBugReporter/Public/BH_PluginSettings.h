@@ -75,8 +75,21 @@ public:
         meta=(ToolTip="Developer aid: fills the feedback form with sample text when it opens, so you do not have to type anything to test a submission. Has no effect in Shipping builds - the code is compiled out - but any report submitted with this on is still a real report on BetaHub."))
     bool bDebugPrefillForm;
 
+    // True only when the plugin was built with hardware-encode support (BETAHUB_HWENCODE=1). Set in the
+    // constructor; drives EditConditionHides on VideoEncoderBackend so the backend picker is absent
+    // entirely from builds where every option would resolve to FFmpeg anyway.
+    //
+    // This is a runtime flag rather than an #if around the UPROPERTY on purpose: UnrealHeaderTool only
+    // understands a fixed set of macros (WITH_EDITOR, WITH_EDITORONLY_DATA, CPP, ...) and silently SKIPS
+    // the body of any #if it does not recognise. Guarding the property with #if WITH_BETAHUB_HWENCODE
+    // would therefore strip its reflection - no Config persistence, no settings row - in exactly the
+    // hardware-enabled build that needs it. See UhtHeaderFileParser.cs, UhtCompilerDirective.Unrecognized.
+    UPROPERTY(Transient)
+    bool bHardwareEncodeSupported;
+
     UPROPERTY(EditAnywhere, Config, Category="Settings",
-        meta=(ToolTip="Which encoder produces the recorded video. FFmpeg (CPU) works everywhere. Hardware (GPU, NVIDIA/AMD on Windows) offloads encoding off the CPU. Auto uses hardware when available and falls back to FFmpeg otherwise. Hardware requires the plugin to be built with hardware-encode support; it always falls back to FFmpeg if the GPU encoder cannot start."))
+        meta=(EditCondition="bHardwareEncodeSupported", EditConditionHides,
+              ToolTip="Which encoder produces the recorded video. FFmpeg (CPU) works everywhere. Hardware (GPU, NVIDIA/AMD on Windows) offloads encoding off the CPU. Auto uses hardware when available and falls back to FFmpeg otherwise; both fall back to FFmpeg if the GPU encoder cannot start."))
     EBH_VideoEncoderBackend VideoEncoderBackend;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings",

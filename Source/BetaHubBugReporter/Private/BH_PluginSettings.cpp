@@ -24,6 +24,10 @@ UBH_PluginSettings::UBH_PluginSettings()
     // the GPU where available; Auto/Hardware always fall back to FFmpeg if the GPU encoder cannot start.
     VideoEncoderBackend = EBH_VideoEncoderBackend::FFmpeg;
 
+    // The backend picker only appears when the plugin can actually honour it. In a stock build every
+    // hardware path is compiled out, so offering "Hardware (GPU)" would silently do nothing.
+    bHardwareEncodeSupported = (WITH_BETAHUB_HWENCODE != 0);
+
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
 
