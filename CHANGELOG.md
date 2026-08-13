@@ -1,6 +1,18 @@
 # Changelog
 
-## 1.5.6 - 2026-08-13
+## 1.6.0 - 2026-08-13
+
+### Changed
+
+- Video recording no longer stalls the render thread. Frames were previously read back from the GPU synchronously, which forced a pipeline flush on every captured frame. Capture now uses an asynchronous readback ring and scales the frame down on the GPU before reading it back. On our test hardware the render-thread stall went from ~6.5 ms per capture to ~0.01 ms, and the cost of recording to game framerate dropped from ~18% to ~6%.
+- Recorded video is smoother. The old synchronous readback was silently throttling capture to roughly half the configured frame rate, so a recording set to 30 FPS was really being written at about 13. It now reaches the configured rate.
+
+### Fixed
+
+- The game could hang permanently when recording stopped. If FFmpeg exited early - a missing or unwritable output directory, a crash, an antivirus block - the plugin kept a copy of FFmpeg's own input pipe handle open, so the pipe never registered as broken. Writes to it blocked forever and took the game thread down with them when it waited for the encoder to finish. Reachable from ordinary actions including resizing the viewport.
+- Video recording failed silently in packaged and cook-in-editor builds where the engine redirects file paths. The plugin and FFmpeg had different views of where the video segments were: the plugin reported files as present that FFmpeg could not open, so the merge step produced no video and no clear error. All segment file operations now go through the physical filesystem, which FFmpeg also sees.
+- Recording now refuses to start, with a clear log message, when the video segments directory cannot be written to, instead of failing later during the merge.
+- Video merge failures caused by unchecked file writes and relative paths.
 
 ### Added
 
