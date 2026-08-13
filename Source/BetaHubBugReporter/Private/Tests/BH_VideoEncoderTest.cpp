@@ -12,6 +12,9 @@
 #include "HAL/PlatformProcess.h"
 #include "HAL/PlatformTime.h"
 #include "HAL/PlatformFileManager.h"
+// IPlatformFile itself lives here. PlatformFileManager.h only declares FPlatformFileManager and does
+// not pull this in on every engine version, so relying on it compiles by luck of unity grouping.
+#include "GenericPlatform/GenericPlatformFile.h"
 
 // windows.h can leak DeleteFile -> DeleteFileW here too (see BH_VideoEncoder.cpp); undo it so the
 // physical-file cleanup calls below resolve to IPlatformFile::DeleteFile on every engine version.

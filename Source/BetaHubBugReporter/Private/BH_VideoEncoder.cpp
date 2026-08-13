@@ -5,6 +5,9 @@
 #include "Runtime/Launch/Resources/Version.h"
 #include "HAL/PlatformProcess.h"
 #include "HAL/PlatformFileManager.h"
+// IPlatformFile itself lives here. PlatformFileManager.h only declares FPlatformFileManager and does
+// not pull this in on every engine version, so relying on it compiles by luck of unity grouping.
+#include "GenericPlatform/GenericPlatformFile.h"
 #include "HAL/Event.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
