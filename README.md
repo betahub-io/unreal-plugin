@@ -20,7 +20,7 @@ The plugin is available on the [Fab marketplace](https://www.fab.com/pl/listings
 
 ## Compatibility
 
-This plugin is fully compatible with Unreal Engine versions **5.3**, **5.4**, **5.5**, **5.6**, and **5.7**. If you're looking for Unreal 4 support, there's a [separate repo for that](https://github.com/betahub-io/unreal-4-plugin).
+This plugin is fully compatible with Unreal Engine versions **5.3**, **5.4**, **5.5**, **5.6**, **5.7**, and **5.8**. If you're looking for Unreal 4 support, there's a [separate repo for that](https://github.com/betahub-io/unreal-4-plugin).
 All features have been tested and verified on these versions.
 
 ## FFmpeg Installation
@@ -35,17 +35,21 @@ For packaged builds, place the executable (renamed to `bh_ffmpeg` or `bh_ffmpeg.
 
 ## Video Encoder
 
-The plugin can encode the gameplay video with either the bundled FFmpeg (CPU) or a GPU hardware encoder. Choose it under *Project Settings → Plugins → BetaHub Bug Reporter → **Video Encoder Backend***:
+The plugin records by copying each frame off the GPU asynchronously, scaling it down on the GPU, and encoding it with the bundled FFmpeg (CPU). This is the only encoder in a standard build, and it works on every GPU and platform — there is nothing to configure.
+
+Frame capture never blocks the render thread waiting for the GPU, so recording costs a few percent of framerate rather than stalling every captured frame.
+
+**Hardware (GPU) encoding — experimental, off by default.** An optional NVENC/AMF backend exists but is compiled out unless the plugin is built from source with the `BETAHUB_HWENCODE=1` environment variable set *and* Unreal's Experimental *AVCodecs* (plus *NVCodecs*/*AMFCodecs*) plugins enabled in your project. Only such a build shows the *Video Encoder Backend* setting under *Project Settings → Plugins → BetaHub Bug Reporter*, offering:
 
 | Setting | What it does | Requirements |
 | --- | --- | --- |
 | **FFmpeg** (default) | Encodes on the CPU with the bundled FFmpeg. | None — works on every GPU and platform. |
-| **Hardware** | Encodes on the GPU (NVENC/AMF), keeping encoding off the CPU. | Windows, an NVIDIA or AMD GPU, and a plugin build with hardware-encode support (see below). |
+| **Hardware** | Encodes on the GPU (NVENC/AMF), keeping encoding off the CPU. | Windows, an NVIDIA or AMD GPU. |
 | **Auto** | Uses the hardware encoder when it is available, otherwise FFmpeg. | Same as Hardware; silently uses FFmpeg when hardware isn't available. |
 
-**Automatic fallback:** *Hardware* and *Auto* always fall back to FFmpeg if the GPU encoder can't start (no supported GPU, driver session limit reached, or the plugin was built without hardware support). The chosen backend is logged at the start of each recording under the `LogBetaHub` category.
+*Hardware* and *Auto* always fall back to FFmpeg if the GPU encoder can't start (no supported GPU, or the driver's encode-session limit is already used up by streaming software). The chosen backend is logged at the start of each recording under the `LogBetaHub` category.
 
-**Enabling hardware encode (experimental):** hardware encoding is built on Unreal's Experimental *AVCodecs* plugins and is compiled in only when the plugin is built from source with the `BETAHUB_HWENCODE=1` environment variable set, with the *AVCodecs* (and *NVCodecs*/*AMFCodecs*) plugins enabled in your project. Without that, the *Hardware*/*Auto* settings fall back to FFmpeg.
+The setting is hidden in standard builds because every option there would resolve to FFmpeg anyway.
 
 ## Configuration
 
@@ -83,10 +87,11 @@ Use `FromString()` for text/single-select/boolean fields and `FromArray()` for m
 
 **Project setup:** plain text fields auto-create on first submission, so no setup is needed for them. **Single-select, multi-select, and boolean fields must be pre-created** in your BetaHub project settings — and for select fields, every submitted value must match a predefined option, otherwise the whole report is rejected. See the [custom fields documentation](https://betahub.io/docs/integrations/game-engines/#custom-fields) for details.
 
-## Development Branch
+## Reporting Issues
 
-This repository has an actively maintained `dev` branch which is often more up-to-date than `master`. If you encounter any issues on `master`, we recommend checking whether the problem has already been addressed in the `dev` branch:
+`master` is the maintained branch — it carries every released fix, and each release is built and
+tested against all supported engine versions before it lands.
 
-👉 https://github.com/betahub-io/unreal-plugin/tree/dev
-
-The `dev` branch is regularly merged into `master` after we ensure that it does not introduce regressions for users who simply clone the repository and use `master` as-is.
+If you hit a problem, please [open an issue](https://github.com/betahub-io/unreal-plugin/issues)
+with your engine version, platform, and the `LogBetaHub` lines from your project's
+`Saved/Logs/<Project>.log`. Video-recording problems in particular log a clear reason there.

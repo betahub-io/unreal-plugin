@@ -99,6 +99,32 @@ Success looks like `Test Completed. Result={Success}` per test, ending in `Autom
   `FPlatformProcess::Yield`). Prefer `#include "Windows/WindowsHWrapper.h"` over raw `<windows.h>`;
   it runs `PostWindowsApi.h`, which undoes them. Where raw inclusion is unavoidable, `#undef` after.
 
+## Testing video capture: editor builds record only the editor window
+
+`UBH_GameRecorder::CaptureBackBuffer` opens with a `#if WITH_EDITOR` block that captures a window
+only when its title contains `Unreal Editor`, and returns for anything else. So in an **editor
+build**:
+
+- **Play In Editor works** — PIE renders into the `… - Unreal Editor` window.
+- **A standalone game launched from the editor records nothing.** Its title is
+  `YourProject (64-bit, PCD3D_SM6)`, so every presented frame is discarded one line into the
+  capture callback.
+- `UnrealEditor.exe <proj> -game` records nothing either, for the same reason.
+
+Packaged builds compile the filter out (`WITH_EDITOR` is 0), which is why customers record fine in
+standalone. **Use PIE or a packaged build to exercise the capture path — never `-game`.**
+
+Downstream this looks identical to a broken GPU readback: the encoder starts, logs
+`Waiting for the first valid frame...`, and produces no video. Since `aedcb57` a Warning after ~5s
+names the rejected window, so check `Saved/Logs/<Project>.log` before suspecting the readback.
+
+A healthy run logs `StartRecording called with FPS: 30` → `video segments directory ready` →
+`Preferred FFmpeg options: ...`, then writes `<id>_%06d.mp4` into `Saved/BH_VideoSegments/`.
+
+**Read `Saved/Logs/<Project>.log`, not a `> file` stdout redirect** — the redirect is heavily
+buffered and loses everything if the process is force-killed. A second concurrent instance writes
+`<Project>_2.log`.
+
 ## Releases
 
 `build.bat` on the Windows box packages all engine versions via `RunUAT BuildPlugin`. It is
