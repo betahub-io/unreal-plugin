@@ -87,11 +87,28 @@ Use `FromString()` for text/single-select/boolean fields and `FromArray()` for m
 
 **Project setup:** plain text fields auto-create on first submission, so no setup is needed for them. **Single-select, multi-select, and boolean fields must be pre-created** in your BetaHub project settings — and for select fields, every submitted value must match a predefined option, otherwise the whole report is rejected. See the [custom fields documentation](https://betahub.io/docs/integrations/game-engines/#custom-fields) for details.
 
-## Reporting Issues
+## Getting Help
 
-`master` is the maintained branch — it carries every released fix, and each release is built and
-tested against all supported engine versions before it lands.
+**Found a problem? Tell us on [Discord](https://discord.gg/g2wpRtG).** That's where our team is, and
+it's the fastest way to get an answer.
 
-If you hit a problem, please [open an issue](https://github.com/betahub-io/unreal-plugin/issues)
-with your engine version, platform, and the `LogBetaHub` lines from your project's
-`Saved/Logs/<Project>.log`. Video-recording problems in particular log a clear reason there.
+It helps a lot if you include:
+
+- your Unreal Engine version and platform,
+- the plugin version (see `BetaHubBugReporter.uplugin`),
+- the `LogBetaHub` lines from your project's `Saved/Logs/<Project>.log` — video recording in
+  particular logs a clear reason when it can't record.
+
+### Workaround: roll back to a previous release
+
+If a new release breaks something for you, install the previous one from
+[GitHub Releases](https://github.com/betahub-io/unreal-plugin/releases) while we sort it out. Each
+release is packaged per engine version, so pick the zip matching your engine (for example
+`BetaHubPlugin-<version>-Unreal_5.4.zip`). Replace the contents of
+`Plugins/BetaHubBugReporter` with the older build and restart the editor.
+
+Please still let us know on Discord that you had to roll back, and which version works — that tells
+us what broke and when.
+
+`master` is the maintained branch: it carries every released fix, and each release is built and
+tested against all supported engine versions before it ships.
