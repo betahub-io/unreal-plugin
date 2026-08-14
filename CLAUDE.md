@@ -134,10 +134,26 @@ buffered and loses everything if the process is force-killed. A second concurren
 build.bat <version>          compile the editor target (fast; needs a BetaHub_X_Y test project)
 build.bat package all        normal release zips
 build.bat fab all            Fab: strips ThirdParty (ffmpeg), Binaries, Build, Saved
+build.bat package 5.7 dirty  package the WORKING TREE for testing (zip suffixed -dirty)
 ```
 
 Supported UE versions: **5.3, 5.4, 5.5, 5.6, 5.7, 5.8**, listed in the `VERSIONS` variable
 near the top of that script.
+
+**`package` and `fab` build from a clean `git archive HEAD`, not from your working tree.** A
+published zip therefore always corresponds to a commit, and the script prints the short SHA it
+used. If the tree is dirty it warns and lists the files, then builds HEAD anyway — your
+uncommitted changes are *not* in that build. Add `dirty` as the third argument to package the
+working tree instead; those zips are suffixed `-dirty` so a test build cannot be mistaken for a
+release.
+
+Two consequences worth knowing. `.gitattributes` `export-ignore` is honoured, so `tools/` and
+`widgets/` contribute no files. And untracked paths cannot enter the build — which matters
+because `OUTPUT_DIR` is `dist/` *inside* the plugin folder, and `RunUAT BuildPlugin` copies the
+whole plugin folder into its HostProject: packaging a working tree with a populated `dist/`
+nests each version's output inside the next. That once produced 135 GB and filled the disk.
+Plain `build.bat <version>` still compiles the working tree, which is what you want while
+iterating.
 
 ## Verification available
 
