@@ -4,6 +4,7 @@
 #include "BH_Log.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "HAL/PlatformProcess.h"
+#include "HAL/PlatformTime.h"
 #include "HAL/PlatformFileManager.h"
 // IPlatformFile itself lives here. PlatformFileManager.h only declares FPlatformFileManager and does
 // not pull this in on every engine version, so relying on it compiles by luck of unity grouping.
@@ -302,6 +303,9 @@ void BH_VideoEncoder::RunEncoding()
     {
         // Wait for the first valid frame
         TSharedPtr<FBH_Frame> firstFrame = nullptr;
+        const double WaitStartedAt = FPlatformTime::Seconds();
+        double NextLogAt = 0.0;              // seconds since WaitStartedAt
+        bool bWarnedNoFrames = false;
         while (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
         {
             if (!frameSource.IsValid())
@@ -313,7 +317,21 @@ void BH_VideoEncoder::RunEncoding()
             firstFrame = frameSource->GetFrame();
             if (!firstFrame.IsValid() || firstFrame->Data.Num() == 0)
             {
-                UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame..."));
+                // This loop used to log at Log verbosity ten times a second forever, which reads as
+                // "busy working" rather than "permanently stuck" - a capture front-end that never
+                // delivers a frame produced thousands of identical benign-looking lines and no signal.
+                // Throttle it, and escalate to a Warning once it is clear no frames are coming.
+                const double Waited = FPlatformTime::Seconds() - WaitStartedAt;
+                if (!bWarnedNoFrames && Waited >= 5.0)
+                {
+                    bWarnedNoFrames = true;
+                    UE_LOG(LogBetaHub, Warning, TEXT("No captured frames have arrived after %.0f seconds. Encoding is started and waiting, but the capture front-end is delivering nothing, so no video will be recorded. In editor builds only the main Unreal Editor window is captured - a standalone game launched from the editor records nothing; use Play In Editor or a packaged build."), Waited);
+                }
+                else if (Waited >= NextLogAt)
+                {
+                    NextLogAt = Waited + 2.0;
+                    UE_LOG(LogBetaHub, Log, TEXT("Waiting for the first valid frame... (%.0fs)"), Waited);
+                }
                 FPlatformProcess::Sleep(0.1f); // Sleep for a short interval before checking again
             }
 

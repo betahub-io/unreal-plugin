@@ -173,6 +173,11 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
 
     UE_LOG(LogBetaHub, Log, TEXT("StartRecording called with FPS: %d, Duration: %d seconds"), InTargetFPS, InRecordingDuration);
 
+#if WITH_EDITOR
+    // Re-arm the one-shot window warning so it fires again for each new recording.
+    bWarnedNonEditorWindow = false;
+#endif
+
     if (!GEngine)
     {
         UE_LOG(LogBetaHub, Error, TEXT("StartRecording failed: GEngine is null"));
@@ -529,6 +534,14 @@ void UBH_GameRecorder::CaptureBackBuffer(SWindow& Window, const FTextureRHIRef& 
             return;
         }
     } else {
+        // Not the editor window, so this frame is discarded before any capture work happens. Silent
+        // rejection here looks identical downstream to a broken readback: the encoder starts, waits
+        // forever, and records nothing. Say so once, with the title that was rejected.
+        if (bIsRecording && !bWarnedNonEditorWindow)
+        {
+            bWarnedNonEditorWindow = true;
+            UE_LOG(LogBetaHub, Warning, TEXT("Not capturing window '%s': editor builds only record the main Unreal Editor window, so a standalone game launched from the editor produces no video. Use Play In Editor, or a packaged build where this restriction is compiled out."), *WindowTitle);
+        }
         return; // do not capture frames from other windows
     }
     #endif

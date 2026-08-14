@@ -123,6 +123,12 @@ private:
     SWindow* MainEditorWindow;
     FVector2D LargestSize;
 
+#if WITH_EDITOR
+    // One-shot latch so the "this window is not captured" explanation is logged once per recording
+    // rather than once per presented frame. Reset in StartRecording.
+    bool bWarnedNonEditorWindow = false;
+#endif
+
     // Maximum video dimensions
     int32 MaxVideoWidth;
     int32 MaxVideoHeight;
