@@ -61,7 +61,7 @@ This plugin has a headless **Unreal Automation Test** suite. Tests live in
 `Source/BetaHubBugReporter/Private/Tests/` and are guarded by `#if WITH_DEV_AUTOMATION_TESTS`, so they
 compile into Development *editor* builds and are compiled out of Shipping/packaged builds.
 
-Current tests (`BetaHub.VideoEncoder.*`, in `BH_VideoEncoderTest.cpp`):
+`BetaHub.VideoEncoder.*` (in `BH_VideoEncoderTest.cpp`):
 - `HappyPath` — drives `BH_VideoEncoder` with a synthetic `FBH_FrameSource` through the real bundled
   ffmpeg, then `MergeSegments`, and asserts a valid mp4 is produced. Exercises the whole segment
   lifecycle end to end **without a GPU/rendering session** — the frames are synthesized, so it does not
@@ -69,19 +69,33 @@ Current tests (`BetaHub.VideoEncoder.*`, in `BH_VideoEncoderTest.cpp`):
 - `FailFastUnwritableDir` — makes the segments directory unwritable and asserts recording refuses
   cleanly and promptly (a guard against the recording-stop freeze regression).
 
+`BetaHub.ReportSubmit.*` (in `BH_SubmitOrchestratorTest.cpp`):
+- Drives `BH_RunSubmit` (the plain-C++ submit seam in `BH_SubmitOrchestrator.h`) with a **fake
+  submitter** and a **spy recorder** — no UMG / RHI / network — to assert gameplay recording is
+  restarted after *every* submit: no-video success, no-video failure, the video path, and suggestions.
+  This guards the betahub.tasks#165 invariant (a no-video submit must not leave the recorder stopped,
+  or the next report captures the previous report's frozen screenshot + stale segments). The seam
+  stubs out the real UMG widget and HTTP, so it does **not** verify checkbox→input wiring or the real
+  upload path — that still needs a manual PIE run of the two-report repro.
+
 ### Running the tests (headless, Windows)
 
-Build the editor target for a version, then run the automation commandlet:
+Build the editor target for a version, then run the automation commandlet. `BetaHub` runs the whole
+suite; narrow it to `BetaHub.VideoEncoder` or `BetaHub.ReportSubmit` for one group:
 
 ```
 <UE_ROOT>/Engine/Binaries/Win64/UnrealEditor-Cmd.exe <YourProject>.uproject \
-  -ExecCmds="Automation RunTests BetaHub.VideoEncoder" \
+  -ExecCmds="Automation RunTests BetaHub" \
   -TestExit="Automation Test Queue Empty" \
   -unattended -nullrhi -nosound -nopause -stdout -FullStdOutLogOutput
 ```
 
 Success looks like `Test Completed. Result={Success}` per test, ending in `Automation Test Queue Empty`.
 (The internal Windows build box and its exact paths/aliases are recorded in agent memory, not here.)
+
+On the build box, `run_bh_tests.sh <ver>` wraps the whole cycle (clean → build editor target → run
+`BetaHub` → print each result). Like `build.bat`, it is box-only and untracked — its location and usage
+are in agent memory.
 
 ### Conventions & gotchas when adding tests here (learned the hard way)
 
