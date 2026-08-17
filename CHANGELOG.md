@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.1 - 2026-08-17
+
+### Fixed
+
+- Submitting a report without video (a screenshot-only or logs-only bug report, or a suggestion) left gameplay recording stopped and never resumed it. The next report then captured the *previous* report's frozen screenshot and its leftover video segments, while the report the player was actually filing ended up with stale or missing media. Recording now resumes after every submission - success or failure - so each report captures its own moment.
+
 ## 1.6.0 - 2026-08-13
 
 ### Changed
