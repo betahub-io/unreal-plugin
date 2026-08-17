@@ -184,6 +184,8 @@ void UBH_ReportFormWidget::SubmitReport()
 
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
+                    // Resume recording so the next report captures a fresh moment (betahub.tasks#165).
+                    Self->EnsureRecording();
                     Self->bSuppressCursorRestore = true;
                     Self->ResetSubmitButton();
                     Self->ShowPopup("Success", "Bug report submitted successfully!");
@@ -204,6 +206,9 @@ void UBH_ReportFormWidget::SubmitReport()
 
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
+                    // Resume recording even on failure, or a failed no-video submit leaves the
+                    // recorder dead until the form is closed (betahub.tasks#165).
+                    Self->EnsureRecording();
                     Self->ShowPopup("Error", ErrorMessage);
                     Self->ResetSubmitButton();
                 }
@@ -220,6 +225,8 @@ void UBH_ReportFormWidget::SubmitReport()
             {
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
+                    // Resume recording so the next report captures a fresh moment (betahub.tasks#165).
+                    Self->EnsureRecording();
                     Self->bSuppressCursorRestore = true;
                     Self->ResetSubmitButton();
                     Self->ShowPopup("Success", "Suggestion submitted successfully!");
@@ -230,6 +237,8 @@ void UBH_ReportFormWidget::SubmitReport()
             {
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
+                    // Resume recording even on failure (betahub.tasks#165).
+                    Self->EnsureRecording();
                     Self->ShowPopup("Error", ErrorMessage);
                     Self->ResetSubmitButton();
                 }
@@ -308,12 +317,18 @@ void UBH_ReportFormWidget::OnSubmitButtonClicked()
     SubmitReport();
 }
 
-void UBH_ReportFormWidget::OnCloseClicked()
+void UBH_ReportFormWidget::EnsureRecording()
 {
     if (GameRecorder && Settings)
     {
+        // Idempotent: StartRecording no-ops if already recording or a stop is in progress.
         GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
     }
+}
+
+void UBH_ReportFormWidget::OnCloseClicked()
+{
+    EnsureRecording();
     RemoveFromParent();
 }
 
