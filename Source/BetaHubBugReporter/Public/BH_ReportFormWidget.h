@@ -63,7 +63,11 @@ private:
 
     void SetReportType(EBH_ReportType NewType);
     void UpdateFormForReportType();
-    void ShowPopup(const FString& Title, const FString& Description);
+    // Returns true if a popup widget was actually shown. bFormClosing = this form is being removed
+    // (successful submit), so the popup takes over restoring the game's input/cursor state on dismiss.
+    // false = this form stays open and keeps ownership (error popups shown on top of it, and the
+    // not-configured guard); the popup then leaves the input mode untouched on dismiss.
+    bool ShowPopup(const FString& Title, const FString& Description, bool bFormClosing = false);
 
     // Developer aid, gated by bDebugPrefillForm. Compiled out in Shipping builds.
     void ApplyDebugPrefill();

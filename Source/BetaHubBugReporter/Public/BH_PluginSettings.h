@@ -5,6 +5,7 @@
 #include "UObject/NoExportTypes.h"
 #include "BH_ReportFormWidget.h"
 #include "BH_PopupWidget.h"
+#include "BH_InputModeRestore.h"
 #include "BH_PluginSettings.generated.h"
 
 // Which encoder produces the recorded video.
@@ -70,6 +71,10 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings",
         meta=(ToolTip="The maximum height of the recorded bug report video. The video will be scaled down if the viewport height exceeds this value."))
     int32 MaxVideoHeight;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
+        meta=(ToolTip="Which input mode the game returns to after the bug report form or popup closes. Use 'Game and UI' for cursor-driven / click-drag games (the default) so the mouse is not locked to the viewport when the form closes; use 'Game Only' for FPS-style games that capture the mouse. The engine cannot read the game's previous input mode, so this is how the plugin knows what to restore."))
+    EBH_InputModeRestore RestoreInputMode;
 
     UPROPERTY(EditAnywhere, Config, Category="Debug",
         meta=(ToolTip="Developer aid: fills the feedback form with sample text when it opens, so you do not have to type anything to test a submission. Has no effect in Shipping builds - the code is compiled out - but any report submitted with this on is still a real report on BetaHub."))

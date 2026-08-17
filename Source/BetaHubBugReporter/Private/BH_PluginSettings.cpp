@@ -20,6 +20,13 @@ UBH_PluginSettings::UBH_PluginSettings()
     MaxVideoHeight = 1200;
     bDebugPrefillForm = false;
 
+    // Default to Game and UI: after the form/popup closes the mouse cursor stays free instead of
+    // being locked to the viewport. This is the correct behaviour for cursor-driven and click-drag
+    // games (BetaHub's typical audience). FPS-style projects that capture the mouse should switch
+    // this to Game Only. The engine has no getter for the game's prior input mode, so the plugin
+    // restores to whatever this setting says rather than to the real previous mode.
+    RestoreInputMode = EBH_InputModeRestore::GameAndUI;
+
     // Default to FFmpeg (unchanged, universal behavior). Switch to Auto/Hardware to offload encoding to
     // the GPU where available; Auto/Hardware always fall back to FFmpeg if the GPU encoder cannot start.
     VideoEncoderBackend = EBH_VideoEncoderBackend::FFmpeg;

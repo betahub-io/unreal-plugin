@@ -8,6 +8,7 @@
 #include "BH_BugReport.h"
 #include "BH_FeatureRequest.h"
 #include "BH_PopupWidget.h"
+#include "BH_PluginSettings.h"
 
 // constructor
 UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer)
@@ -73,6 +74,15 @@ void UBH_ReportFormWidget::SetSubmittingState()
         SubmitButton->SetIsEnabled(false);
     }
 
+    // Disable the close button for the duration of the async submit. Otherwise the user can close
+    // the form mid-upload (which restores the game input mode), resume playing, and then have the
+    // late success callback pop up a modal popup that re-grabs input seconds later - the game's
+    // "click-drag works for a bit then stops" symptom. See betahub.tasks#... (input-restore race).
+    if (CloseButton)
+    {
+        CloseButton->SetIsEnabled(false);
+    }
+
     if (SubmitLabel)
     {
         SubmitLabel->SetText(FText::FromString("Submitting..."));
@@ -86,6 +96,11 @@ void UBH_ReportFormWidget::ResetSubmitButton()
     if (SubmitButton)
     {
         SubmitButton->SetIsEnabled(true);
+    }
+
+    if (CloseButton)
+    {
+        CloseButton->SetIsEnabled(true);
     }
 
     if (SubmitLabel)
@@ -127,7 +142,7 @@ void UBH_ReportFormWidget::SubmitReport()
     if (!Settings || Settings->ProjectToken.IsEmpty())
     {
         UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Please set it in Project Settings -> BetaHub."));
-        ShowPopup("Error", "Bug reporting is not configured. Please set the Project Token in the BetaHub plugin settings.");
+        ShowPopup("Error", "Bug reporting is not configured. Please set the Project Token in the BetaHub plugin settings.", /*bFormClosing=*/false);
         ResetSubmitButton();
         return;
     }
@@ -186,9 +201,13 @@ void UBH_ReportFormWidget::SubmitReport()
                 {
                     // Resume recording so the next report captures a fresh moment (betahub.tasks#165).
                     Self->EnsureRecording();
-                    Self->bSuppressCursorRestore = true;
                     Self->ResetSubmitButton();
-                    Self->ShowPopup("Success", "Bug report submitted successfully!");
+
+                    // Successful submit: the popup takes over restoring input (see ShowPopup). Only
+                    // suppress our own restore if we captured the cursor AND a popup is there to do it;
+                    // otherwise NativeDestruct restores, so input is never left stuck in UI-only.
+                    const bool bPopupShown = Self->ShowPopup("Success", "Bug report submitted successfully!", /*bFormClosing=*/true);
+                    Self->bSuppressCursorRestore = (Self->bCursorStateModified && bPopupShown);
                     Self->RemoveFromParent();
                 }
             },
@@ -209,7 +228,9 @@ void UBH_ReportFormWidget::SubmitReport()
                     // Resume recording even on failure, or a failed no-video submit leaves the
                     // recorder dead until the form is closed (betahub.tasks#165).
                     Self->EnsureRecording();
-                    Self->ShowPopup("Error", ErrorMessage);
+                    // Error popup is shown on top of the still-open form, which keeps owning the
+                    // input state - so the popup must NOT restore it (bFormClosing = false).
+                    Self->ShowPopup("Error", ErrorMessage, /*bFormClosing=*/false);
                     Self->ResetSubmitButton();
                 }
             }
@@ -227,9 +248,11 @@ void UBH_ReportFormWidget::SubmitReport()
                 {
                     // Resume recording so the next report captures a fresh moment (betahub.tasks#165).
                     Self->EnsureRecording();
-                    Self->bSuppressCursorRestore = true;
                     Self->ResetSubmitButton();
-                    Self->ShowPopup("Success", "Suggestion submitted successfully!");
+
+                    // Successful submit: the popup takes over restore (see the Bug branch above).
+                    const bool bPopupShown = Self->ShowPopup("Success", "Suggestion submitted successfully!", /*bFormClosing=*/true);
+                    Self->bSuppressCursorRestore = (Self->bCursorStateModified && bPopupShown);
                     Self->RemoveFromParent();
                 }
             },
@@ -239,7 +262,9 @@ void UBH_ReportFormWidget::SubmitReport()
                 {
                     // Resume recording even on failure (betahub.tasks#165).
                     Self->EnsureRecording();
-                    Self->ShowPopup("Error", ErrorMessage);
+                    // Error popup is shown on top of the still-open form, which keeps owning the
+                    // input state - so the popup must NOT restore it (bFormClosing = false).
+                    Self->ShowPopup("Error", ErrorMessage, /*bFormClosing=*/false);
                     Self->ResetSubmitButton();
                 }
             }
@@ -273,21 +298,22 @@ void UBH_ReportFormWidget::RestoreCursorState()
 
     if (APlayerController* PlayerController = GetOwningPlayer())
     {
-
-        // Restore the previous cursor state
+        // Restore the cursor visibility we saved on open, and put the game back into the input mode
+        // the integrator selected (BH_PluginSettings::RestoreInputMode). The engine has no getter for
+        // the game's previous input mode, so we cannot restore the *actual* prior mode - hard-coding
+        // GameOnly here is what broke click-drag games, which run in GameAndUI. Default is GameAndUI.
         PlayerController->SetShowMouseCursor(bWasCursorVisible);
-        PlayerController->SetInputMode(FInputModeGameOnly());
 
-        /*if (bWasCursorLocked)
-        {
-            PlayerController->SetInputMode(FInputModeGameOnly());
-        }
-        else
+        const EBH_InputModeRestore RestoreMode =
+            Settings ? Settings->RestoreInputMode : EBH_InputModeRestore::GameAndUI;
+        if (RestoreMode == EBH_InputModeRestore::GameAndUI)
         {
             PlayerController->SetInputMode(FInputModeGameAndUI());
         }
-        PlayerController->SetIgnoreLookInput(false);
-        PlayerController->SetIgnoreMoveInput(false);*/
+        else
+        {
+            PlayerController->SetInputMode(FInputModeGameOnly());
+        }
 
         bCursorStateModified = false;
     }
@@ -332,7 +358,7 @@ void UBH_ReportFormWidget::OnCloseClicked()
     RemoveFromParent();
 }
 
-void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Description)
+bool UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Description, bool bFormClosing)
 {
     if (Settings && Settings->PopupWidgetClass)
     {
@@ -340,13 +366,36 @@ void UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
         if (PopupWidget)
         {
             PopupWidget->SetMessage(Title, Description);
+
+            if (bFormClosing)
+            {
+                // Successful submit: this form is being removed, so the popup owns input restore. Give
+                // it the configured mode, and - only if this form actually captured the cursor first -
+                // the value we saved on open, so the popup restores the game's real prior cursor rather
+                // than the cursor we forced visible. If the form never captured (bTryCaptureMouse=false),
+                // the popup falls back to its own pre-force snapshot and still restores, so the game is
+                // never left stuck in UI-only input.
+                const EBH_InputModeRestore RestoreMode =
+                    Settings ? Settings->RestoreInputMode : EBH_InputModeRestore::GameAndUI;
+                PopupWidget->ConfigureRestoreOnClose(RestoreMode, /*bOverrideCursor=*/bCursorStateModified, bWasCursorVisible);
+            }
+            else
+            {
+                // Error popup shown on top of the still-open form: the form keeps input ownership and
+                // will restore when it closes, so the popup must not touch the input mode on dismiss.
+                PopupWidget->SetLeaveInputToForm();
+            }
+
             PopupWidget->AddToViewport();
+            return true;
         }
     }
     else
     {
         UE_LOG(LogBetaHub, Error, TEXT("Settings or PopupWidgetClass is null."));
     }
+
+    return false;
 }
 
 void UBH_ReportFormWidget::OnBugReportCheckBoxChanged(bool bIsChecked)
