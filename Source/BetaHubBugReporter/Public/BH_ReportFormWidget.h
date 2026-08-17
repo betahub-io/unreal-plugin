@@ -43,13 +43,9 @@ private:
     void SetSubmittingState();
     void ResetSubmitButton();
 
-    // Idempotent restart of gameplay recording. The recorder is stopped while the form is open
-    // (Setup -> StopRecording); this resumes it once the form is done with it, so the NEXT report
-    // captures a fresh screenshot/video instead of the previous report's frozen frame and stale
-    // segments. Must run on every submit outcome (success AND failure) and on cancel, otherwise a
-    // no-video submit leaves the recorder dead. StartRecording guards on !bIsRecording / stop-in-
-    // progress, so calling this when already recording (e.g. the video path already restarted) is a
-    // no-op. See betahub.tasks#165.
+    // Cancel-path restart of gameplay recording (the recorder is stopped while the form is open, in
+    // Setup -> StopRecording). Submit paths restart via the orchestrator's recorder-control instead;
+    // this delegates to that same seam so the restart is defined once. Idempotent. See betahub.tasks#165.
     void EnsureRecording();
 
     UFUNCTION()

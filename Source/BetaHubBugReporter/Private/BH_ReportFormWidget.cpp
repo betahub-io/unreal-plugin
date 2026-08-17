@@ -8,6 +8,25 @@
 #include "BH_BugReport.h"
 #include "BH_FeatureRequest.h"
 #include "BH_PopupWidget.h"
+#include "BH_PluginSettings.h"
+#include "BH_SubmitOrchestrator.h"
+
+namespace
+{
+    // Delete the temporary screenshot file once a submit is done with it. Uses the wrapped platform layer
+    // (as the original inline cleanup did); the screenshot is engine-written, not an ffmpeg artifact.
+    void CleanupScreenshotFile(const FString& ScreenshotPath)
+    {
+        if (!ScreenshotPath.IsEmpty())
+        {
+            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+            if (PlatformFile.FileExists(*ScreenshotPath))
+            {
+                PlatformFile.DeleteFile(*ScreenshotPath);
+            }
+        }
+    }
+}
 
 // constructor
 UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer)
@@ -132,119 +151,76 @@ void UBH_ReportFormWidget::SubmitReport()
         return;
     }
 
-    FString Description = BugDescriptionEdit->GetText().ToString();
+    // Gather the user's choices into a UMG-free snapshot and delegate to the testable orchestrator, which
+    // guarantees recording is restarted on every outcome (betahub.tasks#165). The routing that had the bug
+    // (which report type, whether the recorder is passed) and the restart policy now live in BH_RunSubmit /
+    // the real submitter, covered headlessly by BetaHub.ReportSubmit.*.
+    FBH_SubmitInputs Inputs;
+    Inputs.bIsSuggestion = (CurrentReportType == EBH_ReportType::Suggestion);
+    Inputs.Description = BugDescriptionEdit ? BugDescriptionEdit->GetText().ToString() : FString();
+    Inputs.StepsToReproduce = (!Inputs.bIsSuggestion && StepsToReproduceEdit) ? StepsToReproduceEdit->GetText().ToString() : FString();
+    Inputs.ScreenshotPath = ScreenshotPath;
+    Inputs.LogFileContents = LogFileContents;
+    Inputs.bIncludeScreenshot = IncludeScreenshotCheckbox && IncludeScreenshotCheckbox->IsChecked();
+    Inputs.bIncludeVideo = IncludeVideoCheckbox && IncludeVideoCheckbox->IsChecked();
+    Inputs.bIncludeLogs = IncludeLogsCheckbox && IncludeLogsCheckbox->IsChecked();
+
+    if (Inputs.bIsSuggestion)
+    {
+        UE_LOG(LogBetaHub, Log, TEXT("Suggestion Description: %s"), *Inputs.Description);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s"), *Inputs.Description);
+        UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s"), *Inputs.StepsToReproduce);
+    }
+
     TWeakObjectPtr<UBH_ReportFormWidget> WeakThis(this);
+    const FString ScreenshotPathCopy = ScreenshotPath;
+    // Preserve the original per-path cleanup: bug submits delete the temp screenshot on both outcomes;
+    // suggestion submits never did. (The suggestion leak is pre-existing and out of scope here.)
+    const bool bCleanupScreenshot = !Inputs.bIsSuggestion;
+    const FString SuccessMessage = Inputs.bIsSuggestion
+        ? TEXT("Suggestion submitted successfully!")
+        : TEXT("Bug report submitted successfully!");
 
-    if (CurrentReportType == EBH_ReportType::Bug)
+    // UI hooks run AFTER the orchestrator has already restarted recording.
+    TFunction<void()> OnUiSuccess = [WeakThis, ScreenshotPathCopy, bCleanupScreenshot, SuccessMessage]()
     {
-        FString StepsToReproduce = StepsToReproduceEdit->GetText().ToString();
-
-        UE_LOG(LogBetaHub, Log, TEXT("Bug Description: %s"), *Description);
-        UE_LOG(LogBetaHub, Log, TEXT("Steps to Reproduce: %s"), *StepsToReproduce);
-
-        // Build media file arrays
-        TArray<FBH_MediaFile> Videos;  // Empty - video is handled via GameRecorder
-        TArray<FBH_MediaFile> Screenshots;
-        TArray<FBH_MediaFile> Logs;
-
-        if (IncludeScreenshotCheckbox->IsChecked() && !ScreenshotPath.IsEmpty())
+        if (bCleanupScreenshot)
         {
-            FBH_MediaFile Screenshot;
-            Screenshot.FilePath = ScreenshotPath;
-            Screenshots.Add(Screenshot);
+            CleanupScreenshotFile(ScreenshotPathCopy);
         }
 
-        if (IncludeLogsCheckbox->IsChecked() && !LogFileContents.IsEmpty())
+        if (UBH_ReportFormWidget* Self = WeakThis.Get())
         {
-            FBH_MediaFile Log;
-            Log.Content = LogFileContents;
-            Logs.Add(Log);
+            Self->bSuppressCursorRestore = true;
+            Self->ResetSubmitButton();
+            Self->ShowPopup(TEXT("Success"), SuccessMessage);
+            Self->RemoveFromParent();
+        }
+    };
+
+    TFunction<void(const FString&)> OnUiFailure = [WeakThis, ScreenshotPathCopy, bCleanupScreenshot](const FString& ErrorMessage)
+    {
+        if (bCleanupScreenshot)
+        {
+            CleanupScreenshotFile(ScreenshotPathCopy);
         }
 
-        // Only pass GameRecorder if video checkbox is checked
-        UBH_GameRecorder* RecorderToPass = (IncludeVideoCheckbox->IsChecked() && GameRecorder) ? GameRecorder : nullptr;
+        if (UBH_ReportFormWidget* Self = WeakThis.Get())
+        {
+            Self->ShowPopup(TEXT("Error"), ErrorMessage);
+            Self->ResetSubmitButton();
+        }
+    };
 
-        // Capture ScreenshotPath for cleanup in callbacks
-        FString ScreenshotPathCopy = ScreenshotPath;
+    TSharedRef<IBH_ReportSubmitter> Submitter = BH_MakeReportSubmitter(Settings, GameRecorder);
+    TSharedRef<IBH_RecorderControl> Rec = BH_MakeRecorderControl(GameRecorder,
+        Settings ? Settings->MaxRecordedFrames : 0,
+        Settings ? Settings->MaxRecordingDuration : 0);
 
-        UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
-        BugReport->SubmitReportWithMedia(Settings, RecorderToPass, Description, StepsToReproduce,
-            Videos, Screenshots, Logs,
-            [WeakThis, ScreenshotPathCopy]()
-            {
-                // Cleanup screenshot file
-                if (!ScreenshotPathCopy.IsEmpty())
-                {
-                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-                    if (PlatformFile.FileExists(*ScreenshotPathCopy))
-                    {
-                        PlatformFile.DeleteFile(*ScreenshotPathCopy);
-                    }
-                }
-
-                if (UBH_ReportFormWidget* Self = WeakThis.Get())
-                {
-                    // Resume recording so the next report captures a fresh moment (betahub.tasks#165).
-                    Self->EnsureRecording();
-                    Self->bSuppressCursorRestore = true;
-                    Self->ResetSubmitButton();
-                    Self->ShowPopup("Success", "Bug report submitted successfully!");
-                    Self->RemoveFromParent();
-                }
-            },
-            [WeakThis, ScreenshotPathCopy](const FString& ErrorMessage)
-            {
-                // Cleanup screenshot file even on failure
-                if (!ScreenshotPathCopy.IsEmpty())
-                {
-                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-                    if (PlatformFile.FileExists(*ScreenshotPathCopy))
-                    {
-                        PlatformFile.DeleteFile(*ScreenshotPathCopy);
-                    }
-                }
-
-                if (UBH_ReportFormWidget* Self = WeakThis.Get())
-                {
-                    // Resume recording even on failure, or a failed no-video submit leaves the
-                    // recorder dead until the form is closed (betahub.tasks#165).
-                    Self->EnsureRecording();
-                    Self->ShowPopup("Error", ErrorMessage);
-                    Self->ResetSubmitButton();
-                }
-            }
-        );
-    }
-    else // EBH_ReportType::Suggestion
-    {
-        UE_LOG(LogBetaHub, Log, TEXT("Suggestion Description: %s"), *Description);
-
-        UBH_FeatureRequest* FeatureRequest = NewObject<UBH_FeatureRequest>();
-        FeatureRequest->SubmitFeatureRequest(Settings, Description, ScreenshotPath, IncludeScreenshotCheckbox->IsChecked(),
-            [WeakThis]()
-            {
-                if (UBH_ReportFormWidget* Self = WeakThis.Get())
-                {
-                    // Resume recording so the next report captures a fresh moment (betahub.tasks#165).
-                    Self->EnsureRecording();
-                    Self->bSuppressCursorRestore = true;
-                    Self->ResetSubmitButton();
-                    Self->ShowPopup("Success", "Suggestion submitted successfully!");
-                    Self->RemoveFromParent();
-                }
-            },
-            [WeakThis](const FString& ErrorMessage)
-            {
-                if (UBH_ReportFormWidget* Self = WeakThis.Get())
-                {
-                    // Resume recording even on failure (betahub.tasks#165).
-                    Self->EnsureRecording();
-                    Self->ShowPopup("Error", ErrorMessage);
-                    Self->ResetSubmitButton();
-                }
-            }
-        );
-    }
+    BH_RunSubmit(Inputs, *Submitter, Rec, OnUiSuccess, OnUiFailure);
 }
 
 void UBH_ReportFormWidget::SetCursorState()
@@ -319,10 +295,11 @@ void UBH_ReportFormWidget::OnSubmitButtonClicked()
 
 void UBH_ReportFormWidget::EnsureRecording()
 {
+    // Cancel path. Submit paths restart via the orchestrator; this delegates to the same recorder-control
+    // seam so the StartRecording call (idempotent) has a single definition. See betahub.tasks#165.
     if (GameRecorder && Settings)
     {
-        // Idempotent: StartRecording no-ops if already recording or a stop is in progress.
-        GameRecorder->StartRecording(Settings->MaxRecordedFrames, Settings->MaxRecordingDuration);
+        BH_MakeRecorderControl(GameRecorder, Settings->MaxRecordedFrames, Settings->MaxRecordingDuration)->EnsureRecording();
     }
 }
 
