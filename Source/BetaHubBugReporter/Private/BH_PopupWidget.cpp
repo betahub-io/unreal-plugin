@@ -71,7 +71,14 @@ void UBH_PopupWidget::RestoreCursorState()
 
         if (RestoreInputMode == EBH_InputModeRestore::GameAndUI)
         {
-            PlayerController->SetInputMode(FInputModeGameAndUI());
+            // A default FInputModeGameAndUI hides the cursor on capture and locks the mouse to the
+            // viewport (LockInFullscreen) - the exact "mouse stays locked after the form closes"
+            // symptom for cursor / click-drag games. This branch exists to serve those games, so
+            // restore the cursor-friendly variant: never hide on capture, never lock.
+            FInputModeGameAndUI Mode;
+            Mode.SetHideCursorDuringCapture(false);
+            Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+            PlayerController->SetInputMode(Mode);
         }
         else
         {
