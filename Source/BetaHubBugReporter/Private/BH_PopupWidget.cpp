@@ -7,10 +7,8 @@
 UBH_PopupWidget::UBH_PopupWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
     , bRestoreOnClose(true)
-    , bSnapshotCursorVisible(false)
-    , bCursorOverridden(false)
-    , bOverrideCursorVisible(false)
-    , RestoreInputMode(EBH_InputModeRestore::GameAndUI)
+    , bSnapshotOverridden(false)
+    , RestoreInputMode(EBH_InputModeRestore::Auto)
 {
     SetIsFocusable(true);
 }
@@ -25,11 +23,11 @@ void UBH_PopupWidget::NativeConstruct()
     }
 
     // Make the popup interactive (its own Close button needs the cursor). Snapshot the game's real
-    // cursor value BEFORE forcing it on, so RestoreCursorState() can put it back - unless the form
-    // captured first and overrides the snapshot (see ConfigureRestoreOnClose / bCursorOverridden).
+    // input/cursor state BEFORE forcing UI-only input, so RestoreCursorState() can put it back - unless
+    // the form captured first and overrides the snapshot (see ConfigureRestoreOnClose / bSnapshotOverridden).
     if (APlayerController* PlayerController = GetOwningPlayer())
     {
-        bSnapshotCursorVisible = PlayerController->bShowMouseCursor;
+        Snapshot = BH_CaptureInputModeSnapshot(PlayerController);
         PlayerController->SetShowMouseCursor(true);
         PlayerController->SetInputMode(FInputModeUIOnly());
     }
@@ -41,12 +39,12 @@ void UBH_PopupWidget::NativeDestruct()
     RestoreCursorState();
 }
 
-void UBH_PopupWidget::ConfigureRestoreOnClose(EBH_InputModeRestore InRestoreMode, bool bOverrideCursor, bool bCursorVisible)
+void UBH_PopupWidget::ConfigureRestoreOnClose(EBH_InputModeRestore InRestoreMode, bool bOverrideSnapshot, const FBH_InputModeSnapshot& InSnapshot)
 {
     bRestoreOnClose = true;
     RestoreInputMode = InRestoreMode;
-    bCursorOverridden = bOverrideCursor;
-    bOverrideCursorVisible = bCursorVisible;
+    bSnapshotOverridden = bOverrideSnapshot;
+    OverrideSnapshot = InSnapshot;
 }
 
 void UBH_PopupWidget::SetLeaveInputToForm()
@@ -65,25 +63,11 @@ void UBH_PopupWidget::RestoreCursorState()
 
     if (APlayerController* PlayerController = GetOwningPlayer())
     {
-        // Prefer the form's saved value when it captured before us; otherwise our own pre-force snapshot.
-        const bool bCursorVisible = bCursorOverridden ? bOverrideCursorVisible : bSnapshotCursorVisible;
-        PlayerController->SetShowMouseCursor(bCursorVisible);
-
-        if (RestoreInputMode == EBH_InputModeRestore::GameAndUI)
-        {
-            // A default FInputModeGameAndUI hides the cursor on capture and locks the mouse to the
-            // viewport (LockInFullscreen) - the exact "mouse stays locked after the form closes"
-            // symptom for cursor / click-drag games. This branch exists to serve those games, so
-            // restore the cursor-friendly variant: never hide on capture, never lock.
-            FInputModeGameAndUI Mode;
-            Mode.SetHideCursorDuringCapture(false);
-            Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-            PlayerController->SetInputMode(Mode);
-        }
-        else
-        {
-            PlayerController->SetInputMode(FInputModeGameOnly());
-        }
+        // Prefer the form's snapshot when it captured before us; otherwise our own pre-force snapshot.
+        // BH_RestoreInputMode routes through SetInputMode (which clears the IgnoreInput flag UI-only set)
+        // and, in Auto, reconstructs the game's exact prior mode from the snapshot.
+        const FBH_InputModeSnapshot& Effective = bSnapshotOverridden ? OverrideSnapshot : Snapshot;
+        BH_RestoreInputMode(PlayerController, Effective, RestoreInputMode);
 
         bRestoreOnClose = false;
     }

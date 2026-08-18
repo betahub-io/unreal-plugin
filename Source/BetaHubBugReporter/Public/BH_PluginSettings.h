@@ -73,7 +73,7 @@ public:
     int32 MaxVideoHeight;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings",
-        meta=(ToolTip="Which input mode the game returns to after the bug report form or popup closes. Use 'Game and UI' for cursor-driven / click-drag games (the default) so the mouse is not locked to the viewport when the form closes; use 'Game Only' for FPS-style games that capture the mouse. The engine cannot read the game's previous input mode, so this is how the plugin knows what to restore."))
+        meta=(ToolTip="How the game's input mode is restored after the bug report form or popup closes. 'Auto' (the default) snapshots the game's real mouse capture/lock/cursor state when the report opens and restores exactly that on close - correct for almost every game with no setup. Override with 'Game and UI' (cursor-driven / click-drag games) or 'Game Only' (FPS-style games that capture the mouse) only if your game manages input in an unusual way that Auto cannot restore."))
     EBH_InputModeRestore RestoreInputMode;
 
     UPROPERTY(EditAnywhere, Config, Category="Debug",

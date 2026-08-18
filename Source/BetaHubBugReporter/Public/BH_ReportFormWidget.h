@@ -9,6 +9,7 @@
 #include "Components/TextBlock.h"
 #include "Components/CheckBox.h"
 #include "Components/HorizontalBox.h"
+#include "BH_InputModeRestore.h"
 #include "BH_ReportFormWidget.generated.h"
 
 UENUM(BlueprintType)
@@ -34,9 +35,12 @@ private:
 
     EBH_ReportType CurrentReportType;
 
+    // True once SetCursorState() has forced UI-only input and captured InputSnapshot, i.e. this form
+    // owns an input-mode restore. Gates RestoreCursorState() and tells ShowPopup() whether the form's
+    // snapshot is authoritative when it hands off to a popup on a successful submit.
     bool bCursorStateModified;
-    bool bWasCursorVisible;
-    bool bWasCursorLocked;
+    // The game's real input/cursor state captured in SetCursorState() before UI-only input was forced.
+    FBH_InputModeSnapshot InputSnapshot;
     bool bSuppressCursorRestore;
     bool bIsSubmitting;
 

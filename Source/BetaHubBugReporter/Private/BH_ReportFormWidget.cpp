@@ -17,8 +17,6 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     , Settings(nullptr)
     , CurrentReportType(EBH_ReportType::Bug)
     , bCursorStateModified(false)
-    , bWasCursorVisible(false)
-    , bWasCursorLocked(false)
     , bSuppressCursorRestore(false)
     , bIsSubmitting(false)
 {
@@ -276,16 +274,14 @@ void UBH_ReportFormWidget::SetCursorState()
 {
     if (APlayerController* PlayerController = GetOwningPlayer())
     {
-        // Save the current cursor state
+        // Snapshot the game's real input/cursor state BEFORE forcing UI-only input, so RestoreCursorState
+        // (or the popup, after a successful submit) can put the game back exactly where it was.
         bCursorStateModified = true;
-        bWasCursorVisible = PlayerController->bShowMouseCursor;
-        //bWasCursorLocked = PlayerController->IsInputKeyDown(EKeys::LeftMouseButton);
+        InputSnapshot = BH_CaptureInputModeSnapshot(PlayerController);
 
-        // Unlock and show the cursor
+        // Unlock and show the cursor so the form is usable.
         PlayerController->SetShowMouseCursor(true);
         PlayerController->SetInputMode(FInputModeUIOnly());
-        //PlayerController->SetIgnoreLookInput(true);
-        //PlayerController->SetIgnoreMoveInput(true);
     }
 }
 
@@ -298,29 +294,13 @@ void UBH_ReportFormWidget::RestoreCursorState()
 
     if (APlayerController* PlayerController = GetOwningPlayer())
     {
-        // Restore the cursor visibility we saved on open, and put the game back into the input mode
-        // the integrator selected (BH_PluginSettings::RestoreInputMode). The engine has no getter for
-        // the game's previous input mode, so we cannot restore the *actual* prior mode - hard-coding
-        // GameOnly here is what broke click-drag games, which run in GameAndUI. Default is GameAndUI.
-        PlayerController->SetShowMouseCursor(bWasCursorVisible);
-
+        // Restore the input/cursor state we snapshotted on open. In Auto (the default) this reconstructs
+        // the game's exact prior mode; GameOnly/GameAndUI force a mode for games Auto cannot serve. The
+        // restore is routed through SetInputMode inside the helper, which also clears the IgnoreInput
+        // flag FInputModeUIOnly set - see BH_RestoreInputMode.
         const EBH_InputModeRestore RestoreMode =
-            Settings ? Settings->RestoreInputMode : EBH_InputModeRestore::GameAndUI;
-        if (RestoreMode == EBH_InputModeRestore::GameAndUI)
-        {
-            // A default FInputModeGameAndUI hides the cursor on capture and locks the mouse to the
-            // viewport (LockInFullscreen) - the exact "mouse stays locked after the form closes"
-            // symptom for cursor / click-drag games. This branch exists to serve those games, so
-            // restore the cursor-friendly variant: never hide on capture, never lock.
-            FInputModeGameAndUI Mode;
-            Mode.SetHideCursorDuringCapture(false);
-            Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-            PlayerController->SetInputMode(Mode);
-        }
-        else
-        {
-            PlayerController->SetInputMode(FInputModeGameOnly());
-        }
+            Settings ? Settings->RestoreInputMode : EBH_InputModeRestore::Auto;
+        BH_RestoreInputMode(PlayerController, InputSnapshot, RestoreMode);
 
         bCursorStateModified = false;
     }
@@ -377,14 +357,14 @@ bool UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
             if (bFormClosing)
             {
                 // Successful submit: this form is being removed, so the popup owns input restore. Give
-                // it the configured mode, and - only if this form actually captured the cursor first -
-                // the value we saved on open, so the popup restores the game's real prior cursor rather
-                // than the cursor we forced visible. If the form never captured (bTryCaptureMouse=false),
-                // the popup falls back to its own pre-force snapshot and still restores, so the game is
-                // never left stuck in UI-only input.
+                // it the configured mode, and - only if this form actually captured first - the snapshot
+                // we took on open, so the popup restores the game's real prior state rather than the
+                // UI-only state the form forced. If the form never captured (bTryCaptureMouse=false), the
+                // popup falls back to its own pre-force snapshot and still restores, so the game is never
+                // left stuck in UI-only input.
                 const EBH_InputModeRestore RestoreMode =
-                    Settings ? Settings->RestoreInputMode : EBH_InputModeRestore::GameAndUI;
-                PopupWidget->ConfigureRestoreOnClose(RestoreMode, /*bOverrideCursor=*/bCursorStateModified, bWasCursorVisible);
+                    Settings ? Settings->RestoreInputMode : EBH_InputModeRestore::Auto;
+                PopupWidget->ConfigureRestoreOnClose(RestoreMode, /*bOverrideSnapshot=*/bCursorStateModified, InputSnapshot);
             }
             else
             {

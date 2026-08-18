@@ -25,13 +25,13 @@ private:
 	// SetLeaveInputToForm() suppresses the popup's restore.
 	bool bRestoreOnClose;
 
-	// Cursor visibility to restore. By default the popup snapshots the game's real value in
-	// NativeConstruct *before* forcing the cursor on. When the form captured the cursor first (it had
-	// already forced it visible before this popup was constructed), that snapshot would be wrong, so
-	// the form overrides it with the value it saved on open via ConfigureRestoreOnClose().
-	bool bSnapshotCursorVisible;
-	bool bCursorOverridden;
-	bool bOverrideCursorVisible;
+	// Input/cursor state to restore on dismiss. By default the popup snapshots the game's real state in
+	// NativeConstruct *before* forcing UI-only input. When the form captured first (it had already
+	// forced UI-only input before this popup was constructed), that snapshot would read the form's forced
+	// state, so the form overrides it with the snapshot it took on open via ConfigureRestoreOnClose().
+	FBH_InputModeSnapshot Snapshot;
+	bool bSnapshotOverridden;
+	FBH_InputModeSnapshot OverrideSnapshot;
 
 	EBH_InputModeRestore RestoreInputMode;
 
@@ -60,11 +60,11 @@ public:
 	void SetMessage(const FString& InTitle, const FString& InDescription);
 
 	// Called by the report form on a SUCCESSFUL submit (the form is being removed and hands input
-	// ownership to this popup). Sets the input mode to restore to on dismiss. If bOverrideCursor is
-	// true the popup restores bCursorVisible (the value the form saved on open) instead of its own
-	// snapshot - used when the form had already forced the cursor visible before this popup existed.
+	// ownership to this popup). Sets the input mode to restore to on dismiss. If bOverrideSnapshot is
+	// true the popup restores InSnapshot (the state the form captured on open) instead of its own
+	// snapshot - used when the form had already forced UI-only input before this popup existed.
 	// Must be called before AddToViewport().
-	void ConfigureRestoreOnClose(EBH_InputModeRestore InRestoreMode, bool bOverrideCursor, bool bCursorVisible);
+	void ConfigureRestoreOnClose(EBH_InputModeRestore InRestoreMode, bool bOverrideSnapshot, const FBH_InputModeSnapshot& InSnapshot);
 
 	// Called by the report form when this popup is shown ON TOP of a still-open form (e.g. an error
 	// popup): the form keeps ownership of the input state, so this popup must not restore on dismiss.
