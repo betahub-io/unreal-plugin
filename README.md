@@ -59,6 +59,21 @@ There, you can also configure your shortcut key to open the bug reporter window.
 
 For full docs and guides, please visit the [BetaHub Documentation](https://betahub.io/docs/permalinks/unreal-plugin).
 
+## Submission mode
+
+The *Media Upload Mode* setting under *Project Settings → Plugins → BetaHub Bug Reporter* controls when
+the report form confirms a submission and lets the player return to the game:
+
+| Setting | What it does |
+| --- | --- |
+| **Upload in background** (default) | The form confirms and closes as soon as the draft is created on BetaHub; the screenshot/video upload and the publish then finish in the background. The player is back in the game in about one round-trip instead of waiting out the whole submission, which can take several seconds on projects with heavy server-side processing. |
+| **Wait for upload** | The form stays open on *Submitting…* until the media has fully uploaded and the report is published, then shows the result. This was the behavior before 1.7. |
+
+Background mode is safe against a lost connection: if the client's own publish call never lands (the game
+is closed or crashes right after submitting), BetaHub auto-publishes the draft shortly afterwards, so a
+report is never left stranded. **Updating from 1.6.x switches you to background mode automatically** — set
+*Media Upload Mode* to *Wait for upload* if you want the old blocking behavior back.
+
 ## Custom Fields (C++)
 
 You can attach your own game-specific data (player level, current scene, build number, etc.) to a bug report. Custom fields are **C++ only** — they are passed per submission to `SubmitReportWithMedia` and are not exposed in the bundled report widget or via Blueprint.

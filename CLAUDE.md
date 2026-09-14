@@ -68,6 +68,10 @@ Current tests (`BetaHub.VideoEncoder.*`, in `BH_VideoEncoderTest.cpp`):
   touch the back-buffer capture path.
 - `FailFastUnwritableDir` — makes the segments directory unwritable and asserts recording refuses
   cleanly and promptly (a guard against the recording-stop freeze regression).
+- `UniqueMergedNames` — records + merges twice and asserts the two merged files are distinct, coexist on
+  disk, and carry the `Gameplay_<date>_<time>_<guid>` structure. Guards the per-report unique filename
+  that background upload relies on (a second report must not clobber a file the first is still uploading);
+  a revert to a timestamp-only name fails the structure check.
 
 ### Running the tests (headless, Windows)
 
