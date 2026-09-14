@@ -383,6 +383,15 @@ void UBH_GameRecorder::StopRecording()
 
 FString UBH_GameRecorder::SaveRecording()
 {
+    // Concurrency invariant for background upload (multiple reports in flight at once): SaveRecording, and
+    // the segment merge it drives, MUST run on the game thread. That is what serializes the single shared
+    // recorder's Stop -> merge -> resume critical section across overlapping reports - MergeSegments blocks
+    // the game thread, so a second report cannot start its own merge, nor start a new recording into the
+    // shared segments directory, until this one has finished and resumed. Together with the per-report
+    // unique merged filename (see BH_VideoEncoder::MergeSegments) this is what keeps overlapping background
+    // submissions from corrupting each other. Fail fast if this invariant is ever broken.
+    checkf(IsInGameThread(), TEXT("UBH_GameRecorder::SaveRecording must be called on the game thread"));
+
     if (!VideoEncoder.IsValid())
     {
         UE_LOG(LogBetaHub, Error, TEXT("VideoEncoder is null."));

@@ -19,6 +19,7 @@ UBH_ReportFormWidget::UBH_ReportFormWidget(const FObjectInitializer& ObjectIniti
     , bCursorStateModified(false)
     , bSuppressCursorRestore(false)
     , bIsSubmitting(false)
+    , bScreenshotHandedToAsync(false)
 {
     SetIsFocusable(true);
 }
@@ -114,6 +115,8 @@ bool bTryCaptureMouse)
     GameRecorder = InGameRecorder;
     ScreenshotPath = InScreenshotPath;
     LogFileContents = InLogFileContents;
+    // Fresh screenshot file for this form; the widget owns it until a submit hands it to an async path.
+    bScreenshotHandedToAsync = false;
 
     if (bTryCaptureMouse)
     {
@@ -177,66 +180,114 @@ void UBH_ReportFormWidget::SubmitReport()
         // Only pass GameRecorder if video checkbox is checked
         UBH_GameRecorder* RecorderToPass = (IncludeVideoCheckbox->IsChecked() && GameRecorder) ? GameRecorder : nullptr;
 
-        // Capture ScreenshotPath for cleanup in callbacks
-        FString ScreenshotPathCopy = ScreenshotPath;
+        // The submit chain owns cleanup of the auto-captured screenshot: in background mode this form closes
+        // before the upload finishes, so cleanup must not depend on the widget still being alive. The
+        // auto-recorded video is cleaned up by the chain regardless of this list.
+        TArray<FString> TempFilesToCleanup;
+        if (!ScreenshotPath.IsEmpty())
+        {
+            TempFilesToCleanup.Add(ScreenshotPath);
+            // The chain now owns the screenshot file's cleanup; NativeDestruct must not delete it (the
+            // upload may still be reading it after this form closes in background mode).
+            bScreenshotHandedToAsync = true;
+        }
+
+        const bool bBackground = Settings && (Settings->MediaUploadMode == EBH_MediaUploadMode::UploadInBackground);
+        // When video is included the chain resumes recording right after it saves the clip; when it is not,
+        // the chain never touches the recorder, so the widget must resume it. This split decides who calls
+        // EnsureRecording, so the confirm path never resumes while a video save is still pending (which
+        // would make SaveRecording refuse and drop the clip).
+        const bool bVideoIncluded = (RecorderToPass != nullptr);
+
+        // Fires once, whether from the draft-created callback (background) or the terminal success callback
+        // (wait mode). RemoveFromParent does not destroy the widget immediately, so a stale WeakThis could
+        // still resolve after a background close; the shared guard stops the terminal success from
+        // confirming a second time.
+        TSharedPtr<bool> ConfirmGuard = MakeShared<bool>(false);
+        auto ConfirmAndClose = [WeakThis, bVideoIncluded, ConfirmGuard]()
+        {
+            if (*ConfirmGuard)
+            {
+                return;
+            }
+            if (UBH_ReportFormWidget* Self = WeakThis.Get())
+            {
+                *ConfirmGuard = true;
+
+                // Only resume here for the no-video case; with video the chain resumes after saving the clip.
+                if (!bVideoIncluded)
+                {
+                    Self->EnsureRecording();
+                }
+                Self->ResetSubmitButton();
+
+                // The popup takes over restoring input (see ShowPopup). Only suppress our own restore if we
+                // captured the cursor AND a popup is there to do it; otherwise NativeDestruct restores, so
+                // input is never left stuck in UI-only.
+                const bool bPopupShown = Self->ShowPopup("Success", "Bug report submitted successfully!", /*bFormClosing=*/true);
+                Self->bSuppressCursorRestore = (Self->bCursorStateModified && bPopupShown);
+                Self->RemoveFromParent();
+            }
+        };
 
         UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
         BugReport->SubmitReportWithMedia(Settings, RecorderToPass, Description, StepsToReproduce,
             Videos, Screenshots, Logs,
-            [WeakThis, ScreenshotPathCopy]()
+            // OnSuccess (terminal: whole upload + publish done). In background mode the form was already
+            // confirmed and closed on draft creation, so ConfirmAndClose no-ops here (guard + gone widget);
+            // in wait mode this is where it confirms and closes.
+            [ConfirmAndClose]()
             {
-                // Cleanup screenshot file
-                if (!ScreenshotPathCopy.IsEmpty())
-                {
-                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-                    if (PlatformFile.FileExists(*ScreenshotPathCopy))
-                    {
-                        PlatformFile.DeleteFile(*ScreenshotPathCopy);
-                    }
-                }
-
-                if (UBH_ReportFormWidget* Self = WeakThis.Get())
-                {
-                    // Resume recording so the next report captures a fresh moment (betahub.tasks#165).
-                    Self->EnsureRecording();
-                    Self->ResetSubmitButton();
-
-                    // Successful submit: the popup takes over restoring input (see ShowPopup). Only
-                    // suppress our own restore if we captured the cursor AND a popup is there to do it;
-                    // otherwise NativeDestruct restores, so input is never left stuck in UI-only.
-                    const bool bPopupShown = Self->ShowPopup("Success", "Bug report submitted successfully!", /*bFormClosing=*/true);
-                    Self->bSuppressCursorRestore = (Self->bCursorStateModified && bPopupShown);
-                    Self->RemoveFromParent();
-                }
+                ConfirmAndClose();
             },
-            [WeakThis, ScreenshotPathCopy](const FString& ErrorMessage)
+            // OnFailure. ConfirmGuard is the discriminator, NOT the widget's liveness: RemoveFromParent does
+            // not GC the widget for ~a minute, so after a background-mode confirm+close a late upload/publish
+            // failure (arriving in seconds) would still resolve WeakThis and pop an Error modal over gameplay
+            // - seconds after the player saw "submitted successfully". Once confirmed, log only (the design's
+            // "no modal after close"). If NOT yet confirmed - wait mode, or a draft-create failure in
+            // background mode before the form closed - show the error on the still-open form and resume.
+            [WeakThis, ConfirmGuard](const FString& ErrorMessage)
             {
-                // Cleanup screenshot file even on failure
-                if (!ScreenshotPathCopy.IsEmpty())
+                if (*ConfirmGuard)
                 {
-                    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-                    if (PlatformFile.FileExists(*ScreenshotPathCopy))
-                    {
-                        PlatformFile.DeleteFile(*ScreenshotPathCopy);
-                    }
+                    UE_LOG(LogBetaHub, Warning,
+                        TEXT("Bug report submission failed after the form was confirmed and closed: %s"), *ErrorMessage);
+                    return;
                 }
 
                 if (UBH_ReportFormWidget* Self = WeakThis.Get())
                 {
-                    // Resume recording even on failure, or a failed no-video submit leaves the
-                    // recorder dead until the form is closed (betahub.tasks#165).
+                    // Resume unconditionally: on any failure there is no video save still pending (the chain
+                    // either failed before saving or already saved), so this cannot drop a clip. Without it a
+                    // failed no-video submit leaves the recorder dead until close (betahub.tasks#165).
                     Self->EnsureRecording();
-                    // Error popup is shown on top of the still-open form, which keeps owning the
-                    // input state - so the popup must NOT restore it (bFormClosing = false).
+                    // Error popup is shown on top of the still-open form, which keeps owning the input state
+                    // - so the popup must NOT restore it (bFormClosing = false).
                     Self->ShowPopup("Error", ErrorMessage, /*bFormClosing=*/false);
                     Self->ResetSubmitButton();
                 }
-            }
+                else
+                {
+                    UE_LOG(LogBetaHub, Warning,
+                        TEXT("Bug report submission failed after the form closed: %s"), *ErrorMessage);
+                }
+            },
+            /*ReleaseLabel*/ TEXT(""),
+            /*ReleaseId*/ TEXT(""),
+            /*CustomFields*/ TMap<FString, FBH_CustomFieldValue>(),
+            // OnDraftCreated: only in background mode. Confirm + close as soon as the draft exists on BetaHub,
+            // while the media upload and publish finish detached in the chain.
+            bBackground ? TFunction<void()>(ConfirmAndClose) : TFunction<void()>(),
+            TempFilesToCleanup
         );
     }
     else // EBH_ReportType::Suggestion
     {
         UE_LOG(LogBetaHub, Log, TEXT("Suggestion Description: %s"), *Description);
+
+        // The feature-request upload deletes the screenshot itself, but only when it is actually included.
+        // Hand off cleanup to it in that case; otherwise the widget still owns the file (cleaned on destruct).
+        bScreenshotHandedToAsync = (IncludeScreenshotCheckbox->IsChecked() && !ScreenshotPath.IsEmpty());
 
         UBH_FeatureRequest* FeatureRequest = NewObject<UBH_FeatureRequest>();
         FeatureRequest->SubmitFeatureRequest(Settings, Description, ScreenshotPath, IncludeScreenshotCheckbox->IsChecked(),
@@ -313,14 +364,29 @@ void UBH_ReportFormWidget::NativeDestruct()
     // Restore cursor state when the widget is destructed (hidden)
     RestoreCursorState();
 
-    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-
-    // We can't delete the screenshot file here as it still could be used by the BugReport to upload the media
-    // TODO: Create a screenshot object that can destroy itself when it's no longer in use
-    // if (PlatformFile.FileExists(*ScreenshotPath))
-    // {
-    //     PlatformFile.DeleteFile(*ScreenshotPath);
-    // }
+    // Clean up this form's auto-captured screenshot UNLESS an async submit path has taken over its cleanup
+    // (bug submit chain, or an included feature-request screenshot). Deleting it here when the async path
+    // still owns it would kill an in-flight upload - in background mode this form closes before the upload
+    // finishes. When the widget still owns it (cancel, or a suggestion submitted without the screenshot),
+    // deleting it here stops the now-unique screenshot filenames from accumulating across a session. Use the
+    // physical layer since the file lives on real disk (see the filesystem note in CLAUDE.md).
+    if (!bScreenshotHandedToAsync && !ScreenshotPath.IsEmpty())
+    {
+        // The screenshot is written by the engine through the WRAPPED layer, so delete it there; also try
+        // the physical layer for safety. Under the cook-in-editor virtualization shim the two layers see
+        // different paths, so a physical-only delete would silently miss the wrapped file and leak it; in
+        // packaged builds the layers are identical and the second call is a harmless no-op.
+        IPlatformFile& WrappedFile = FPlatformFileManager::Get().GetPlatformFile();
+        IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
+        if (WrappedFile.FileExists(*ScreenshotPath))
+        {
+            WrappedFile.DeleteFile(*ScreenshotPath);
+        }
+        if (PhysicalFile.FileExists(*ScreenshotPath))
+        {
+            PhysicalFile.DeleteFile(*ScreenshotPath);
+        }
+    }
 
     // Do not start recording here, since it's the responsibility either of the close button, or BugReport class
 }

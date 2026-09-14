@@ -96,6 +96,17 @@ public:
      *                                Fields.Add("severity", FBH_CustomFieldValue::FromString("Major"));
      *                                Fields.Add("platform", FBH_CustomFieldValue::FromString("Steam"));
      *                                Fields.Add("tags", FBH_CustomFieldValue::FromArray({"Bug", "UI"}));
+     * @param OnDraftCreated        Optional callback fired on the game thread as soon as the draft issue is
+     *                              created on BetaHub (before media upload / publish). Background upload mode
+     *                              uses this to confirm and close the form immediately while the media upload
+     *                              and publish finish detached in the async chain. Never called on failure.
+     * @param TempFilesToCleanup    Optional list of caller-owned temporary files (e.g. an auto-captured
+     *                              screenshot) that the submit chain deletes when the whole submission
+     *                              terminates - success or failure - via the physical filesystem layer. This
+     *                              is deliberately owned by the chain, not the caller: in background mode the
+     *                              form closes before the upload finishes, so cleanup cannot depend on the
+     *                              widget still being alive. The auto-recorded video (saved internally) is
+     *                              always cleaned up regardless of this list.
      */
     void SubmitReportWithMedia(
         UBH_PluginSettings* Settings,
@@ -109,7 +120,9 @@ public:
         TFunction<void(const FString&)> OnFailure,
         const FString& ReleaseLabel = TEXT(""),
         const FString& ReleaseId = TEXT(""),
-        const TMap<FString, FBH_CustomFieldValue>& CustomFields = TMap<FString, FBH_CustomFieldValue>());
+        const TMap<FString, FBH_CustomFieldValue>& CustomFields = TMap<FString, FBH_CustomFieldValue>(),
+        TFunction<void()> OnDraftCreated = TFunction<void()>(),
+        const TArray<FString>& TempFilesToCleanup = TArray<FString>());
 
     /**
      * Submits a bug report to BetaHub (legacy method)
@@ -167,7 +180,9 @@ private:
         TFunction<void(const FString&)> OnFailure,
         const FString& ReleaseLabel = TEXT(""),
         const FString& ReleaseId = TEXT(""),
-        const TMap<FString, FBH_CustomFieldValue>& CustomFields = TMap<FString, FBH_CustomFieldValue>());
+        const TMap<FString, FBH_CustomFieldValue>& CustomFields = TMap<FString, FBH_CustomFieldValue>(),
+        TFunction<void()> OnDraftCreated = TFunction<void()>(),
+        const TArray<FString>& TempFilesToCleanup = TArray<FString>());
 
     void SubmitMedia(
         UBH_PluginSettings* Settings,

@@ -176,4 +176,79 @@ bool FBHVideoEncoderFailFastTest::RunTest(const FString& Parameters)
     return true;
 }
 
+// Unique merged names: two encoders (standing in for two reports submitted close together) must produce
+// two DISTINCT merged files that coexist on disk. Background upload keeps the first report's merged file
+// alive while it uploads, so a second report merging in the meantime must not reuse the same path and
+// clobber it. Guards the GUID-suffixed name added for background upload (see BH_VideoEncoder::MergeSegments).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHVideoEncoderUniqueMergedNamesTest,
+    "BetaHub.VideoEncoder.UniqueMergedNames",
+    BH_AUTOMATION_TEST_FLAGS)
+
+bool FBHVideoEncoderUniqueMergedNamesTest::RunTest(const FString& Parameters)
+{
+    const FString FFmpegPath = BH_FFmpeg::GetFFmpegPath();
+    if (FFmpegPath.IsEmpty() || !FPaths::FileExists(FFmpegPath))
+    {
+        AddError(FString::Printf(TEXT("Bundled ffmpeg not found at '%s' - cannot run encoder integration test."), *FFmpegPath));
+        return false;
+    }
+
+    IPlatformFile& Phys = IPlatformFile::GetPlatformPhysical();
+    const FString SegDir = SegmentsDirPath();
+    if (Phys.FileExists(*SegDir))
+    {
+        Phys.DeleteFile(*SegDir);
+    }
+
+    const int32 W = 320, H = 240, FPS = 30;
+
+    // Record + merge with a fresh encoder, returning the merged path (left on disk for the caller to check).
+    auto RecordAndMerge = [&](FColor Color) -> FString
+    {
+        TSharedPtr<FBH_FrameSource> FrameSource = MakeShared<FBH_FrameSource>();
+        FrameSource->SetFrame(MakeSolidFrame(W, H, Color));
+
+        TUniquePtr<BH_VideoEncoder> Encoder = MakeUnique<BH_VideoEncoder>(
+            FPS, FTimespan(0, 1, 0), W, H, FrameSource, /*bH264PassThrough*/ false);
+        Encoder->StartRecording();
+        FPlatformProcess::Sleep(3.0f);
+        Encoder->StopRecording();
+        return Encoder->MergeSegments(12);
+    };
+
+    // First report's merged file - deliberately kept on disk while the second report merges.
+    const FString PathA = RecordAndMerge(FColor(0, 128, 255, 255));
+    TestTrue(TEXT("first merge returned a path"), !PathA.IsEmpty());
+    TestTrue(TEXT("first merged file exists"), !PathA.IsEmpty() && Phys.FileExists(*PathA));
+
+    const FString PathB = RecordAndMerge(FColor(255, 128, 0, 255));
+    TestTrue(TEXT("second merge returned a path"), !PathB.IsEmpty());
+    TestTrue(TEXT("second merged file exists"), !PathB.IsEmpty() && Phys.FileExists(*PathB));
+
+    TestTrue(TEXT("the two reports produced distinct merged paths"), PathA != PathB);
+    // The core guarantee: the first file was not clobbered by the second merge.
+    TestTrue(TEXT("both merged files coexist on disk"),
+        !PathA.IsEmpty() && !PathB.IsEmpty() && Phys.FileExists(*PathA) && Phys.FileExists(*PathB));
+
+    // Tighten the guard to the GUID suffix, not the 1-second timestamp (the two merges above are ~3s apart,
+    // so their timestamps already differ - distinct paths alone would still pass on a timestamp-only name).
+    // The merged basename must be Gameplay_<date>_<time>_<guid>: 4 underscore-separated parts, with the GUID
+    // differing between reports. A revert to the old timestamp-only name (3 parts) fails here - that is the
+    // exact regression this test protects, since two reports in the same wall-clock second would otherwise
+    // collide and one would clobber the other mid-upload.
+    TArray<FString> PartsA, PartsB;
+    FPaths::GetBaseFilename(PathA).ParseIntoArray(PartsA, TEXT("_"));
+    FPaths::GetBaseFilename(PathB).ParseIntoArray(PartsB, TEXT("_"));
+    TestEqual(TEXT("merged name A is Gameplay_<date>_<time>_<guid> (4 parts)"), PartsA.Num(), 4);
+    TestEqual(TEXT("merged name B is Gameplay_<date>_<time>_<guid> (4 parts)"), PartsB.Num(), 4);
+    if (PartsA.Num() == 4 && PartsB.Num() == 4)
+    {
+        TestNotEqual(TEXT("the GUID suffix differs between the two reports"), PartsA[3], PartsB[3]);
+    }
+
+    if (!PathA.IsEmpty() && Phys.FileExists(*PathA)) { Phys.DeleteFile(*PathA); }
+    if (!PathB.IsEmpty() && Phys.FileExists(*PathB)) { Phys.DeleteFile(*PathB); }
+    return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

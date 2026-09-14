@@ -29,6 +29,12 @@ UBH_PluginSettings::UBH_PluginSettings()
     // the GPU where available; Auto/Hardware always fall back to FFmpeg if the GPU encoder cannot start.
     VideoEncoderBackend = EBH_VideoEncoderBackend::FFmpeg;
 
+    // Default to background upload: confirm + close on draft creation and finish the upload/publish
+    // detached, so reporters are not held on "Submitting..." for the several seconds server-side
+    // processing can take. Existing integrators get this on update (see the 1.7 release notes); set
+    // WaitForUpload to keep the original blocking behavior.
+    MediaUploadMode = EBH_MediaUploadMode::UploadInBackground;
+
     // The backend picker only appears when the plugin can actually honour it. In a stock build every
     // hardware path is compiled out, so offering "Hardware (GPU)" would silently do nothing.
     bHardwareEncodeSupported = (WITH_BETAHUB_HWENCODE != 0);

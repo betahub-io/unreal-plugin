@@ -44,6 +44,15 @@ private:
     bool bSuppressCursorRestore;
     bool bIsSubmitting;
 
+    // The auto-captured screenshot (ScreenshotPath) has a unique per-report filename, so unlike the old
+    // fixed name it is not self-overwriting: whoever opens a form owns its screenshot file and must delete
+    // it. This flag records that an async submit path has taken over that cleanup - the bug submit chain
+    // (via TempFilesToCleanup) or the feature-request upload (when the screenshot is included) - so
+    // NativeDestruct must NOT delete the file (the async path may still be uploading it, possibly after this
+    // form has closed). When it stays false (cancel, or a suggestion submitted without the screenshot),
+    // NativeDestruct deletes the file so screenshots do not accumulate across a session.
+    bool bScreenshotHandedToAsync;
+
     void SetSubmittingState();
     void ResetSubmitButton();
 

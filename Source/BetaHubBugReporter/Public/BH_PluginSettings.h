@@ -20,6 +20,21 @@ enum class EBH_VideoEncoderBackend : uint8
     Hardware  UMETA(DisplayName = "Hardware (GPU - NVIDIA/AMD)")
 };
 
+// When the report form confirms a submission and lets the player return to the game. Mirrors the Unity
+// plugin's MediaUploadType.
+UENUM(BlueprintType)
+enum class EBH_MediaUploadMode : uint8
+{
+    // Confirm and close the form as soon as the draft is created on BetaHub; the media upload and publish
+    // finish detached in the background. The player is back in the game in ~1 round-trip instead of waiting
+    // for the whole upload+publish (~15s on projects with heavy server-side processing). A backend
+    // safety-net republishes the draft if the client's publish call is lost.
+    UploadInBackground UMETA(DisplayName = "Upload in background (confirm on draft, keep playing)"),
+    // Keep the form open with "Submitting..." until the media has fully uploaded and the issue is published,
+    // then show the result. The original (pre-1.7) behavior.
+    WaitForUpload      UMETA(DisplayName = "Wait for upload (block until fully submitted)")
+};
+
 UCLASS(Config=Game, defaultconfig)
 class BETAHUBBUGREPORTER_API UBH_PluginSettings : public UObject
 {
@@ -96,6 +111,10 @@ public:
         meta=(EditCondition="bHardwareEncodeSupported", EditConditionHides,
               ToolTip="Which encoder produces the recorded video. FFmpeg (CPU) works everywhere. Hardware (GPU, NVIDIA/AMD on Windows) offloads encoding off the CPU. Auto uses hardware when available and falls back to FFmpeg otherwise; both fall back to FFmpeg if the GPU encoder cannot start."))
     EBH_VideoEncoderBackend VideoEncoderBackend;
+
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
+        meta=(ToolTip="How the report form confirms a submission. 'Upload in background' (default) confirms and closes as soon as the draft is created on BetaHub, then finishes the media upload and publish detached, so the player returns to the game quickly - recommended for projects where submitting takes several seconds. 'Wait for upload' keeps the form open until everything has uploaded and published (the original behavior)."))
+    EBH_MediaUploadMode MediaUploadMode;
 
     UPROPERTY(EditAnywhere, Config, Category="Settings",
         meta=(ToolTip="The path to the widget that will be used to display the bug report form."))

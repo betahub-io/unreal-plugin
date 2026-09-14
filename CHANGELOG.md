@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.7.0 - 2026-09-14
+
+### Changed
+
+- **Bug reports now upload in the background by default.** The form confirms and closes as soon as the draft is created on BetaHub, and the media upload and publish finish detached, so reporters return to the game in about one round-trip instead of waiting out the full submission - which on projects with heavy server-side processing could take ~15 seconds. **Action for existing integrators updating from 1.6.x: this is a behavior change you get automatically.** If you need the old behavior - the form staying open on "Submitting..." until everything has uploaded and published - set **Project Settings -> BetaHub -> Media Upload Mode** to **Wait for upload**. A backend safety-net republishes the draft if the client's publish call is lost, so a report is never left as an unpublished draft.
+
+### Added
+
+- **Media Upload Mode** setting (Project Settings -> BetaHub): **Upload in background** (default) or **Wait for upload** (the pre-1.7 blocking behavior). Mirrors the Unity plugin's upload modes.
+- `UBH_BugReport::SubmitReportWithMedia` gained two optional trailing parameters, both back-compatible: an `OnDraftCreated` callback (fired when the draft is created, before upload/publish) and a `TempFilesToCleanup` list the submit chain deletes when the submission finishes.
+
+### Fixed
+
+- Auto-captured screenshots and recorded video clips now use unique per-report filenames. With background upload a second report can be submitted while the first is still uploading; the old fixed screenshot name and second-resolution video name could let the second report overwrite a file the first was still sending.
+- Cleanup of a report's temporary media (screenshot and recorded clip) now runs in the submit chain rather than in the form, so it happens reliably even though the form closes before the background upload finishes.
+
 ## 1.6.1 - 2026-08-17
 
 ### Fixed

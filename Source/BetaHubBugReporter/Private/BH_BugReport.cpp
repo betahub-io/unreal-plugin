@@ -35,14 +35,17 @@ void UBH_BugReport::SubmitReportWithMedia(
     TFunction<void(const FString&)> OnFailure,
     const FString& ReleaseLabel,
     const FString& ReleaseId,
-    const TMap<FString, FBH_CustomFieldValue>& CustomFields
+    const TMap<FString, FBH_CustomFieldValue>& CustomFields,
+    TFunction<void()> OnDraftCreated,
+    const TArray<FString>& TempFilesToCleanup
 )
 {
     // HTTP requests are already asynchronous, no need for Async wrapper
     // Calling directly avoids UObject lifetime issues with 'this' capture
     SubmitReportWithMediaAsync(Settings, GameRecorder, Description, StepsToReproduce,
         Videos, Screenshots, Logs,
-        OnSuccess, OnFailure, ReleaseLabel, ReleaseId, CustomFields);
+        OnSuccess, OnFailure, ReleaseLabel, ReleaseId, CustomFields,
+        OnDraftCreated, TempFilesToCleanup);
 }
 
 void UBH_BugReport::SubmitReportWithMediaAsync(
@@ -57,14 +60,67 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
     TFunction<void(const FString&)> OnFailure,
     const FString& ReleaseLabel,
     const FString& ReleaseId,
-    const TMap<FString, FBH_CustomFieldValue>& CustomFields
+    const TMap<FString, FBH_CustomFieldValue>& CustomFields,
+    TFunction<void()> OnDraftCreated,
+    const TArray<FString>& TempFilesToCleanup
     )
 {
+    // Temp files this submission owns and must delete when it terminates (success or failure), regardless
+    // of whether the caller (e.g. the report form) is still alive by then. Seeded with the caller's list
+    // (auto-captured screenshot); the auto-recorded video path is appended once the merge produces it.
+    TSharedPtr<TArray<FString>> TempFiles = MakeShared<TArray<FString>>(TempFilesToCleanup);
+
+    auto CleanupTempFiles = [TempFiles]()
+    {
+        // Delete on BOTH filesystem layers: the merged video is written by ffmpeg (physical layer) while the
+        // screenshot is written by the engine (wrapped layer), and under the cook-in-editor virtualization
+        // shim those layers see different paths - so a single-layer delete would silently miss one kind of
+        // file and leak it. In packaged builds the two layers are identical, so the second call is a harmless
+        // no-op. (See the filesystem note in CLAUDE.md.)
+        IPlatformFile& PhysicalFile = IPlatformFile::GetPlatformPhysical();
+        IPlatformFile& WrappedFile = FPlatformFileManager::Get().GetPlatformFile();
+        for (const FString& TempFile : *TempFiles)
+        {
+            if (TempFile.IsEmpty())
+            {
+                continue;
+            }
+            if (PhysicalFile.FileExists(*TempFile))
+            {
+                PhysicalFile.DeleteFile(*TempFile);
+            }
+            if (WrappedFile.FileExists(*TempFile))
+            {
+                WrappedFile.DeleteFile(*TempFile);
+            }
+        }
+        TempFiles->Empty();
+    };
+
+    // Wrap the caller callbacks so temp-file cleanup runs exactly once at the end of the submission, in the
+    // chain rather than in the (possibly already-closed) form. The user callback is invoked after cleanup.
+    TFunction<void()> WrappedOnSuccess = [OnSuccess, CleanupTempFiles]()
+    {
+        CleanupTempFiles();
+        if (OnSuccess)
+        {
+            OnSuccess();
+        }
+    };
+    TFunction<void(const FString&)> WrappedOnFailure = [OnFailure, CleanupTempFiles](const FString& Error)
+    {
+        CleanupTempFiles();
+        if (OnFailure)
+        {
+            OnFailure(Error);
+        }
+    };
+
     if (!Settings)
     {
         UE_LOG(LogBetaHub, Error, TEXT("Settings is null"));
-        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
-            OnFailure(TEXT("Invalid settings"));
+        AsyncTask(ENamedThreads::GameThread, [WrappedOnFailure]() {
+            WrappedOnFailure(TEXT("Invalid settings"));
         });
         return;
     }
@@ -72,8 +128,8 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
     if (Settings->ProjectToken.IsEmpty())
     {
         UE_LOG(LogBetaHub, Error, TEXT("ProjectToken is not configured. Cannot submit bug report."));
-        AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
-            OnFailure(TEXT("Project Token is not configured. Please set it in the BetaHub plugin settings."));
+        AsyncTask(ENamedThreads::GameThread, [WrappedOnFailure]() {
+            WrappedOnFailure(TEXT("Project Token is not configured. Please set it in the BetaHub plugin settings."));
         });
         return;
     }
@@ -136,15 +192,15 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
 
     InitialRequest->ProcessRequest(
         [WeakSettings, WeakGameRecorder, Videos, Screenshots, Logs, InitialRequest,
-        OnSuccess, OnFailure]
+        WrappedOnSuccess, WrappedOnFailure, OnDraftCreated, TempFiles]
         (FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {
         // Validate UObject pointers are still valid
         if (!WeakSettings.IsValid())
         {
             UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed during async operation"));
-            AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
-                OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+            AsyncTask(ENamedThreads::GameThread, [WrappedOnFailure]() {
+                WrappedOnFailure(TEXT("Operation cancelled - settings no longer valid"));
             });
             return;
         }
@@ -156,8 +212,8 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
         if (!Settings)
         {
             UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid after weak pointer validation"));
-            AsyncTask(ENamedThreads::GameThread, [OnFailure]() {
-                OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+            AsyncTask(ENamedThreads::GameThread, [WrappedOnFailure]() {
+                WrappedOnFailure(TEXT("Operation cancelled - settings no longer valid"));
             });
             return;
         }
@@ -174,16 +230,34 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
 
                 FString FormattedIssueId = FString::Printf(TEXT("g-%s"), *IssueId);
 
+                // Draft exists on BetaHub now. Background upload mode uses this to confirm and close the form
+                // immediately; the media upload + publish below then finish detached. Fire on the game thread
+                // for UI safety, and only when a callback was supplied. Never fired on failure.
+                if (OnDraftCreated)
+                {
+                    AsyncTask(ENamedThreads::GameThread, [OnDraftCreated]() {
+                        OnDraftCreated();
+                    });
+                }
+
                 // Lambda to start media uploads - called after video save completes (or immediately if no video)
-                auto StartMediaUploads = [WeakSettings, Videos, Screenshots, Logs, FormattedIssueId, ApiToken, OnSuccess, OnFailure]
+                auto StartMediaUploads = [WeakSettings, Videos, Screenshots, Logs, FormattedIssueId, ApiToken, WrappedOnSuccess, WrappedOnFailure, TempFiles]
                     (const FString& VideoPath)
                 {
                     UE_LOG(LogBetaHub, Log, TEXT("StartMediaUploads called with VideoPath: %s"), *VideoPath);
 
+                    // The merged video is an auto-recorded temp file this submission owns. Register it now so
+                    // every terminal path (including the early failures just below) cleans it up via the
+                    // wrapped callbacks - the merge already produced the file even if the upload never starts.
+                    if (!VideoPath.IsEmpty())
+                    {
+                        TempFiles->AddUnique(VideoPath);
+                    }
+
                     if (!WeakSettings.IsValid())
                     {
                         UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed before media upload"));
-                        OnFailure(TEXT("Operation cancelled - settings destroyed"));
+                        WrappedOnFailure(TEXT("Operation cancelled - settings destroyed"));
                         return;
                     }
 
@@ -191,7 +265,7 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                     if (!Settings)
                     {
                         UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid before media upload"));
-                        OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+                        WrappedOnFailure(TEXT("Operation cancelled - settings no longer valid"));
                         return;
                     }
 
@@ -212,13 +286,13 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                     TSharedPtr<BH_MediaUploadManager> MediaManager = MakeShareable(new BH_MediaUploadManager());
 
                     BH_MediaUploadManager::FOnUploadComplete UploadCompleteDelegate;
-                    UploadCompleteDelegate.BindLambda([WeakSettings, FormattedIssueId, ApiToken, OnSuccess, OnFailure, VideoPath, MediaManager]
+                    UploadCompleteDelegate.BindLambda([WeakSettings, FormattedIssueId, ApiToken, WrappedOnSuccess, WrappedOnFailure, MediaManager]
                         (const BH_MediaUploadManager::FMediaUploadResult& Result)
                     {
                         if (!WeakSettings.IsValid())
                         {
                             UE_LOG(LogBetaHub, Warning, TEXT("Settings destroyed during media upload"));
-                            OnFailure(TEXT("Operation cancelled - settings destroyed during upload"));
+                            WrappedOnFailure(TEXT("Operation cancelled - settings destroyed during upload"));
                             return;
                         }
 
@@ -226,7 +300,7 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                         if (!Settings)
                         {
                             UE_LOG(LogBetaHub, Warning, TEXT("Settings invalid during upload completion"));
-                            OnFailure(TEXT("Operation cancelled - settings no longer valid"));
+                            WrappedOnFailure(TEXT("Operation cancelled - settings no longer valid"));
                             return;
                         }
 
@@ -250,18 +324,9 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
                             UE_LOG(LogBetaHub, Warning, TEXT("All media uploads failed, publishing issue without media"));
                         }
 
-                        // Always publish the issue, even if media uploads failed
-                        PublishIssue(Settings, FormattedIssueId, ApiToken, OnSuccess, OnFailure);
-
-                        // Cleanup auto-recorded video file
-                        if (!VideoPath.IsEmpty())
-                        {
-                            IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-                            if (PlatformFile.FileExists(*VideoPath))
-                            {
-                                PlatformFile.DeleteFile(*VideoPath);
-                            }
-                        }
+                        // Always publish the issue, even if media uploads failed. The wrapped callbacks clean
+                        // up the temp files (auto-recorded video + screenshot) when publish terminates.
+                        PublishIssue(Settings, FormattedIssueId, ApiToken, WrappedOnSuccess, WrappedOnFailure);
                     });
 
                     BH_MediaUploadManager::FOnProgressUpdate ProgressDelegate;
@@ -332,8 +397,8 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
             else
             {
                 UE_LOG(LogBetaHub, Error, TEXT("Failed to parse Issue ID from response: %s"), *ContentAsString);
-                AsyncTask(ENamedThreads::GameThread, [OnFailure, ContentAsString]() {
-                    OnFailure(FString::Printf(TEXT("Failed to parse Issue ID from response: %s"), *ContentAsString));
+                AsyncTask(ENamedThreads::GameThread, [WrappedOnFailure, ContentAsString]() {
+                    WrappedOnFailure(FString::Printf(TEXT("Failed to parse Issue ID from response: %s"), *ContentAsString));
                 });
             }
         }
@@ -354,8 +419,8 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
             }
 
             UE_LOG(LogBetaHub, Error, TEXT("Failed to submit bug report: %s"), *ResponseContentForLog);
-            AsyncTask(ENamedThreads::GameThread, [OnFailure, ErrorMessage]() {
-                OnFailure(ErrorMessage);
+            AsyncTask(ENamedThreads::GameThread, [WrappedOnFailure, ErrorMessage]() {
+                WrappedOnFailure(ErrorMessage);
             });
         }
     });

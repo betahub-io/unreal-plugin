@@ -570,10 +570,14 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         return FString();
     }
 
-    // Set the merged file path (absolute, for the same reason as segmentsDir).
+    // Set the merged file path (absolute, for the same reason as segmentsDir). A GUID suffix makes the
+    // name unique per merge: with background upload a second report can be submitted while the first
+    // report's merged file is still uploading, and the timestamp alone (1-second resolution) would let two
+    // close-together reports collide on the same path and clobber a file mid-upload.
     MergedFilePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(),
-        FString::Printf(TEXT("Gameplay_%s.mp4"),
-        *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S")))));
+        FString::Printf(TEXT("Gameplay_%s_%s.mp4"),
+        *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S")),
+        *FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8))));
 
     // FFmpeg command to merge segments
     FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""),

@@ -9,6 +9,8 @@
 #include "Components/CanvasPanelSlot.h"
 #include "TimerManager.h"
 #include "UnrealClient.h"
+#include "Misc/Paths.h"
+#include "Misc/Guid.h"
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)
@@ -131,7 +133,13 @@ void UBH_BackgroundService::CaptureScreenshot()
 {
     if (GameRecorder)
     {
-        ScreenshotPath = GameRecorder->CaptureScreenshotToJPG();
+        // Unique per capture: with background upload a second report can be opened while the first report's
+        // screenshot is still uploading. A fixed name (the CaptureScreenshotToJPG default, Screenshot.jpg)
+        // would let the second capture overwrite a file the first report's upload is still reading.
+        const FString UniqueScreenshotPath = FPaths::Combine(FPaths::ProjectSavedDir(),
+            FString::Printf(TEXT("BH_Screenshot_%s.jpg"),
+            *FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8)));
+        ScreenshotPath = GameRecorder->CaptureScreenshotToJPG(UniqueScreenshotPath);
     }
 }
 
