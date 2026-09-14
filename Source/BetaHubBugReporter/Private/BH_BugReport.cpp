@@ -147,6 +147,17 @@ void UBH_BugReport::SubmitReportWithMediaAsync(
     InitialRequest->AddField(TEXT("issue[unformatted_steps_to_reproduce]"), StepsToReproduce);
     InitialRequest->AddField(TEXT("draft"), TEXT("true")); // Create as draft for media upload
 
+    // Backend safety net for the background-upload model: if this client's own publish call never lands
+    // (process killed, crash, or network loss after the draft is created), BetaHub auto-publishes the draft
+    // after this delay so a report is never stranded as an invisible draft. Sent as a top-level Fugit
+    // duration string relative to now; requires draft=true (always sent above). The client normally
+    // publishes within seconds of the upload finishing, flipping the issue to 'open' - after which the
+    // backend sweep skips it - so this only fires for a genuinely lost publish. Kept comfortably longer
+    // than a normal upload+publish so a slow-but-healthy client is never pre-empted.
+    // See betahub-backend issues_controller#apply_auto_publish_schedule! / parse_publish_after.
+    const FString PublishAfterSafetyNet = TEXT("10m");
+    InitialRequest->AddField(TEXT("publish_after"), PublishAfterSafetyNet);
+
     // Handle release information
     FString FinalReleaseLabel = ReleaseLabel;
     if (FinalReleaseLabel.IsEmpty() && !Settings->ReleaseLabel.IsEmpty())
