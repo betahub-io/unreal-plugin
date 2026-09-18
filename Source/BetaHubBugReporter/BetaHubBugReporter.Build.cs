@@ -66,11 +66,14 @@ public class BetaHubBugReporter : ModuleRules
 					"AVCodecsCoreRHI",
 				}
 				);
-			PrivateDefinitions.Add("WITH_BETAHUB_HWENCODE=1");
+			// Public, not Private: BH_GameRecorder.h is a public header and gates member
+			// declarations on this macro, so a consuming C++ module must see the same value
+			// the plugin was built with or the two disagree on UBH_GameRecorder's layout (ODR).
+			PublicDefinitions.Add("WITH_BETAHUB_HWENCODE=1");
 		}
 		else
 		{
-			PrivateDefinitions.Add("WITH_BETAHUB_HWENCODE=0");
+			PublicDefinitions.Add("WITH_BETAHUB_HWENCODE=0");
 		}
 		
 		
