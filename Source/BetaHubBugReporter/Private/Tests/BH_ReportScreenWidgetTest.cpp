@@ -133,4 +133,32 @@ bool FBHScreenPadTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHClassicFormTest, "BetaHub.ReportScreen.Widget.ClassicFormStillWorks", BH_SCREEN_TEST_FLAGS)
+bool FBHClassicFormTest::RunTest(const FString& Parameters)
+{
+    // The classic form's widgets became optional for the report screen; its own asset must still bind them all.
+    UWorld* World = BH_ScreenTest::AnyWorld();
+    UClass* Class = LoadClass<UBH_ReportFormWidget>(nullptr, TEXT("/BetaHubBugReporter/BugReportForm.BugReportForm_C"));
+    if (!TestNotNull(TEXT("world"), World) || !TestNotNull(TEXT("BugReportForm asset"), Class))
+    {
+        return false;
+    }
+    UBH_ReportFormWidget* Form = CreateWidget<UBH_ReportFormWidget>(World, Class);
+    for (UWidget* Bound : {static_cast<UWidget*>(Form->CloseButton), static_cast<UWidget*>(Form->BugReportCheckBox),
+                           static_cast<UWidget*>(Form->SuggestionCheckBox), static_cast<UWidget*>(Form->BugDescriptionEdit),
+                           static_cast<UWidget*>(Form->StepsToReproduceLabel), static_cast<UWidget*>(Form->StepsToReproduceEdit),
+                           static_cast<UWidget*>(Form->IncludeGameplayVideoContainer), static_cast<UWidget*>(Form->IncludeVideoCheckbox),
+                           static_cast<UWidget*>(Form->IncludeLogsCheckbox), static_cast<UWidget*>(Form->IncludeLogsContainer),
+                           static_cast<UWidget*>(Form->IncludeScreenshotCheckbox), static_cast<UWidget*>(Form->SubmitButton),
+                           static_cast<UWidget*>(Form->SubmitLabel)})
+    {
+        TestNotNull(TEXT("classic widget bound"), Bound);
+    }
+    UBH_PluginSettings* Settings = NewObject<UBH_PluginSettings>(GetTransientPackage());
+    Form->Setup(Settings, nullptr, FString(), TEXT("LogTemp: Display: classic\n"), false);
+    TestFalse(TEXT("not the report screen"), Form->IsA<UBH_ReportScreenWidget>());
+    Form->MarkAsGarbage();
+    return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

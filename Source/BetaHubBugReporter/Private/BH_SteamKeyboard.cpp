@@ -28,7 +28,8 @@ namespace
     void* LoadedSteamApi()
     {
 #if PLATFORM_WINDOWS
-        return ::GetModuleHandleW(PLATFORM_64BITS ? L"steam_api64.dll" : L"steam_api.dll");
+        // Unreal 5 builds only 64-bit games.
+        return ::GetModuleHandleW(L"steam_api64.dll");
 #elif PLATFORM_LINUX
         return dlopen("libsteam_api.so", RTLD_NOW | RTLD_NOLOAD);
 #else
