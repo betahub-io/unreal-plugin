@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **A new report form.** A full-screen report screen over the paused game, played with a keyboard, a mouse or a controller, with each action shown in a prompt bar using the glyphs of the device in use (keyboard, Xbox, PlayStation, Switch). Players can switch between a bug report and a suggestion, leave out any attachment, and preview the screenshot, recent frames of play and the game log full screen before sending; after sending they can add an email to hear when the bug is fixed, or copy a link to the report. It is the new default; the previous form stays available - set *Report Form Widget Class* to `/BetaHubBugReporter/BugReportForm` to keep it.
+- *Report Form Widget Class* is now read each time the form opens, so changing it at runtime takes effect.
+
+### Added
+
+- *Report Widget* settings: six built-in colour themes or your own theme asset (accent colour and neutral tint), optional terms of bug reporting players must accept, and the minimum suggestion length (BetaHub refuses shorter suggestions).
+- Steam's floating keyboard for controller players on Steam Deck and in Big Picture, when the game uses Steamworks.
+- A progress toast while a report finishes uploading after the form has closed.
+- The fonts the form uses (Barlow, JetBrains Mono) and their SIL Open Font License texts, in `Licenses/`.
+
 ## 1.7.0 - 2026-09-14
 
 ### Changed

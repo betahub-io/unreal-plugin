@@ -7,6 +7,7 @@
 #include "BH_PluginSettings.h"
 #include "BH_ReportSubmission.h"
 #include "BH_ReportWidgets.h"
+#include "BH_SteamKeyboard.h"
 #include "BH_ThumbnailRing.h"
 #include "BH_WidgetStyler.h"
 #include "Blueprint/WidgetTree.h"
@@ -30,6 +31,7 @@
 #include "HAL/PlatformApplicationMisc.h"
 #include "HAL/PlatformFileManager.h"
 #include "ImageUtils.h"
+#include "TextureResource.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 
@@ -55,11 +57,13 @@ namespace
     constexpr int32 FramesPerRow = 3;
     constexpr int32 FrameRows = 2;
     constexpr int32 FullScreenLogLines = 200;
+    /** The game viewport's Slate widget, where focus returns after alt-tab. */
+    const FName ViewportWidgetType(TEXT("SViewport"));
     /** Above the game's own HUD. */
     constexpr int32 ToastZOrder = 100;
     /** Frame cells: 12px from the pane, 4px between columns, 8px between rows (Unity's percentages at 1080p). */
     const FMargin FrameSlotPadding(2.0f, 4.0f);
-    const FText Separator = FText::AsCultureInvariant(TEXT(" · "));
+    const FText Separator = FText::AsCultureInvariant(TEXT(" \u00B7 "));
 
     FText Caps(const FText& Text)
     {
@@ -953,6 +957,21 @@ void UBH_ReportScreenWidget::StartTyping(EBH_Field Field)
         Input->SetUserFocus(Player);
     }
     Input->SetKeyboardFocus();
+    // A controller player gets Steam's floating keyboard where there is one (Steam Deck, Big Picture).
+    if (GlyphSet != EBH_GlyphSet::Keyboard && FSlateApplication::IsInitialized())
+    {
+        const FGeometry& Geometry = Input->GetCachedGeometry();
+        FVector2D Origin = Geometry.GetAbsolutePosition();
+        if (TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(TakeWidget()))
+        {
+            Origin -= Window->GetPositionInScreen();
+        }
+        const FVector2D Size = Geometry.GetAbsoluteSize();
+        const FIntRect FieldRect(FIntPoint(FMath::RoundToInt(Origin.X), FMath::RoundToInt(Origin.Y)),
+                             FIntPoint(FMath::RoundToInt(Origin.X + Size.X), FMath::RoundToInt(Origin.Y + Size.Y)));
+        const EBH_SteamKeyboardMode Mode = Input == EmailInput ? EBH_SteamKeyboardMode::Email : EBH_SteamKeyboardMode::MultipleLines;
+        bSteamKeyboardOpen = BH_SteamKeyboard::Show(Mode, FieldRect);
+    }
     // Continue where the text ends, as the Unity widget does.
     if (UMultiLineEditableText* Multi = Cast<UMultiLineEditableText>(Input))
     {
@@ -967,6 +986,11 @@ void UBH_ReportScreenWidget::StartTyping(EBH_Field Field)
 
 void UBH_ReportScreenWidget::StopTyping()
 {
+    if (bSteamKeyboardOpen)
+    {
+        bSteamKeyboardOpen = false;
+        BH_SteamKeyboard::Dismiss();
+    }
     bool bTyping = false;
     bool bEmail = false;
     TypingFieldNow(bTyping, bEmail);
@@ -1024,7 +1048,10 @@ void UBH_ReportScreenWidget::Close()
         }
         if (!Submission->IsFinished() && UploadToastClass)
         {
-            if (UBH_UploadToastWidget* Toast = CreateWidget<UBH_UploadToastWidget>(GetOwningPlayer(), UploadToastClass))
+            UBH_UploadToastWidget* Toast = GetOwningPlayer()
+                ? CreateWidget<UBH_UploadToastWidget>(GetOwningPlayer(), UploadToastClass)
+                : CreateWidget<UBH_UploadToastWidget>(GetWorld(), UploadToastClass);
+            if (Toast)
             {
                 Toast->Observe(Submission, Theme);
                 Toast->AddToViewport(ToastZOrder);
@@ -1165,11 +1192,26 @@ void UBH_ReportScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDel
     const EBH_Field Field = TypingFieldNow(bTyping, bEmail);
     if (bTyping != bWasTyping || (bTyping && (Field != WasField || bEmail != bWasEmail)))
     {
+        if (!bTyping && bSteamKeyboardOpen)
+        {
+            bSteamKeyboardOpen = false;
+            BH_SteamKeyboard::Dismiss();
+        }
         if (bTyping && !bEmail)
         {
             S.Focus.FocusField(Field);
         }
         Render();
+    }
+    // Focus back on the game viewport or nowhere (alt-tab, a click outside the form): take it
+    // back, or keys and pads would reach the game under the form. Another widget keeps it.
+    if (!bClosing && IsInViewport() && FSlateApplication::IsInitialized() && !HasAnyUserFocus() && !HasFocusedDescendants())
+    {
+        const TSharedPtr<SWidget> Focused = FSlateApplication::Get().GetUserFocusedWidget(FSlateApplication::Get().GetUserIndexForKeyboard());
+        if (!Focused.IsValid() || Focused->GetType() == ViewportWidgetType)
+        {
+            FocusSelf();
+        }
     }
     UpdatePaneSizes();
     UpdateHover();
@@ -1479,7 +1521,7 @@ void UBH_ReportScreenWidget::RenderPane()
 
     CaptionLeft->SetText(Item
         ? Caps(Item->Meta.IsEmpty() ? Item->Name : FText::Format(LOCTEXT("NameMeta", "{0}{1}{2}"), Item->Name, Separator, Item->Meta))
-        : LOCTEXT("ScreenshotCaption", "YOUR SCREENSHOT · THIS FRAME"));
+        : LOCTEXT("ScreenshotCaption", "YOUR SCREENSHOT \u00B7 THIS FRAME"));
     if (Item)
     {
         CaptionRightText->SetText(LOCTEXT("FullScreen", "Full screen"));
@@ -1559,17 +1601,17 @@ void UBH_ReportScreenWidget::RenderPreview()
     if (Item->Id == BH_AttachmentIds::Screenshot)
     {
         Describe = ScreenshotTexture
-            ? FText::Format(LOCTEXT("PreviewShot", "{0} × {1} · the frame under this form"),
+            ? FText::Format(LOCTEXT("PreviewShot", "{0} \u00D7 {1} \u00B7 the frame under this form"),
                             FText::AsNumber(ScreenshotTexture->GetSizeX()), FText::AsNumber(ScreenshotTexture->GetSizeY()))
             : LOCTEXT("PreviewShotNoSize", "The frame under this form");
     }
     else if (Item->Kind == EBH_AttachmentKind::Clip)
     {
-        Describe = LOCTEXT("PreviewClip", "One frame every 10 s · ends when you opened this");
+        Describe = LOCTEXT("PreviewClip", "One frame every 10 s \u00B7 ends when you opened this");
     }
     else if (Item->Kind == EBH_AttachmentKind::Log)
     {
-        Describe = LOCTEXT("PreviewLog", "Last lines · the full file is sent");
+        Describe = LOCTEXT("PreviewLog", "Last lines \u00B7 the full file is sent");
     }
     else
     {

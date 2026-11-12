@@ -66,7 +66,7 @@ bool FBHScreenE2ETest::RunTest(const FString& Parameters)
     {
         return false;
     }
-    TestEqual(TEXT("sending prompt"), Screen->Prompts(true), TArray<FString>{TEXT("Sending…")});
+    TestEqual(TEXT("sending prompt"), Screen->Prompts(true), TArray<FString>{TEXT("Sending\u2026")});
     TestTrue(TEXT("form locked"), Screen->Find<UWidget>(TEXT("Form"))->GetRenderOpacity() < 1.0f);
     if (bRenders)
     {
@@ -97,7 +97,7 @@ bool FBHScreenE2ETest::RunTest(const FString& Parameters)
                 return false;
             }
             TestEqual(TEXT("sent title"), Screen->Text(TEXT("Title")), FString(TEXT("REPORT SENT")));
-            TestEqual(TEXT("sent subtitle"), Screen->Text(TEXT("Subtitle")), FString::Printf(TEXT("#%s · saved anonymously"), *S->GetIssueId()));
+            TestEqual(TEXT("sent subtitle"), Screen->Text(TEXT("Subtitle")), FString::Printf(TEXT("#%s \u00B7 saved anonymously"), *S->GetIssueId()));
             TestEqual(TEXT("sent prompts"), Screen->Prompts(false), TArray<FString>{TEXT("Write"), TEXT("Copy link"), TEXT("Back to game")});
             TestEqual(TEXT("email is the main action"), Screen->Prompts(true), TArray<FString>{TEXT("Email me a link")});
             TestTrue(TEXT("email field shown"), Screen->Shown(TEXT("EmailField")));

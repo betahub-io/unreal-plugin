@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "BH_GameRecorder.h"
+#include "BH_ReportSubmission.h"
 #include "BH_ReportScreenTestUtil.h"
 #include "Misc/CommandLine.h"
 
@@ -119,6 +120,22 @@ bool FBHScreenRendersTest::RunTest(const FString& Parameters)
             return false;
         }
         Render(Screen, 1920, 1080, TEXT("unavailable"));
+        Screen.Close();
+    }
+    {
+        // The toast over the running game: uploading, then failed.
+        FScreen Screen;
+        if (!Screen.Open(*this, Options()))
+        {
+            return false;
+        }
+        UBH_ReportSubmission* Submission = NewObject<UBH_ReportSubmission>(GetTransientPackage());
+        UBH_UploadToastWidget* Toast = CreateWidget<UBH_UploadToastWidget>(BH_ScreenTest::AnyWorld(), Screen.Widget->UploadToastClass);
+        Toast->Observe(Submission, BH_ThemeRecipe::BuiltIn(EBH_BuiltInTheme::Dark));
+        BH_ScreenTest::RenderSlate(Toast->TakeWidget(), 1920, 1080, TEXT("toast-uploading"));
+        AddExpectedError(TEXT("Bug report submission failed"), EAutomationExpectedErrorFlags::Contains, 1);
+        Submission->Fail(TEXT("Could not reach BetaHub. Check your connection."));
+        BH_ScreenTest::RenderSlate(Toast->TakeWidget(), 1920, 1080, TEXT("toast-failed"));
         Screen.Close();
     }
     AddInfo(FString::Printf(TEXT("Renders in %s"), *FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_ScreenRenders")))));

@@ -279,6 +279,7 @@ private:
     bool bPointer = false;
     bool bClosing = false;
     bool bLinkCopied = false;
+    bool bSteamKeyboardOpen = false;
     int32 PreviewIndex = 0;
     FDateTime CaptureTime;
 

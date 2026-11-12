@@ -42,7 +42,7 @@ bool FBHScreenComposeTest::RunTest(const FString& Parameters)
 
     Screen.Press(EKeys::Down);
     TestEqual(TEXT("attachment prompts"), Screen.Prompts(false), TArray<FString>{TEXT("Leave out"), TEXT("Full screen"), TEXT("Close")});
-    TestEqual(TEXT("caption follows focus"), Screen.Text(TEXT("CaptionLeft")), FString(TEXT("SCREENSHOT · THIS FRAME")));
+    TestEqual(TEXT("caption follows focus"), Screen.Text(TEXT("CaptionLeft")), FString(TEXT("SCREENSHOT \u00B7 THIS FRAME")));
     TestEqual(TEXT("caption action"), Screen.Text(TEXT("CaptionRightText")), FString(TEXT("Full screen")));
 
     Screen.Press(EKeys::Enter);
@@ -64,7 +64,7 @@ bool FBHScreenComposeTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("log tail lines"), Screen.Find<UVerticalBox>(TEXT("PreviewLogLines"))->GetChildrenCount(), 3);
     Screen.Press(EKeys::Escape);
     TestFalse(TEXT("preview closed"), Screen.Shown(TEXT("Preview")));
-    TestEqual(TEXT("focus returns to the previewed row"), Screen.Text(TEXT("CaptionLeft")), FString(TEXT("GAME LOG · ")) + Screen.RowText(1, TEXT("Meta")).ToUpper());
+    TestEqual(TEXT("focus returns to the previewed row"), Screen.Text(TEXT("CaptionLeft")), FString(TEXT("GAME LOG \u00B7 ")) + Screen.RowText(1, TEXT("Meta")).ToUpper());
 
     // Up through the grid and the fields to the type row; make it a suggestion.
     for (int32 i = 0; i < 4; ++i)

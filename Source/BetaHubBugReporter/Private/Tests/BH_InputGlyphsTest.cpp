@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "BH_InputGlyphs.h"
+#include "BH_SteamKeyboard.h"
 
 #define BH_INPUT_TEST_FLAGS (EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext \
     | EAutomationTestFlags::ServerContext | EAutomationTestFlags::CommandletContext | EAutomationTestFlags::ProductFilter)
@@ -49,6 +50,15 @@ bool FBHGlyphsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("DualSense"), PadSetForHardware(TEXT("DualSense")), EBH_GlyphSet::PlayStation);
     TestEqual(TEXT("Switch Pro"), PadSetForHardware(TEXT("SwitchProController")), EBH_GlyphSet::Switch);
     TestEqual(TEXT("anything else"), PadSetForHardware(TEXT("XInputController")), EBH_GlyphSet::Xbox);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSteamKeyboardTest, "BetaHub.Input.SteamKeyboardWithoutSteam", BH_INPUT_TEST_FLAGS)
+bool FBHSteamKeyboardTest::RunTest(const FString& Parameters)
+{
+    // The editor has no Steamworks loaded: the form must fall back to the focused field, quietly.
+    TestFalse(TEXT("no floating keyboard without Steam"), BH_SteamKeyboard::Show(EBH_SteamKeyboardMode::Email, FIntRect(0, 0, 100, 40)));
+    BH_SteamKeyboard::Dismiss();
     return true;
 }
 

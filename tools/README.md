@@ -211,8 +211,26 @@ The full syntax is in the module docstring. What matters day to day:
   child's slot; the compiler fills whichever side you left out and refuses a contradiction.
 - Text without `key=` is culture-invariant (`INVTEXT`), as before.
 
-`tools/tests/fixtures/LayoutProbe.umg.xml` is a worked example: the direction-B compose
-screen, built and rendered on UE 5.3 at three sizes.
+`widgets/BH_ReportScreen.umg.xml` and its siblings are the shipped example: the report
+screen and the rows, prompts, glyphs, frames and toast it is built from, all sharing
+`widgets/BH_Widgets.umg.css`.
+
+### Runtime styles
+
+A stylesheet does more than build the asset:
+
+- `var(--bh-*)` values are the theme. Every property set from one is re-coloured when the game
+  picks another theme (`FBH_WidgetStyler::SetTheme`); the stylesheet's values are the Dark theme.
+- A rule with a widget type and a class (`Border.row--focused`) is a state the game switches at
+  runtime (`FBH_WidgetStyler::SetClass`). Such classes may not appear in markup: baked into the
+  asset they could never be switched off. Rules with a class only are applied at build time.
+
+```sh
+python3 tools/umg_markup.py styles    # writes Source/.../Private/Generated/BH_WidgetStyles.inl
+```
+
+`check` fails when that file is stale. A new widget asset needs its C++ parent class (binding its
+named widgets) before it can be generated; the generator creates it with `"createIfMissing": true`.
 
 ## Fonts
 

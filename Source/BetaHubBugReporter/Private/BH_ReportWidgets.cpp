@@ -381,14 +381,21 @@ void UBH_UploadToastWidget::Refresh()
         }
         return;
     }
-    const float Progress = Submission->GetUploadProgress();
-    const int32 Percent = FMath::Clamp(FMath::FloorToInt(Progress * 100.0f), 0, 99);
     Title->SetText(LOCTEXT("ToastUploading", "UPLOADING YOUR REPORT"));
-    Subtitle->SetText(FText::Format(LOCTEXT("ToastUploadingSub", "{0}% · the game continues"), FText::AsNumber(Percent)));
     ArcColor = FLinearColor(Colors.Accent);
-    // Nothing measurable yet (publishing, or only inline attachments): spin a short arc instead.
-    bSpinning = Progress <= 0.0f;
-    Sweep = bSpinning ? SpinnerSweep : Progress;
+    // Uploads done (or none to make) and the report still publishing: nothing left to measure.
+    bSpinning = Submission->IsMediaUploadComplete();
+    if (bSpinning)
+    {
+        Subtitle->SetText(LOCTEXT("ToastFinishing", "Finishing \u00B7 the game continues"));
+        Sweep = SpinnerSweep;
+        return;
+    }
+    const float Progress = Submission->GetUploadProgress();
+    // Rounded down, so 100% only ever means done.
+    const int32 Percent = FMath::Clamp(FMath::FloorToInt(Progress * 100.0f), 0, 99);
+    Subtitle->SetText(FText::Format(LOCTEXT("ToastUploadingSub", "{0}% \u00B7 the game continues"), FText::AsNumber(Percent)));
+    Sweep = Progress;
 }
 
 void UBH_UploadToastWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

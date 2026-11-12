@@ -17,6 +17,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "HAL/FileManager.h"
 #include "Kismet/KismetRenderingLibrary.h"
+#include "RenderingThread.h"
 #include "Slate/WidgetRenderer.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
@@ -184,8 +185,8 @@ namespace BH_ScreenTest
     /** UE's default DPI curve scales by the shortest side, 1.0 at 1080. */
     inline constexpr float ReferenceHeight = 1080.0f;
 
-    /** Draw the screen as the player sees it and write Saved/BH_ScreenRenders/<Name>.png. Needs a real RHI. */
-    inline void Render(FScreen& Screen, int32 Width, int32 Height, const FString& Name)
+    /** Draw a widget as the player sees it and write Saved/BH_ScreenRenders/<Name>.png. Needs a real RHI. */
+    inline void RenderSlate(const TSharedRef<SWidget>& Slate, int32 Width, int32 Height, const FString& Name)
     {
         UWorld* World = AnyWorld();
         UTextureRenderTarget2D* Target = UKismetRenderingLibrary::CreateRenderTarget2D(World, Width, Height, RTF_RGBA8);
@@ -193,12 +194,17 @@ namespace BH_ScreenTest
         const float Scale = Height / ReferenceHeight;
         for (int32 Frame = 0; Frame < SettleFrames; ++Frame)
         {
-            Renderer.DrawWidget(Target, Screen.Slate.ToSharedRef(), Scale, FVector2D(Width, Height), FrameSeconds);
+            Renderer.DrawWidget(Target, Slate, Scale, FVector2D(Width, Height), FrameSeconds);
         }
         FlushRenderingCommands();
         const FString Directory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_ScreenRenders"));
         IFileManager::Get().MakeDirectory(*Directory, true);
         UKismetRenderingLibrary::ExportRenderTarget(World, Target, Directory, Name + TEXT(".png"));
+    }
+
+    inline void Render(FScreen& Screen, int32 Width, int32 Height, const FString& Name)
+    {
+        RenderSlate(Screen.Slate.ToSharedRef(), Width, Height, Name);
     }
 }
 
