@@ -12,7 +12,7 @@
 - *Report Widget* settings: six built-in colour themes or your own theme asset (accent colour and neutral tint), optional terms of bug reporting players must accept, and the minimum suggestion length (BetaHub refuses shorter suggestions).
 - Steam's floating keyboard for controller players on Steam Deck and in Big Picture, when the game uses Steamworks.
 - A progress toast while a report finishes uploading after the form has closed.
-- The fonts the form uses (Barlow, JetBrains Mono) and their SIL Open Font License texts, in `Licenses/`.
+- The fonts the form uses (Barlow, JetBrains Mono) and their SIL Open Font License texts, in `Resources/Licenses/`.
 
 ## 1.7.0 - 2026-09-14
 

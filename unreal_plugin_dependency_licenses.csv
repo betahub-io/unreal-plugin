@@ -1,4 +1,4 @@
 Repository,Package Manager,Library Name,Version,License,License Type
 unreal-plugin,External (user-provided),ffmpeg,7.1 or later (not bundled),LGPL-2.1/GPL (depends on build config),Copyleft (Weak)
-unreal-plugin,Bundled (Content/Fonts),Barlow and Barlow Semi Condensed (fonts),1.408,SIL Open Font License 1.1 (Licenses/Barlow-OFL.txt),Permissive
-unreal-plugin,Bundled (Content/Fonts),JetBrains Mono (font),2.305,SIL Open Font License 1.1 (Licenses/JetBrainsMono-OFL.txt),Permissive
+unreal-plugin,Bundled (Content/Fonts),Barlow and Barlow Semi Condensed (fonts),1.408,SIL Open Font License 1.1 (Resources/Licenses/Barlow-OFL.txt),Permissive
+unreal-plugin,Bundled (Content/Fonts),JetBrains Mono (font),2.305,SIL Open Font License 1.1 (Resources/Licenses/JetBrainsMono-OFL.txt),Permissive
