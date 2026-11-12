@@ -18,7 +18,11 @@ Reads bh_generate_config.json from its own directory:
      "exportDir": "C:/.../gen_export"}
 
 RootWidget cannot be written from Python, so generation starts from a seed
-asset and rebuilds everything below its existing root. The root's own class
+asset and rebuilds everything below its existing root. For a widget that has
+no asset yet, set "seed" equal to "target" and add "createIfMissing": true:
+the asset is then created with the JSON's parent class and root (the root is
+written through BHWidgetGenLibrary). An existing asset whose parent class
+differs from the JSON's is reparented. The root's own class
 and name therefore come from the seed, not the JSON, and the two must agree.
 
 Property failures are collected rather than raised, so a single run reports
@@ -278,6 +282,52 @@ def build(node, parent, tree, depth=0):
 # ---------------------------------------------------------------- main
 
 
+def resolve_class(name):
+    """unreal.<name> as a UClass; parent classes in the JSON are short C++ names."""
+    cls = getattr(unreal, name, None)
+    if cls is None:
+        raise RuntimeError("class %r is not loaded in this editor" % name)
+    return cls.static_class()
+
+
+def create_widget_asset(target, doc):
+    """A new WidgetBlueprint with the JSON's parent class and root widget.
+
+    Python cannot write WidgetTree.RootWidget, so the root is set through
+    BHWidgetGenLibrary.ApplyPropertyText, as everything else Python cannot reach."""
+    if HELPER is None:
+        raise RuntimeError("creating a widget asset needs BHWidgetGenLibrary")
+    folder, name = target.rsplit("/", 1)
+    factory = unreal.WidgetBlueprintFactory()
+    factory.set_editor_property("parent_class", resolve_class(doc["parentClass"]))
+    bp = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+        name, folder, unreal.WidgetBlueprint, factory)
+    if bp is None:
+        raise RuntimeError("could not create %s" % target)
+    tree = unreal.load_object(None, "%s.%s:WidgetTree" % (target, name))
+    root_spec = doc["root"]
+    root_cls = resolve_class(root_spec["class"])
+    unreal.new_object(getattr(unreal, root_spec["class"]), outer=tree, name=root_spec["name"])
+    ref = "%s'%s.%s:WidgetTree.%s'" % (root_cls.get_path_name(), target, name, root_spec["name"])
+    if not HELPER.apply_property_text(tree, "RootWidget", ref):
+        raise RuntimeError("could not set the root of %s" % target)
+    unreal.BlueprintEditorLibrary.compile_blueprint(bp)
+    if not unreal.EditorAssetLibrary.save_asset(target, only_if_is_dirty=False):
+        raise RuntimeError("could not save new asset %s" % target)
+    return bp
+
+
+def match_parent(bp, parent_name):
+    """Reparent when the JSON names a different parent class than the asset has."""
+    if not parent_name or HELPER is None:
+        return
+    current = HELPER.export_property_text(bp, "ParentClass")
+    if current.rstrip("'").endswith("." + parent_name):
+        return
+    log("reparent     : %s -> %s" % (current, parent_name))
+    unreal.BlueprintEditorLibrary.reparent_blueprint(bp, resolve_class(parent_name))
+
+
 def run(cfg=None):
     """Generate one widget. Returns (ok, problems). Importable so the
     combined build driver can generate and render in a single editor
@@ -321,14 +371,22 @@ def run(cfg=None):
         log("seed asset   : %s" % seed)
         log("target asset : %s" % target)
 
+        if target == seed and cfg.get("createIfMissing") \
+                and not unreal.EditorAssetLibrary.does_asset_exist(target):
+            bp = create_widget_asset(target, doc)
+            log("created %s (parent %s, root %s %s)" % (target, doc["parentClass"],
+                                                        doc["root"]["class"], doc["root"]["name"]))
         if target == seed:
             # In-place regeneration: the asset is its own seed. This is how the
             # real Content/*.uasset are produced - the root survives (RootWidget
             # cannot be written from Python) and everything below it is rebuilt.
             bp = unreal.load_asset(target)
             if bp is None:
-                raise RuntimeError("could not load %s for in-place rebuild" % target)
+                raise RuntimeError("could not load %s for in-place rebuild%s" % (
+                    target, "" if cfg.get("createIfMissing")
+                    else ' (set "createIfMissing": true to create it)'))
             log("in-place regeneration (seed == target)")
+            match_parent(bp, doc.get("parentClass"))
         else:
             if unreal.EditorAssetLibrary.does_asset_exist(target):
                 unreal.EditorAssetLibrary.delete_asset(target)
