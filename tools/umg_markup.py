@@ -111,6 +111,14 @@ SELECTOR_RE = re.compile(r"^(?P<type>[A-Za-z_]\w*)?(?P<rest>(?:[.#][A-Za-z_][\w-
 PROP_RE = re.compile(r"^[A-Za-z_][\w.]*$")
 TOKEN_RE = re.compile(r"^--[A-Za-z0-9_-]+$")
 MAX_TOKEN_DEPTH = 16
+# Tokens a theme supplies at runtime (FBH_ThemeColors). Their :root values are the
+# compile-time defaults; every property set from one is re-coloured when the theme changes.
+THEME_PREFIX = "--bh-"
+THEME_TOKENS = {"ground", "surface", "surface-hi", "line", "text", "muted", "accent", "on-accent",
+                "ok", "warn", "err", "field", "field-hi", "bar", "scrim", "radius"}
+WHOLE_VAR_RE = re.compile(r"^\s*var\(\s*(--[A-Za-z0-9_-]+)\s*\)\s*$")
+DEFAULT_STYLES_OUT = os.path.join(REPO, "Source", "BetaHubBugReporter", "Private", "Generated",
+                                  "BH_WidgetStyles.inl")
 
 
 class MarkupError(ValueError):
@@ -410,6 +418,31 @@ def resolve_tokens(raw, tokens, where, depth=0):
     return VAR_RE.sub(sub, raw)
 
 
+def theme_token(raw, tokens, where, depth=0):
+    """The theme token a value *is* (alias chains followed), or None. A theme token
+    inside a larger value cannot be re-applied at runtime, so it is refused."""
+    if depth > MAX_TOKEN_DEPTH:
+        raise MarkupError("%s: tokens refer to each other in a loop" % where)
+    m = WHOLE_VAR_RE.match(raw)
+    if m:
+        name = m.group(1)
+        if name.startswith(THEME_PREFIX):
+            token = name[len(THEME_PREFIX):]
+            if token not in THEME_TOKENS:
+                raise MarkupError("%s: %s is not a theme token (%s)"
+                                  % (where, name, ", ".join(sorted(THEME_TOKENS))))
+            return token
+        if name not in tokens:
+            raise MarkupError("%s: undefined token %s" % (where, name))
+        return theme_token(tokens[name], tokens, where, depth + 1)
+    for name in VAR_RE.findall(raw):
+        if name.startswith(THEME_PREFIX) or (name in tokens
+                                             and theme_token(tokens[name], tokens, where, depth + 1)):
+            raise MarkupError("%s: theme token %s must be the whole value, not part of %r"
+                              % (where, name, raw))
+    return None
+
+
 def matches(selector, cls, name, classes):
     return ((selector["type"] is None or selector["type"] == cls)
             and selector["classes"] <= classes
@@ -428,6 +461,10 @@ class Compiler:
         self.rules = sorted(rules, key=lambda r: (r[0], r[1]))
         self.used = set()
         self.counters = {}
+        # widget name -> {property path: theme token}, for runtime theming
+        self.bindings = {}
+        # widget name -> style classes from the markup
+        self.base_classes = {}
 
     def reserve_names(self, el):
         for e in el.iter():
@@ -466,7 +503,15 @@ class Compiler:
 
         props, slot_props = {}, {}
         slot_cls = schema()[parent_cls]["slotClass"] if parent_cls else None
+        if classes:
+            self.base_classes[name] = sorted(classes)
+        bound = self.bindings.setdefault(name, {})
         for path, raw in decls:
+            token = theme_token(raw, self.tokens, where)
+            for key in [k for k in bound if k == path or k.startswith(path + ".")]:
+                del bound[key]
+            if token:
+                bound[path] = token
             raw = resolve_tokens(raw, self.tokens, where)
             if path.startswith(SLOT_PREFIX):
                 if slot_cls is None:
@@ -507,6 +552,8 @@ class Compiler:
         if max_children > 0 and len(kids) > max_children:
             raise MarkupError("%s takes at most %d child" % (where, max_children))
 
+        if not bound:
+            del self.bindings[name]
         out = {"name": name, "class": cls, "properties": props}
         if kids:
             out["children"] = [self.node(k, cls) for k in kids]
@@ -541,6 +588,11 @@ def _slots(node):
 
 
 def compile_markup(markup, styles=None, base_dir=None):
+    return _compile(markup, styles, base_dir)[0]
+
+
+def _compile(markup, styles=None, base_dir=None):
+    """-> (widget JSON, the Compiler that built it, the stylesheet's id or None)."""
     try:
         top = ET.fromstring(markup)
     except ET.ParseError as exc:
@@ -550,6 +602,9 @@ def compile_markup(markup, styles=None, base_dir=None):
     for attr in ("asset", "parent"):
         if not top.get(attr):
             raise MarkupError("<Widget> needs %s=" % attr)
+    sheet = None
+    if top.get("styles"):
+        sheet = os.path.basename(top.get("styles")).split(".")[0]
     if styles is None and top.get("styles"):
         if base_dir is None:
             raise MarkupError("styles=%r needs the markup's directory" % top.get("styles"))
@@ -564,13 +619,138 @@ def compile_markup(markup, styles=None, base_dir=None):
     compiler.reserve_names(roots[0])
     root = compiler.node(roots[0], None)
     count = _count(root)
-    return {
+    doc = {
         "$schema": SCHEMA_ID,
         "asset": top.get("asset"),
         "parentClass": top.get("parent"),
         "root": root,
         "_stats": {"widgetsReachable": count, "widgetsInTree": count, "slots": _slots(root)},
     }
+    return doc, compiler, sheet
+
+
+# --------------------------------------------------------------------------
+# runtime styles
+# --------------------------------------------------------------------------
+
+def to_t3d(value, nested=False):
+    """A JSON property value as the text FProperty::ImportText reads."""
+    if isinstance(value, dict) and "__text__" in value:
+        literal = (value["__text__"].replace("\\", "\\\\").replace('"', '\\"')
+                   .replace("\r", "\\r").replace("\n", "\\n"))
+        if value.get("__key__"):
+            return 'NSLOCTEXT("", "%s", "%s")' % (value["__key__"], literal)
+        return 'INVTEXT("%s")' % literal
+    if isinstance(value, dict) and "__ref__" in value:
+        ref = "%s'%s'" % (value["__class__"], value["__ref__"])
+        return '"%s"' % ref if nested else ref
+    if isinstance(value, dict):
+        return "(%s)" % ",".join("%s=%s" % (k, to_t3d(v, True)) for k, v in value.items())
+    if isinstance(value, bool):
+        return "True" if value else "False"
+    if isinstance(value, float):
+        return "%f" % value
+    if isinstance(value, int):
+        return str(value)
+    return str(value)
+
+
+def runtime_rules(sheet, styles):
+    """Rules a game can switch on at runtime: a type plus at least one class, no #name.
+    The type makes each value typeable now, so the game only imports finished text."""
+    tokens, rules = parse_styles(styles)
+    out = []
+    for spec, order, selector, decls in rules:
+        if not selector["type"] or not selector["classes"] or selector["ids"]:
+            continue
+        cls = selector["type"]
+        where = "%s: %s.%s" % (sheet, cls, ".".join(sorted(selector["classes"])))
+        if cls not in schema():
+            raise MarkupError("%s: not a UMG widget class" % where)
+        out_decls = []
+        for path, raw in decls:
+            if path.startswith(SLOT_PREFIX):
+                raise MarkupError("%s: a runtime rule cannot set %s - the slot depends on the parent"
+                                  % (where, path))
+            parts = path.split(".")
+            check_path(cls, parts, where)
+            token = theme_token(raw, tokens, where)
+            if token:
+                out_decls.append((path, None, token))
+            else:
+                value = parse_value(cls, parts, resolve_tokens(raw, tokens, where), where + " " + path)
+                out_decls.append((path, to_t3d(value), None))
+        out.append({"sheet": sheet, "type": cls, "classes": sorted(selector["classes"]),
+                    "specificity": spec[0] * 10000 + spec[1] * 100 + spec[2], "order": order,
+                    "decls": out_decls})
+    return out
+
+
+def collect_runtime_styles(markup_paths):
+    """Theme bindings, markup classes and runtime rules of a set of markup files."""
+    assets, rules, sheets_seen = [], [], set()
+    for path in sorted(markup_paths):
+        base_dir = os.path.dirname(os.path.abspath(path))
+        with open(path, "r", encoding="utf-8") as fh:
+            markup = fh.read()
+        doc, compiler, sheet = _compile(markup, base_dir=base_dir)
+        assets.append({"asset": doc["asset"], "sheet": sheet,
+                       "bindings": sorted((w, p, t) for w, paths in compiler.bindings.items()
+                                          for p, t in paths.items()),
+                       "classes": sorted(compiler.base_classes.items())})
+        if sheet and sheet not in sheets_seen:
+            sheets_seen.add(sheet)
+            styles_path = os.path.join(base_dir, ET.fromstring(markup).get("styles"))
+            with open(styles_path, "r", encoding="utf-8") as fh:
+                rules.extend(runtime_rules(sheet, fh.read()))
+    return assets, rules
+
+
+def cpp_string(s):
+    if s is None:
+        return "nullptr"
+    return 'TEXT("%s")' % s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def render_styles_inl(assets, rules):
+    """C++ tables for FBH_WidgetStyler (Private/BH_WidgetStyler.cpp includes them)."""
+    lines = ["// Generated by tools/umg_markup.py styles from widgets/*.umg.xml and their stylesheets.",
+             "// Do not edit: change the markup or stylesheet and regenerate.",
+             "", "static const FBH_StyleDecl GBH_StyleDecls[] = {"]
+    first, decl_index = [], 0
+    for rule in rules:
+        first.append(decl_index)
+        for path, value, token in rule["decls"]:
+            lines.append("    {%s, %s, %s}," % (cpp_string(path), cpp_string(value), cpp_string(token)))
+            decl_index += 1
+    lines += ["    {nullptr, nullptr, nullptr},", "};", "", "static const FBH_StyleRule GBH_StyleRules[] = {"]
+    for rule, start in zip(rules, first):
+        lines.append("    {%s, %s, %s, %d, %d, %d, %d}," % (
+            cpp_string(rule["sheet"]), cpp_string(rule["type"]), cpp_string(" ".join(rule["classes"])),
+            rule["specificity"], rule["order"], start, len(rule["decls"])))
+    lines += ["    {nullptr, nullptr, nullptr, 0, 0, 0, 0},", "};", "",
+              "static const FBH_ThemeBinding GBH_ThemeBindings[] = {"]
+    for a in assets:
+        for widget, path, token in a["bindings"]:
+            lines.append("    {%s, %s, %s, %s}," % (cpp_string(a["asset"]), cpp_string(widget),
+                                                    cpp_string(path), cpp_string(token)))
+    lines += ["    {nullptr, nullptr, nullptr, nullptr},", "};", "",
+              "static const FBH_BaseClasses GBH_BaseClasses[] = {"]
+    for a in assets:
+        for widget, classes in a["classes"]:
+            lines.append("    {%s, %s, %s}," % (cpp_string(a["asset"]), cpp_string(widget),
+                                                cpp_string(" ".join(classes))))
+    lines += ["    {nullptr, nullptr, nullptr},", "};", "",
+              "static const FBH_AssetSheet GBH_AssetSheets[] = {"]
+    for a in assets:
+        lines.append("    {%s, %s}," % (cpp_string(a["asset"]), cpp_string(a["sheet"])))
+    lines += ["    {nullptr, nullptr},", "};", ""]
+    return "\n".join(lines)
+
+
+def styles_inl(directory):
+    paths = glob.glob(os.path.join(directory, "*" + MARKUP_SUFFIX))
+    return render_styles_inl(*collect_runtime_styles(paths))
 
 
 def compile_file(path):
@@ -749,9 +929,18 @@ def write_json(doc, path):
         fh.write("\n")
 
 
-def check(directory):
-    """Every markup source compiles to exactly its committed JSON."""
+def check(directory, styles_out=None):
+    """Every markup source compiles to exactly its committed JSON, and the generated
+    style tables match the markup."""
     stale = []
+    if styles_out and glob.glob(os.path.join(directory, "*" + MARKUP_SUFFIX)):
+        expected = styles_inl(directory)
+        if not os.path.exists(styles_out):
+            stale.append("%s is missing - run: umg_markup.py styles" % styles_out)
+        else:
+            with open(styles_out, "r", encoding="utf-8") as fh:
+                if fh.read() != expected:
+                    stale.append("%s is out of date - run: umg_markup.py styles" % styles_out)
     for path in sorted(glob.glob(os.path.join(directory, "*" + MARKUP_SUFFIX))):
         target = json_path_for(path)
         compiled = compile_file(path)
@@ -776,6 +965,9 @@ def main(argv=None):
     d.add_argument("-o", "--out", help="default: stdout")
     k = sub.add_parser("check", help="every *.umg.xml matches its committed .json")
     k.add_argument("--dir", default=WIDGETS_DIR)
+    st = sub.add_parser("styles", help="runtime style tables for the C++ styler")
+    st.add_argument("--dir", default=WIDGETS_DIR)
+    st.add_argument("-o", "--out", default=DEFAULT_STYLES_OUT)
     args = ap.parse_args(argv)
 
     try:
@@ -794,8 +986,13 @@ def main(argv=None):
                 print("wrote %s" % args.out, file=sys.stderr)
             else:
                 sys.stdout.write(markup)
+        elif args.cmd == "styles":
+            os.makedirs(os.path.dirname(args.out), exist_ok=True)
+            with open(args.out, "w", encoding="utf-8") as fh:
+                fh.write(styles_inl(args.dir))
+            print("wrote %s" % args.out, file=sys.stderr)
         else:
-            stale = check(args.dir)
+            stale = check(args.dir, DEFAULT_STYLES_OUT if args.dir == WIDGETS_DIR else None)
             for s in stale:
                 print(s)
             if stale:

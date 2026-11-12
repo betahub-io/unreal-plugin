@@ -150,6 +150,74 @@ class MirrorTests(unittest.TestCase):
                          {"X": 10.0, "Y": 10.0, "Z": 10.0, "W": 10.0})
 
 
+class RuntimeStyleTests(unittest.TestCase):
+
+    SHEET = """
+        :root { --bh-accent: #FF7A59; --bh-radius: 10; --brand: var(--bh-accent); --gap: 4; }
+        Border.focused { Background.TintColor: var(--bh-accent); Padding: 15 12;
+                         Background.OutlineSettings.CornerRadii: var(--bh-radius); }
+        .plain { Padding: 1; }
+    """
+
+    def write(self, tmp, markup, sheet=None):
+        with open(os.path.join(tmp, "s.umg.css"), "w") as fh:
+            fh.write(sheet or self.SHEET)
+        with open(os.path.join(tmp, "T.umg.xml"), "w") as fh:
+            fh.write('<Widget asset="T" parent="UserWidget" styles="s.umg.css">%s</Widget>' % markup)
+
+    def test_theme_bindings_follow_aliases(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(tmp, '<Border name="Box" class="plain" BrushColor="var(--brand)"/>')
+            assets, rules = umg_markup.collect_runtime_styles([os.path.join(tmp, "T.umg.xml")])
+        self.assertEqual(assets[0]["bindings"], [("Box", "BrushColor", "accent")])
+        self.assertEqual(assets[0]["classes"], [("Box", ["plain"])])
+        self.assertEqual(assets[0]["sheet"], "s")
+
+    def test_later_literal_drops_the_binding(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(tmp, '<Border name="Box" BrushColor="var(--bh-accent)"/>',
+                       self.SHEET + "Border { BrushColor: #000000; }")
+            assets, _ = umg_markup.collect_runtime_styles([os.path.join(tmp, "T.umg.xml")])
+        # The inline attribute comes last, so the token wins and stays bound.
+        self.assertEqual(assets[0]["bindings"], [("Box", "BrushColor", "accent")])
+
+    def test_runtime_rules_are_typed_and_finished(self):
+        rules = umg_markup.runtime_rules("s", self.SHEET)
+        self.assertEqual(len(rules), 1)  # .plain has no type, so it is compile-time only
+        decls = rules[0]["decls"]
+        self.assertIn(("Background.TintColor", None, "accent"), decls)
+        self.assertIn(("Padding", "(Left=15.000000,Top=12.000000,Right=15.000000,Bottom=12.000000)", None), decls)
+        self.assertIn(("Background.OutlineSettings.CornerRadii", None, "radius"), decls)
+
+    def test_theme_token_inside_a_value_is_refused(self):
+        with self.assertRaises(umg_markup.MarkupError):
+            umg_markup.runtime_rules("s", ":root { --bh-radius: 10; } Border.x { Padding: 0 var(--bh-radius); }")
+
+    def test_runtime_rules_cannot_set_slot_properties(self):
+        with self.assertRaises(umg_markup.MarkupError):
+            umg_markup.runtime_rules("s", "TextBlock.x { slot.Padding: 4; }")
+
+    def test_unknown_theme_token_is_refused(self):
+        with self.assertRaises(umg_markup.MarkupError):
+            compile_text('<Border BrushColor="var(--bh-nope)"/>', styles=":root { --bh-nope: #000000; }")
+
+    def test_tables_render_and_stale_tables_are_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(tmp, '<Border name="Box" BrushColor="var(--bh-accent)"/>')
+            inl = umg_markup.styles_inl(tmp)
+            self.assertIn('{TEXT("T"), TEXT("Box"), TEXT("BrushColor"), TEXT("accent")},', inl)
+            self.assertIn('{TEXT("s"), TEXT("Border"), TEXT("focused"), 101,', inl)
+            out = os.path.join(tmp, "styles.inl")
+            with open(out, "w") as fh:
+                fh.write(inl)
+            with open(os.path.join(tmp, "T.json"), "w") as fh:
+                json.dump(umg_markup.compile_file(os.path.join(tmp, "T.umg.xml")), fh)
+            self.assertEqual(umg_markup.check(tmp, out), [])
+            with open(out, "w") as fh:
+                fh.write("// stale")
+            self.assertEqual(len(umg_markup.check(tmp, out)), 1)
+
+
 class StyleTests(unittest.TestCase):
 
     STYLES = """
