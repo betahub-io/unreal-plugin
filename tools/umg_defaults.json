@@ -1,0 +1,5197 @@
+{
+  "classes": {
+    "BackgroundBlur": {
+      "BlurStrength": 0.0,
+      "CornerRadius": {
+        "W": 0.0,
+        "X": 0.0,
+        "Y": 0.0,
+        "Z": 0.0
+      },
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      },
+      "bApplyAlphaToBlur": true
+    },
+    "BackgroundBlurSlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 2.0,
+        "Left": 4.0,
+        "Right": 4.0,
+        "Top": 2.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      }
+    },
+    "Border": {
+      "Background": {
+        "DrawAs": "Image",
+        "ImageSize": {
+          "X": 32.0,
+          "Y": 32.0
+        },
+        "ImageType": "NoImage",
+        "Margin": {
+          "Bottom": 0.0,
+          "Left": 0.0,
+          "Right": 0.0,
+          "Top": 0.0
+        },
+        "Mirroring": "NoMirror",
+        "OutlineSettings": {
+          "Color": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 0.0,
+              "B": 0.0,
+              "G": 0.0,
+              "R": 0.0
+            }
+          },
+          "CornerRadii": {
+            "W": 1.0,
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": 0.0
+          },
+          "RoundingType": "HalfHeightRadius",
+          "Width": 0.0,
+          "bUseBrushTransparency": false
+        },
+        "ResourceName": "",
+        "ResourceObject": "None",
+        "Tiling": "NoTile",
+        "TintColor": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 1.0
+          }
+        },
+        "UVRegion": {
+          "Max": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "Min": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false
+      },
+      "BrushColor": {
+        "A": 1.0,
+        "B": 1.0,
+        "G": 1.0,
+        "R": 1.0
+      },
+      "DesiredSizeScale": {
+        "X": 1.0,
+        "Y": 1.0
+      },
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 2.0,
+        "Left": 4.0,
+        "Right": 4.0,
+        "Top": 2.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      }
+    },
+    "BorderSlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 2.0,
+        "Left": 4.0,
+        "Right": 4.0,
+        "Top": 2.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      }
+    },
+    "Button": {
+      "BackgroundColor": {
+        "A": 1.0,
+        "B": 1.0,
+        "G": 1.0,
+        "R": 1.0
+      },
+      "ColorAndOpacity": {
+        "A": 1.0,
+        "B": 1.0,
+        "G": 1.0,
+        "R": 1.0
+      },
+      "WidgetStyle": {
+        "Disabled": {
+          "DrawAs": "NoDrawType",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "DisabledForeground": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 0.527115,
+            "G": 0.527115,
+            "R": 0.527115
+          }
+        },
+        "Hovered": {
+          "DrawAs": "RoundedBox",
+          "ImageSize": {
+            "X": 32.0,
+            "Y": 32.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 0.724268,
+                "G": 0.724268,
+                "R": 0.724268
+              }
+            },
+            "CornerRadii": {
+              "W": 4.0,
+              "X": 4.0,
+              "Y": 4.0,
+              "Z": 4.0
+            },
+            "RoundingType": "FixedRadius",
+            "Width": 1.0,
+            "bUseBrushTransparency": true
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.724268,
+              "G": 0.724268,
+              "R": 0.724268
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "HoveredForeground": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 0.0
+          }
+        },
+        "HoveredSlateSound": {
+          "ResourceObject": "None"
+        },
+        "Normal": {
+          "DrawAs": "RoundedBox",
+          "ImageSize": {
+            "X": 32.0,
+            "Y": 32.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 0.695111,
+                "G": 0.695111,
+                "R": 0.695111
+              }
+            },
+            "CornerRadii": {
+              "W": 4.0,
+              "X": 4.0,
+              "Y": 4.0,
+              "Z": 4.0
+            },
+            "RoundingType": "FixedRadius",
+            "Width": 1.0,
+            "bUseBrushTransparency": true
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.495466,
+              "G": 0.495466,
+              "R": 0.495466
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "NormalForeground": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 0.0
+          }
+        },
+        "NormalPadding": {
+          "Bottom": 1.5,
+          "Left": 12.0,
+          "Right": 12.0,
+          "Top": 1.5
+        },
+        "Pressed": {
+          "DrawAs": "RoundedBox",
+          "ImageSize": {
+            "X": 32.0,
+            "Y": 32.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 0.724268,
+                "G": 0.724268,
+                "R": 0.724268
+              }
+            },
+            "CornerRadii": {
+              "W": 4.0,
+              "X": 4.0,
+              "Y": 4.0,
+              "Z": 4.0
+            },
+            "RoundingType": "FixedRadius",
+            "Width": 1.0,
+            "bUseBrushTransparency": true
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.384266,
+              "G": 0.384266,
+              "R": 0.384266
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "PressedForeground": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 0.0
+          }
+        },
+        "PressedPadding": {
+          "Bottom": 1.5,
+          "Left": 12.0,
+          "Right": 12.0,
+          "Top": 1.5
+        },
+        "PressedSlateSound": {
+          "ResourceObject": "None"
+        }
+      }
+    },
+    "ButtonSlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_CENTER",
+        "__value__": 2
+      },
+      "Padding": {
+        "Bottom": 2.0,
+        "Left": 4.0,
+        "Right": 4.0,
+        "Top": 2.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_CENTER",
+        "__value__": 2
+      }
+    },
+    "CanvasPanelSlot": {
+      "LayoutData": {
+        "Alignment": {
+          "X": 0.0,
+          "Y": 0.0
+        },
+        "Anchors": {
+          "Maximum": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "Minimum": {
+            "X": 0.0,
+            "Y": 0.0
+          }
+        },
+        "Offsets": {
+          "Bottom": 30.0,
+          "Left": 0.0,
+          "Right": 100.0,
+          "Top": 0.0
+        }
+      },
+      "ZOrder": 0,
+      "bAutoSize": false
+    },
+    "CheckBox": {
+      "CheckedState": {
+        "__enum__": "UNCHECKED",
+        "__value__": 0
+      },
+      "WidgetStyle": {
+        "BackgroundHoveredImage": {
+          "DrawAs": "NoDrawType",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImage": {
+          "DrawAs": "NoDrawType",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundPressedImage": {
+          "DrawAs": "NoDrawType",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BorderBackgroundColor": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 1.0
+          }
+        },
+        "CheckBoxType": "CheckBox",
+        "CheckedForeground": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "CheckedHoveredForeground": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "CheckedHoveredImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox_Checked_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.5,
+              "G": 0.5,
+              "R": 0.5
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "CheckedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox_Checked_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "CheckedPressedForeground": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "CheckedPressedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox_Checked.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "CheckedSlateSound": {
+          "ResourceObject": "None"
+        },
+        "ForegroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "HoveredForeground": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "HoveredSlateSound": {
+          "ResourceObject": "None"
+        },
+        "Padding": {
+          "Bottom": 0.0,
+          "Left": 2.0,
+          "Right": 0.0,
+          "Top": 0.0
+        },
+        "PressedForeground": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "UncheckedHoveredImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "UncheckedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "UncheckedPressedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.5,
+              "G": 0.5,
+              "R": 0.5
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "UncheckedSlateSound": {
+          "ResourceObject": "None"
+        },
+        "UndeterminedForeground": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "UndeterminedHoveredImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox_Undetermined_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "UndeterminedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox_Undetermined.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "UndeterminedPressedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/CheckBox_Undetermined_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.5,
+              "G": 0.5,
+              "R": 0.5
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        }
+      }
+    },
+    "EditableText": {
+      "Justification": {
+        "__enum__": "LEFT",
+        "__value__": 0
+      },
+      "MinimumDesiredWidth": 0.0,
+      "WidgetStyle": {
+        "BackgroundImageComposing": {
+          "DrawAs": "Border",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.1875,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Old/HyperlinkDotted.png",
+          "ResourceObject": "None",
+          "Tiling": "Both",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImageSelected": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/EditableTextSelectionBackground.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "CaretImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Old/White.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "ColorAndOpacity": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "Font": {
+          "FontMaterial": "None",
+          "FontObject": {
+            "__class__": "/Script/Engine.Font",
+            "__ref__": "/Engine/EngineFonts/Roboto.Roboto"
+          },
+          "LetterSpacing": 0,
+          "OutlineSettings": {
+            "OutlineColor": {
+              "A": 1.0,
+              "B": 0.0,
+              "G": 0.0,
+              "R": 0.0
+            },
+            "OutlineMaterial": "None",
+            "OutlineSize": 0,
+            "bApplyOutlineToDropShadows": false,
+            "bSeparateFillAlpha": false
+          },
+          "Size": 24.0,
+          "SkewAmount": 0.0,
+          "TypefaceFontName": "Regular"
+        }
+      }
+    },
+    "EditableTextBox": {
+      "Justification": {
+        "__enum__": "LEFT",
+        "__value__": 0
+      },
+      "MinimumDesiredWidth": 0.0,
+      "WidgetStyle": {
+        "BackgroundColor": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 1.0
+          }
+        },
+        "BackgroundImageFocused": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImageHovered": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImageNormal": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImageReadOnly": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox_ReadOnly.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "FocusedForegroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "ForegroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "HScrollBarPadding": {
+          "Bottom": 0.0,
+          "Left": 0.0,
+          "Right": 0.0,
+          "Top": 0.0
+        },
+        "Padding": {
+          "Bottom": 2.0,
+          "Left": 4.0,
+          "Right": 4.0,
+          "Top": 2.0
+        },
+        "ReadOnlyForegroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "ScrollBarStyle": {
+          "DraggedThumbImage": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.25,
+              "Left": 0.25,
+              "Right": 0.25,
+              "Top": 0.25
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HorizontalBackgroundImage": {
+            "DrawAs": "NoDrawType",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HorizontalBottomSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Horizontal.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HorizontalTopSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Horizontal.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HoveredThumbImage": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.25,
+              "Left": 0.25,
+              "Right": 0.25,
+              "Top": 0.25
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "NormalThumbImage": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.25,
+              "Left": 0.25,
+              "Right": 0.25,
+              "Top": 0.25
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "Thickness": 16.0,
+          "VerticalBackgroundImage": {
+            "DrawAs": "NoDrawType",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "VerticalBottomSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Vertical.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "VerticalTopSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Vertical.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          }
+        },
+        "TextStyle": {
+          "ColorAndOpacity": {
+            "ColorUseRule": "UseColor_Foreground",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 0.0,
+              "R": 1.0
+            }
+          },
+          "Font": {
+            "FontMaterial": "None",
+            "FontObject": {
+              "__class__": "/Script/Engine.Font",
+              "__ref__": "/Engine/EngineFonts/Roboto.Roboto"
+            },
+            "LetterSpacing": 0,
+            "OutlineSettings": {
+              "OutlineColor": {
+                "A": 1.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              },
+              "OutlineMaterial": "None",
+              "OutlineSize": 0,
+              "bApplyOutlineToDropShadows": false,
+              "bSeparateFillAlpha": false
+            },
+            "Size": 24.0,
+            "SkewAmount": 0.0,
+            "TypefaceFontName": "Regular"
+          },
+          "HighlightColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.0,
+              "G": 0.3,
+              "R": 0.02
+            }
+          },
+          "HighlightShape": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.375,
+              "Left": 0.375,
+              "Right": 0.375,
+              "Top": 0.375
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/TextBlockHighlightShape.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "OverflowPolicy": "Clip",
+          "SelectedBackgroundColor": {
+            "ColorUseRule": "UseColor_Foreground",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 0.0,
+              "R": 1.0
+            }
+          },
+          "ShadowColorAndOpacity": {
+            "A": 1.0,
+            "B": 0.0,
+            "G": 0.0,
+            "R": 0.0
+          },
+          "ShadowOffset": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "StrikeBrush": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 32.0,
+              "Y": 32.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "TransformPolicy": "None",
+          "UnderlineBrush": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 32.0,
+              "Y": 32.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          }
+        },
+        "VScrollBarPadding": {
+          "Bottom": 0.0,
+          "Left": 0.0,
+          "Right": 0.0,
+          "Top": 0.0
+        }
+      }
+    },
+    "ExpandableArea": {
+      "AreaPadding": {
+        "Bottom": 1.0,
+        "Left": 1.0,
+        "Right": 1.0,
+        "Top": 1.0
+      },
+      "BorderBrush": {
+        "DrawAs": "Box",
+        "ImageSize": {
+          "X": 0.0,
+          "Y": 0.0
+        },
+        "ImageType": "FullColor",
+        "Margin": {
+          "Bottom": 0.25,
+          "Left": 0.25,
+          "Right": 0.25,
+          "Top": 0.25
+        },
+        "Mirroring": "NoMirror",
+        "OutlineSettings": {
+          "Color": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 0.0,
+              "B": 0.0,
+              "G": 0.0,
+              "R": 0.0
+            }
+          },
+          "CornerRadii": {
+            "W": 1.0,
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": 0.0
+          },
+          "RoundingType": "HalfHeightRadius",
+          "Width": 0.0,
+          "bUseBrushTransparency": false
+        },
+        "ResourceName": "../../../Engine/Content/Slate/Common/GroupBorder.png",
+        "ResourceObject": "None",
+        "Tiling": "NoTile",
+        "TintColor": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 1.0
+          }
+        },
+        "UVRegion": {
+          "Max": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "Min": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false
+      },
+      "BorderColor": {
+        "ColorUseRule": "UseColor_Specified",
+        "SpecifiedColor": {
+          "A": 1.0,
+          "B": 1.0,
+          "G": 1.0,
+          "R": 1.0
+        }
+      },
+      "HeaderPadding": {
+        "Bottom": 2.0,
+        "Left": 4.0,
+        "Right": 4.0,
+        "Top": 2.0
+      },
+      "Style": {
+        "CollapsedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 10.0,
+            "Y": 10.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TreeArrow_Collapsed.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.0,
+              "G": 0.0,
+              "R": 0.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "ExpandedImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 10.0,
+            "Y": 10.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TreeArrow_Expanded.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.0,
+              "G": 0.0,
+              "R": 0.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "RolloutAnimationSeconds": 0.1
+      },
+      "bIsExpanded": false
+    },
+    "HorizontalBoxSlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "Size": {
+        "SizeRule": "Automatic",
+        "Value": 1.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      }
+    },
+    "Image": {
+      "Brush": {
+        "DrawAs": "Image",
+        "ImageSize": {
+          "X": 32.0,
+          "Y": 32.0
+        },
+        "ImageType": "NoImage",
+        "Margin": {
+          "Bottom": 0.0,
+          "Left": 0.0,
+          "Right": 0.0,
+          "Top": 0.0
+        },
+        "Mirroring": "NoMirror",
+        "OutlineSettings": {
+          "Color": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 0.0,
+              "B": 0.0,
+              "G": 0.0,
+              "R": 0.0
+            }
+          },
+          "CornerRadii": {
+            "W": 1.0,
+            "X": 0.0,
+            "Y": 0.0,
+            "Z": 0.0
+          },
+          "RoundingType": "HalfHeightRadius",
+          "Width": 0.0,
+          "bUseBrushTransparency": false
+        },
+        "ResourceName": "",
+        "ResourceObject": "None",
+        "Tiling": "NoTile",
+        "TintColor": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 1.0
+          }
+        },
+        "UVRegion": {
+          "Max": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "Min": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "bIsValid": false
+        },
+        "bIsDynamicallyLoaded": false
+      },
+      "ColorAndOpacity": {
+        "A": 1.0,
+        "B": 1.0,
+        "G": 1.0,
+        "R": 1.0
+      }
+    },
+    "MultiLineEditableText": {
+      "AutoWrapText": true,
+      "Justification": {
+        "__enum__": "LEFT",
+        "__value__": 0
+      },
+      "LineHeightPercentage": 1.0,
+      "Margin": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "WidgetStyle": {
+        "ColorAndOpacity": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "Font": {
+          "FontMaterial": "None",
+          "FontObject": {
+            "__class__": "/Script/Engine.Font",
+            "__ref__": "/Engine/EngineFonts/Roboto.Roboto"
+          },
+          "LetterSpacing": 0,
+          "OutlineSettings": {
+            "OutlineColor": {
+              "A": 1.0,
+              "B": 0.0,
+              "G": 0.0,
+              "R": 0.0
+            },
+            "OutlineMaterial": "None",
+            "OutlineSize": 0,
+            "bApplyOutlineToDropShadows": false,
+            "bSeparateFillAlpha": false
+          },
+          "Size": 12.0,
+          "SkewAmount": 0.0,
+          "TypefaceFontName": "Bold"
+        },
+        "HighlightColor": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 0.0,
+            "G": 0.3,
+            "R": 0.02
+          }
+        },
+        "HighlightShape": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.375,
+            "Left": 0.375,
+            "Right": 0.375,
+            "Top": 0.375
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBlockHighlightShape.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "OverflowPolicy": "Clip",
+        "SelectedBackgroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "ShadowColorAndOpacity": {
+          "A": 1.0,
+          "B": 0.0,
+          "G": 0.0,
+          "R": 0.0
+        },
+        "ShadowOffset": {
+          "X": 0.0,
+          "Y": 0.0
+        },
+        "StrikeBrush": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 32.0,
+            "Y": 32.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "TransformPolicy": "None",
+        "UnderlineBrush": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 32.0,
+            "Y": 32.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        }
+      }
+    },
+    "MultiLineEditableTextBox": {
+      "AutoWrapText": true,
+      "Justification": {
+        "__enum__": "LEFT",
+        "__value__": 0
+      },
+      "WidgetStyle": {
+        "BackgroundColor": {
+          "ColorUseRule": "UseColor_Specified",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 1.0,
+            "R": 1.0
+          }
+        },
+        "BackgroundImageFocused": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImageHovered": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox_Hovered.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImageNormal": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "BackgroundImageReadOnly": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/TextBox_ReadOnly.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "FocusedForegroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "ForegroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "HScrollBarPadding": {
+          "Bottom": 0.0,
+          "Left": 0.0,
+          "Right": 0.0,
+          "Top": 0.0
+        },
+        "Padding": {
+          "Bottom": 2.0,
+          "Left": 4.0,
+          "Right": 4.0,
+          "Top": 2.0
+        },
+        "ReadOnlyForegroundColor": {
+          "ColorUseRule": "UseColor_Foreground",
+          "SpecifiedColor": {
+            "A": 1.0,
+            "B": 1.0,
+            "G": 0.0,
+            "R": 1.0
+          }
+        },
+        "ScrollBarStyle": {
+          "DraggedThumbImage": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.25,
+              "Left": 0.25,
+              "Right": 0.25,
+              "Top": 0.25
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HorizontalBackgroundImage": {
+            "DrawAs": "NoDrawType",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HorizontalBottomSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Horizontal.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HorizontalTopSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Horizontal.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "HoveredThumbImage": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.25,
+              "Left": 0.25,
+              "Right": 0.25,
+              "Top": 0.25
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "NormalThumbImage": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.25,
+              "Left": 0.25,
+              "Right": 0.25,
+              "Top": 0.25
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "Thickness": 16.0,
+          "VerticalBackgroundImage": {
+            "DrawAs": "NoDrawType",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "VerticalBottomSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Vertical.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "VerticalTopSlotImage": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 8.0,
+              "Y": 8.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Vertical.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          }
+        },
+        "TextStyle": {
+          "ColorAndOpacity": {
+            "ColorUseRule": "UseColor_Foreground",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 0.0,
+              "R": 1.0
+            }
+          },
+          "Font": {
+            "FontMaterial": "None",
+            "FontObject": "None",
+            "LetterSpacing": 0,
+            "OutlineSettings": {
+              "OutlineColor": {
+                "A": 1.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              },
+              "OutlineMaterial": "None",
+              "OutlineSize": 0,
+              "bApplyOutlineToDropShadows": false,
+              "bSeparateFillAlpha": false
+            },
+            "Size": 10.0,
+            "SkewAmount": 0.0,
+            "TypefaceFontName": "Regular"
+          },
+          "HighlightColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 0.0,
+              "G": 0.3,
+              "R": 0.02
+            }
+          },
+          "HighlightShape": {
+            "DrawAs": "Box",
+            "ImageSize": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "ImageType": "FullColor",
+            "Margin": {
+              "Bottom": 0.375,
+              "Left": 0.375,
+              "Right": 0.375,
+              "Top": 0.375
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "../../../Engine/Content/Slate/Common/TextBlockHighlightShape.png",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "OverflowPolicy": "Clip",
+          "SelectedBackgroundColor": {
+            "ColorUseRule": "UseColor_Foreground",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 0.0,
+              "R": 1.0
+            }
+          },
+          "ShadowColorAndOpacity": {
+            "A": 1.0,
+            "B": 0.0,
+            "G": 0.0,
+            "R": 0.0
+          },
+          "ShadowOffset": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "StrikeBrush": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 32.0,
+              "Y": 32.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          },
+          "TransformPolicy": "None",
+          "UnderlineBrush": {
+            "DrawAs": "Image",
+            "ImageSize": {
+              "X": 32.0,
+              "Y": 32.0
+            },
+            "ImageType": "NoImage",
+            "Margin": {
+              "Bottom": 0.0,
+              "Left": 0.0,
+              "Right": 0.0,
+              "Top": 0.0
+            },
+            "Mirroring": "NoMirror",
+            "OutlineSettings": {
+              "Color": {
+                "ColorUseRule": "UseColor_Specified",
+                "SpecifiedColor": {
+                  "A": 0.0,
+                  "B": 0.0,
+                  "G": 0.0,
+                  "R": 0.0
+                }
+              },
+              "CornerRadii": {
+                "W": 1.0,
+                "X": 0.0,
+                "Y": 0.0,
+                "Z": 0.0
+              },
+              "RoundingType": "HalfHeightRadius",
+              "Width": 0.0,
+              "bUseBrushTransparency": false
+            },
+            "ResourceName": "",
+            "ResourceObject": "None",
+            "Tiling": "NoTile",
+            "TintColor": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 1.0,
+                "B": 1.0,
+                "G": 1.0,
+                "R": 1.0
+              }
+            },
+            "UVRegion": {
+              "Max": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "Min": {
+                "X": 0.0,
+                "Y": 0.0
+              },
+              "bIsValid": false
+            },
+            "bIsDynamicallyLoaded": false
+          }
+        },
+        "VScrollBarPadding": {
+          "Bottom": 0.0,
+          "Left": 0.0,
+          "Right": 0.0,
+          "Top": 0.0
+        }
+      }
+    },
+    "OverlaySlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_LEFT",
+        "__value__": 1
+      },
+      "Padding": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_TOP",
+        "__value__": 1
+      }
+    },
+    "ScrollBox": {
+      "AlwaysShowScrollbar": false,
+      "Orientation": {
+        "__enum__": "ORIENT_VERTICAL",
+        "__value__": 1
+      },
+      "ScrollBarVisibility": {
+        "__enum__": "VISIBLE",
+        "__value__": 0
+      },
+      "ScrollbarPadding": {
+        "Bottom": 2.0,
+        "Left": 2.0,
+        "Right": 2.0,
+        "Top": 2.0
+      },
+      "ScrollbarThickness": {
+        "X": 9.0,
+        "Y": 9.0
+      },
+      "WidgetBarStyle": {
+        "DraggedThumbImage": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "HorizontalBackgroundImage": {
+          "DrawAs": "NoDrawType",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "HorizontalBottomSlotImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 8.0,
+            "Y": 8.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Horizontal.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "HorizontalTopSlotImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 8.0,
+            "Y": 8.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Horizontal.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "HoveredThumbImage": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "NormalThumbImage": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.25,
+            "Left": 0.25,
+            "Right": 0.25,
+            "Top": 0.25
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Thumb.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "Thickness": 16.0,
+        "VerticalBackgroundImage": {
+          "DrawAs": "NoDrawType",
+          "ImageSize": {
+            "X": 0.0,
+            "Y": 0.0
+          },
+          "ImageType": "NoImage",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "VerticalBottomSlotImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 8.0,
+            "Y": 8.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Vertical.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "VerticalTopSlotImage": {
+          "DrawAs": "Image",
+          "ImageSize": {
+            "X": 8.0,
+            "Y": 8.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.0,
+            "Right": 0.0,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/Scrollbar_Background_Vertical.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        }
+      },
+      "WidgetStyle": {
+        "BarThickness": 9.0,
+        "BottomShadowBrush": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 8.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 1.0,
+            "Left": 0.5,
+            "Right": 0.5,
+            "Top": 0.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/ScrollBoxShadowBottom.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "HorizontalScrolledContentPadding": {
+          "Bottom": 0.0,
+          "Left": 0.0,
+          "Right": 1.0,
+          "Top": 0.0
+        },
+        "LeftShadowBrush": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 8.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.5,
+            "Left": 1.0,
+            "Right": 0.0,
+            "Top": 0.5
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/ScrollBoxShadowLeft.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "RightShadowBrush": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 8.0,
+            "Y": 16.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.5,
+            "Left": 0.0,
+            "Right": 1.0,
+            "Top": 0.5
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/ScrollBoxShadowRight.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "TopShadowBrush": {
+          "DrawAs": "Box",
+          "ImageSize": {
+            "X": 16.0,
+            "Y": 8.0
+          },
+          "ImageType": "FullColor",
+          "Margin": {
+            "Bottom": 0.0,
+            "Left": 0.5,
+            "Right": 0.5,
+            "Top": 1.0
+          },
+          "Mirroring": "NoMirror",
+          "OutlineSettings": {
+            "Color": {
+              "ColorUseRule": "UseColor_Specified",
+              "SpecifiedColor": {
+                "A": 0.0,
+                "B": 0.0,
+                "G": 0.0,
+                "R": 0.0
+              }
+            },
+            "CornerRadii": {
+              "W": 1.0,
+              "X": 0.0,
+              "Y": 0.0,
+              "Z": 0.0
+            },
+            "RoundingType": "HalfHeightRadius",
+            "Width": 0.0,
+            "bUseBrushTransparency": false
+          },
+          "ResourceName": "../../../Engine/Content/Slate/Common/ScrollBoxShadowTop.png",
+          "ResourceObject": "None",
+          "Tiling": "NoTile",
+          "TintColor": {
+            "ColorUseRule": "UseColor_Specified",
+            "SpecifiedColor": {
+              "A": 1.0,
+              "B": 1.0,
+              "G": 1.0,
+              "R": 1.0
+            }
+          },
+          "UVRegion": {
+            "Max": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "Min": {
+              "X": 0.0,
+              "Y": 0.0
+            },
+            "bIsValid": false
+          },
+          "bIsDynamicallyLoaded": false
+        },
+        "VerticalScrolledContentPadding": {
+          "Bottom": 1.0,
+          "Left": 0.0,
+          "Right": 0.0,
+          "Top": 0.0
+        }
+      }
+    },
+    "ScrollBoxSlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "Size": {
+        "SizeRule": "Automatic",
+        "Value": 1.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      }
+    },
+    "SizeBox": {
+      "HeightOverride": 0.0,
+      "MaxDesiredHeight": 0.0,
+      "MaxDesiredWidth": 0.0,
+      "MinDesiredHeight": 0.0,
+      "MinDesiredWidth": 0.0,
+      "WidthOverride": 0.0
+    },
+    "SizeBoxSlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      }
+    },
+    "Spacer": {
+      "Size": {
+        "X": 1.0,
+        "Y": 1.0
+      }
+    },
+    "TextBlock": {
+      "AutoWrapText": false,
+      "ColorAndOpacity": {
+        "ColorUseRule": "UseColor_Specified",
+        "SpecifiedColor": {
+          "A": 1.0,
+          "B": 1.0,
+          "G": 1.0,
+          "R": 1.0
+        }
+      },
+      "Font": {
+        "FontMaterial": "None",
+        "FontObject": {
+          "__class__": "/Script/Engine.Font",
+          "__ref__": "/Engine/EngineFonts/Roboto.Roboto"
+        },
+        "LetterSpacing": 0,
+        "OutlineSettings": {
+          "OutlineColor": {
+            "A": 1.0,
+            "B": 0.0,
+            "G": 0.0,
+            "R": 0.0
+          },
+          "OutlineMaterial": "None",
+          "OutlineSize": 0,
+          "bApplyOutlineToDropShadows": false,
+          "bSeparateFillAlpha": false
+        },
+        "Size": 24.0,
+        "SkewAmount": 0.0,
+        "TypefaceFontName": "Bold"
+      },
+      "Justification": {
+        "__enum__": "LEFT",
+        "__value__": 0
+      },
+      "LineHeightPercentage": 1.0,
+      "Margin": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "MinDesiredWidth": 0.0,
+      "ShadowOffset": {
+        "X": 1.0,
+        "Y": 1.0
+      }
+    },
+    "UniformGridPanel": {
+      "MinDesiredSlotHeight": 0.0,
+      "MinDesiredSlotWidth": 0.0,
+      "SlotPadding": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      }
+    },
+    "UniformGridSlot": {
+      "Column": 0,
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_LEFT",
+        "__value__": 1
+      },
+      "Row": 0,
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_TOP",
+        "__value__": 1
+      }
+    },
+    "VerticalBoxSlot": {
+      "HorizontalAlignment": {
+        "__enum__": "H_ALIGN_FILL",
+        "__value__": 0
+      },
+      "Padding": {
+        "Bottom": 0.0,
+        "Left": 0.0,
+        "Right": 0.0,
+        "Top": 0.0
+      },
+      "Size": {
+        "SizeRule": "Automatic",
+        "Value": 1.0
+      },
+      "VerticalAlignment": {
+        "__enum__": "V_ALIGN_FILL",
+        "__value__": 0
+      }
+    },
+    "Widget": {
+      "RenderTransform": {
+        "Angle": 0.0,
+        "Scale": {
+          "X": 1.0,
+          "Y": 1.0
+        },
+        "Shear": {
+          "X": 0.0,
+          "Y": 0.0
+        },
+        "Translation": {
+          "X": 0.0,
+          "Y": 0.0
+        }
+      },
+      "RenderTransformPivot": {
+        "X": 0.5,
+        "Y": 0.5
+      },
+      "Visibility": {
+        "__enum__": "VISIBLE",
+        "__value__": 0
+      }
+    }
+  },
+  "engine": "5.3.2-29314046+++UE5+Release-5.3"
+}

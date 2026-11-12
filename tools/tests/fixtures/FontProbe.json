@@ -1,0 +1,428 @@
+{
+  "$schema": "betahub-umg-widget/1",
+  "asset": "FontProbe",
+  "parentClass": "BH_PopupWidget",
+  "root": {
+    "name": "CanvasPanel_63",
+    "class": "CanvasPanel",
+    "properties": {},
+    "children": [
+      {
+        "name": "Column",
+        "class": "VerticalBox",
+        "properties": {},
+        "children": [
+          {
+            "name": "Title",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/BarlowSemiCondensed.BarlowSemiCondensed",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Bold",
+                "Size": 36.0,
+                "LetterSpacing": 21
+              },
+              "Text": {
+                "__text__": "REPORT A BUG · AVATAR"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "Kicker",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/BarlowSemiCondensed.BarlowSemiCondensed",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Bold",
+                "Size": 18.0,
+                "LetterSpacing": 158
+              },
+              "Text": {
+                "__text__": "BETAHUB"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "FieldLabel",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/BarlowSemiCondensed.BarlowSemiCondensed",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "SemiBold",
+                "Size": 19.5,
+                "LetterSpacing": 58
+              },
+              "Text": {
+                "__text__": "WHAT HAPPENED · STEPS TO REPRODUCE"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "Body",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Regular",
+                "Size": 22.5
+              },
+              "Text": {
+                "__text__": "Dragging the sword onto the shield, Ty Wo AV Te."
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "Tag",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Medium",
+                "Size": 18.0
+              },
+              "Text": {
+                "__text__": "required · optional · 13:27:39"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "Prompt",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Bold",
+                "Size": 14.25
+              },
+              "Text": {
+                "__text__": "Enter · Esc · Ctrl"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "Mono",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/JetBrainsMono.JetBrainsMono",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Regular",
+                "Size": 16.5
+              },
+              "Text": {
+                "__text__": "Engine.ini [Core.Log] 0x1F42 → 1.2 MB"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "TwoLines",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Regular",
+                "Size": 22.5
+              },
+              "Text": {
+                "__text__": "One email when it's fixed.\nNothing else, no account."
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "Centered",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Medium",
+                "Size": 18.0
+              },
+              "Text": {
+                "__text__": "Last 60 s of play · video"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                },
+                "HorizontalAlignment": "HAlign_Center"
+              }
+            }
+          },
+          {
+            "name": "Description",
+            "class": "TextBlock",
+            "properties": {
+              "ColorAndOpacity": {
+                "SpecifiedColor": {
+                  "R": 0.791298,
+                  "G": 0.806952,
+                  "B": 0.854993,
+                  "A": 1.0
+                },
+                "ColorUseRule": "UseColor_Specified"
+              },
+              "Font": {
+                "FontObject": {
+                  "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                  "__class__": "/Script/Engine.Font"
+                },
+                "TypefaceFontName": "Regular",
+                "Size": 22.5
+              },
+              "Text": {
+                "__text__": "Description"
+              }
+            },
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "Padding": {
+                  "Bottom": 6.0
+                }
+              }
+            }
+          },
+          {
+            "name": "CloseButton",
+            "class": "Button",
+            "properties": {},
+            "children": [
+              {
+                "name": "CloseLabel",
+                "class": "TextBlock",
+                "properties": {
+                  "ColorAndOpacity": {
+                    "SpecifiedColor": {
+                      "R": 0.791298,
+                      "G": 0.806952,
+                      "B": 0.854993,
+                      "A": 1.0
+                    },
+                    "ColorUseRule": "UseColor_Specified"
+                  },
+                  "Font": {
+                    "FontObject": {
+                      "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                      "__class__": "/Script/Engine.Font"
+                    },
+                    "TypefaceFontName": "Bold",
+                    "Size": 14.25
+                  },
+                  "Text": {
+                    "__text__": "Close"
+                  }
+                },
+                "slot": {
+                  "class": "ButtonSlot",
+                  "properties": {
+                    "Padding": {
+                      "Bottom": 6.0
+                    }
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "VerticalBoxSlot",
+              "properties": {
+                "HorizontalAlignment": "HAlign_Right"
+              }
+            }
+          }
+        ],
+        "slot": {
+          "class": "CanvasPanelSlot",
+          "properties": {
+            "LayoutData": {
+              "Offsets": {
+                "Left": 40.0,
+                "Top": 30.0,
+                "Right": 1200.0,
+                "Bottom": 800.0
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "_stats": {
+    "widgetsReachable": 14,
+    "widgetsInTree": 14,
+    "slots": 13
+  }
+}

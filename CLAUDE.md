@@ -12,6 +12,7 @@ anything else.
 ```sh
 $EDITOR widgets/BugReportForm.json
 python3 tools/validate_widget_json.py widgets/BugReportForm.json   # ~1s, no Unreal
+python3 tools/json_to_html.py widgets/BugReportForm.json -o /tmp/p.html   # ~1s, layout within 1px of UE 5.3
 # then regenerate on the build box — see tools/README.md
 ```
 
@@ -41,7 +42,9 @@ Full workflow, tool list and gotchas: **`tools/README.md`**.
   reports success. Only `Asset.Name:WidgetTree` is authoritative.
 - **The `.T3D` export omits defaults**, so a property left at its class default is simply
   absent from the JSON. Six of thirteen text widgets carry no `Font` at all; their real size
-  is UMG's default 24 Bold. Never infer an absent property's value — measure it.
+  is UMG's default 24 Bold. This goes down to single struct fields: a ButtonSlot `Padding` of
+  `{"Left": 2, "Right": 2}` has Top and Bottom at the ButtonSlot default (2), not 0. Never
+  infer an absent value — `tools/umg_defaults.json` holds the engine's, dumped from UE 5.3.
 - **Never conclude anything about widget generation from a non-5.3 engine.** UE 5.7 added
   `WidgetVariableNameToGuidMap`, which makes programmatic widget creation trip compiler
   ensures. UE 5.3 has no such map and is unaffected.
@@ -170,4 +173,5 @@ player ever sees.
 
 ```sh
 python3 tools/tests/test_widget_tools.py
+python3 tools/tests/test_preview.py   # preview vs real UE 5.3 renders; needs Chrome/Chromium
 ```

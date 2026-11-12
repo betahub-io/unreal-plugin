@@ -221,6 +221,10 @@ void UBHWidgetGenLibrary::RenderWidgetToPng(TSubclassOf<UUserWidget> WidgetClass
 
 namespace
 {
+	/** Frames drawn before a render is captured, and the time each one advances. */
+	constexpr int32 RenderSettleFrames = 3;
+	constexpr float RenderFrameSeconds = 1.0f / 60.0f;
+
 	/** Resolve the font actually in effect, which is usually not in the asset:
 	    the .T3D export only carries non-default properties, so a widget left at
 	    UMG's default size stores nothing at all. Reflection is used so this
@@ -417,8 +421,13 @@ void UBHWidgetGenLibrary::RenderWidgetAndDumpGeometry(
 					World, Width, Height, RTF_RGBA8);
 			if (Target != nullptr)
 			{
-				Renderer->DrawWidget(Target, Slate, FVector2D(Width, Height),
-				                     /*DeltaTime*/ 0.0f);
+				// Draw several frames, not one: some layout settles only on the next
+				// frame (auto-wrapping text wraps at the width it was given last
+				// frame), and the player sees the settled result.
+				for (int32 Frame = 0; Frame < RenderSettleFrames; ++Frame)
+				{
+					Renderer->DrawWidget(Target, Slate, FVector2D(Width, Height), RenderFrameSeconds);
+				}
 			}
 
 			if (Target == nullptr)

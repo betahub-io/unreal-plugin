@@ -1,30 +1,37 @@
 #!/usr/bin/env python3
-"""Render a widget JSON source file to HTML — an approximate visual sketch.
+"""Render a widget JSON source file to an HTML preview.
 
     python3 tools/json_to_html.py widgets/BugReportForm.json -o /tmp/preview.html
+    python3 tools/json_to_html.py widgets/BugReportForm.json --size 1920x1080 -o /tmp/p.html
 
-THIS IS NOT A VERIFICATION TOOL. It is a fast iteration aid for seeing roughly
-what a JSON edit produces without a 60-second Unreal round trip.
+Default mode lays the widget out with a re-implementation of Slate's own layout
+passes (tools/preview/slate_layout.js), fed by tools/umg_resolve.py, which fills
+in every class default from tools/umg_defaults.json and gives text the engine's
+own Roboto fonts and Slate's font metrics. Its geometry is checked against real
+UE 5.3 renders by tools/tests/test_preview.py; tools/measure_preview.py reports
+the same numbers for any render you have.
 
-It approximates Slate's layout with CSS flexbox, and the two engines genuinely
-differ - most visibly around CanvasPanel anchors, Slate's Fill/Auto sizing, and
-text metrics. More importantly it is written from the same reading of the JSON
-as the generator, so it can reproduce a misunderstanding rather than expose it.
-Ground truth is BHWidgetGenLibrary.RenderWidgetToPng, which renders what Unreal
-actually built.
+Widgets the preview cannot model raise an error naming the class, rather than
+being drawn approximately.
 
-Use this to catch gross mistakes - wrong container, missing widget, absurd
-padding. Use the PNG render to decide anything looks correct.
+With --geometry it instead places every widget at the rect Unreal measured
+during a real render (ue_render_widgets.py) - exact by construction, but it
+needs an editor run first.
 """
 
 import argparse
+import base64
 import html
 import json
 import os
 import sys
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import umg_resolve  # noqa: E402
 
-CANVAS_SIZE = (1280, 860)
+LAYOUT_JS = os.path.join(HERE, "preview", "slate_layout.js")
+DEFAULT_SIZE = (1280, 860)
 
 
 def srgb(c):
@@ -48,108 +55,6 @@ def color_of(value, default="transparent"):
     return "rgba(%d,%d,%d,%.3f)" % (r, g, b, a)
 
 
-def margin_of(pad):
-    if not isinstance(pad, dict):
-        return None
-    return "%gpx %gpx %gpx %gpx" % (
-        pad.get("Top", 0), pad.get("Right", 0),
-        pad.get("Bottom", 0), pad.get("Left", 0))
-
-
-H_ALIGN = {"HAlign_Fill": "stretch", "HAlign_Left": "flex-start",
-           "HAlign_Center": "center", "HAlign_Right": "flex-end"}
-V_ALIGN = {"VAlign_Fill": "stretch", "VAlign_Top": "flex-start",
-           "VAlign_Center": "center", "VAlign_Bottom": "flex-end"}
-
-
-def slot_style(slot, parent_class):
-    """CSS for how a child sits inside its parent."""
-    if not slot:
-        return [], []
-    props = slot.get("properties") or {}
-    style, notes = [], []
-
-    m = margin_of(props.get("Padding"))
-    if m:
-        style.append("margin:%s" % m)
-
-    size = props.get("Size")
-    if isinstance(size, dict) and size.get("SizeRule") == "Fill":
-        style.append("flex:%s 1 0" % size.get("Value", 1))
-    else:
-        style.append("flex:0 0 auto")
-
-    h = H_ALIGN.get(props.get("HorizontalAlignment"))
-    v = V_ALIGN.get(props.get("VerticalAlignment"))
-    if parent_class == "VerticalBox":
-        if h:
-            style.append("align-self:%s" % h)
-    elif parent_class == "HorizontalBox":
-        if v:
-            style.append("align-self:%s" % v)
-    else:
-        if h:
-            style.append("justify-self:%s" % h)
-        if v:
-            style.append("align-self:%s" % v)
-
-    if parent_class == "CanvasPanel":
-        layout = props.get("LayoutData") or {}
-        offsets = layout.get("Offsets") or {}
-        anchors = layout.get("Anchors") or {}
-        mn = anchors.get("Minimum") or {}
-        style.append("position:absolute")
-        style.append("left:%g%%" % (float(mn.get("X", 0)) * 100))
-        style.append("top:%g%%" % (float(mn.get("Y", 0)) * 100))
-        w = offsets.get("Right")
-        hgt = offsets.get("Bottom")
-        if w:
-            style.append("width:%gpx" % w)
-        if hgt:
-            style.append("height:%gpx" % hgt)
-        align = layout.get("Alignment") or {}
-        style.append("transform:translate(%g%%,%g%%)"
-                     % (-float(align.get("X", 0)) * 100,
-                        -float(align.get("Y", 0)) * 100))
-        notes.append("CanvasPanel anchors are approximated")
-
-    return style, notes
-
-
-def container_style(cls, props):
-    style, notes = [], []
-    if cls == "VerticalBox":
-        style += ["display:flex", "flex-direction:column"]
-    elif cls == "HorizontalBox":
-        style += ["display:flex", "flex-direction:row"]
-    elif cls == "Overlay":
-        style += ["display:grid", "grid-template-areas:'stack'",
-                  "justify-items:stretch", "align-items:stretch"]
-    elif cls == "CanvasPanel":
-        style += ["position:relative",
-                  "width:%dpx" % CANVAS_SIZE[0],
-                  "height:%dpx" % CANVAS_SIZE[1]]
-        notes.append("CanvasPanel given a %dx%d stage; in game it fills the viewport"
-                     % CANVAS_SIZE)
-    elif cls in ("Border", "Button"):
-        style += ["display:flex", "flex-direction:column",
-                  "align-items:stretch", "justify-content:flex-start"]
-
-    if cls == "Border":
-        style.append("background:%s" % color_of(props.get("BrushColor"), "transparent"))
-        m = margin_of(props.get("Padding"))
-        if m:
-            style.append("padding:%s" % m)
-    if cls == "Button":
-        ws = props.get("WidgetStyle") or {}
-        normal = ws.get("Normal") if isinstance(ws, dict) else None
-        tint = (normal or {}).get("TintColor") if isinstance(normal, dict) else None
-        style.append("background:%s" % color_of(tint, "rgba(128,128,128,1)"))
-        style.append("border-radius:4px")
-        notes.append("Button styling is approximated from Normal tint only")
-    return style, notes
-
-
 def text_of(value):
     if isinstance(value, dict) and "__text__" in value:
         return value["__text__"]
@@ -158,108 +63,78 @@ def text_of(value):
     return ""
 
 
-def render_node(node, parent_class, notes, depth=0):
-    cls = node.get("class", "?")
-    name = node.get("name", "?")
-    props = node.get("properties") or {}
-
-    style, s_notes = slot_style(node.get("slot"), parent_class)
-    c_style, c_notes = container_style(cls, props)
-    style += c_style
-    notes.extend("%s: %s" % (name, n) for n in s_notes + c_notes)
-
-    if parent_class == "Overlay":
-        style.append("grid-area:stack")
-
-    vis = props.get("Visibility")
-    if vis in ("Collapsed",):
-        style.append("display:none")
-    elif vis in ("Hidden",):
-        style.append("visibility:hidden")
-
-    inner = ""
-    if cls == "TextBlock":
-        font = props.get("Font") or {}
-        size = font.get("Size", 12)
-        col = color_of(props.get("ColorAndOpacity"), "rgba(255,255,255,1)")
-        style += ["font-size:%gpx" % size, "color:%s" % col,
-                  "white-space:pre-wrap"]
-        inner = html.escape(text_of(props.get("Text")))
-    elif cls == "CheckBox":
-        style += ["width:16px", "height:16px", "border:1px solid #999",
-                  "border-radius:2px", "background:rgba(255,255,255,.15)",
-                  "flex:0 0 auto"]
-        notes.append("%s: CheckBox drawn as a plain box" % name)
-    elif cls == "MultiLineEditableTextBox":
-        hint = html.escape(text_of(props.get("HintText")))
-        style += ["background:rgba(255,255,255,.9)", "color:#555",
-                  "min-height:60px", "padding:6px", "border-radius:3px",
-                  "font-size:13px", "white-space:pre-wrap", "text-align:left",
-                  "display:block"]
-        inner = hint
-    elif cls == "Spacer":
-        size = props.get("Size") or {}
-        style += ["width:%gpx" % size.get("X", 0), "height:%gpx" % size.get("Y", 0)]
-    elif cls == "ExpandableArea":
-        style += ["min-width:8px", "min-height:8px"]
-
-    children = node.get("children") or []
-    kids = "".join(render_node(c, cls, notes, depth + 1) for c in children)
-
-    return ('<div class="w" data-name="%s" data-class="%s" style="%s" '
-            'title="%s [%s]">%s%s</div>'
-            % (html.escape(name), html.escape(cls), ";".join(style),
-               html.escape("%s [%s]" % (name, cls)), html.escape(cls),
-               inner, kids))
-
-
 PAGE = """<!doctype html>
 <meta charset="utf-8">
-<title>%(title)s — approximate preview</title>
+<title>%(title)s - preview %(w)dx%(h)d</title>
 <style>
-  body {{ margin:0; background:#2b2f33; color:#ddd;
-          font-family:-apple-system,Segoe UI,Roboto,sans-serif; }}
-  .banner {{ background:#7a4a12; color:#ffe9cf; padding:8px 14px;
-             font-size:13px; line-height:1.5; }}
-  .banner b {{ color:#fff; }}
-  .stage {{ padding:24px; display:flex; justify-content:center; }}
-  .root {{ box-shadow:0 6px 30px rgba(0,0,0,.5); }}
-  .w {{ box-sizing:border-box; }}
-  .notes {{ padding:12px 24px 32px; font-size:12px; color:#9aa; }}
-  .notes li {{ margin:2px 0; }}
-  body.outline .w {{ outline:1px dashed rgba(120,200,255,.35); }}
-  .toggle {{ padding:6px 24px; font-size:12px; }}
+%(fonts)s
+  body { margin:0; background:#2b2f33; color:#ddd;
+         font-family:-apple-system,Segoe UI,sans-serif; }
+  .banner { background:#1c3f5e; color:#d8ecff; padding:8px 14px; font-size:13px; }
+  .banner b { color:#fff; }
+  .toggle { padding:6px 24px; font-size:12px; }
+  #bh-stage { position:relative; margin:12px 24px 32px; overflow:hidden;
+              background:#000; outline:1px solid #444; }
+  .bh-w { position:absolute; box-sizing:border-box; }
+  .bh-text { position:absolute; inset:0; overflow:visible; }
+  .bh-glyph { position:absolute; white-space:pre; font-kerning:none; }
+  .bh-check { position:absolute; box-sizing:border-box; }
+  .bh-tick { position:absolute; left:32%%; top:8%%; width:28%%; height:58%%;
+             border:solid; border-width:0 2.5px 2.5px 0; transform:rotate(40deg); }
+  body.outline .bh-w { outline:1px dashed rgba(120,200,255,.45); }
+  /* #bare: just the widget at its draw size, for screenshots and pixel diffs */
+  body.bare { background:#000; }
+  body.bare .banner, body.bare .toggle { display:none; }
+  body.bare #bh-stage { margin:0; outline:none; }
 </style>
-<div class="banner">
-  <b>Approximate sketch, not verification.</b> Slate layout is emulated with CSS
-  and the two differ — CanvasPanel anchors, Fill/Auto sizing and text metrics
-  especially. This is also written from the same reading of the JSON as the
-  generator, so it can repeat a misunderstanding rather than reveal one.
-  Confirm anything that matters with the Unreal PNG render.
-</div>
-<div class="toggle">
-  <label><input type="checkbox" onchange="document.body.classList.toggle('outline')"> outline widgets</label>
-</div>
-<div class="stage"><div class="root">%(body)s</div></div>
-<div class="notes"><b>Approximations applied:</b><ul>%(notes)s</ul></div>
+<div class="banner"><b>Slate layout preview.</b> Layout follows UE 5.3's own algorithm with
+  every class default filled in from the engine; glyph advances come from the browser.
+  Default visual state only: no hover, focus or runtime changes.</div>
+<div class="toggle"><label><input type="checkbox"
+  onchange="document.body.classList.toggle('outline')"> outline widgets</label></div>
+<div id="bh-stage"></div>
+<script>if (location.hash === "#bare") document.body.classList.add("bare");</script>
+<script>window.BH_PREVIEW = %(config)s;</script>
+<script>
+%(layout_js)s
+</script>
 """
 
 
-def convert(doc):
-    notes = []
-    body = render_node(doc["root"], None, notes)
-    seen, ordered = set(), []
-    for n in notes:
-        if n not in seen:
-            seen.add(n)
-            ordered.append(n)
-    note_html = "".join("<li>%s</li>" % html.escape(n) for n in ordered) \
-        or "<li>none</li>"
-    return PAGE.replace("{{", "{").replace("}}", "}") % {
-        "title": html.escape(doc.get("asset", "widget")),
-        "body": body,
-        "notes": note_html,
+def font_faces(fonts):
+    rules = []
+    for family, filename in sorted(fonts.items()):
+        with open(os.path.join(umg_resolve.REPO, filename), "rb") as fh:
+            data = base64.b64encode(fh.read()).decode("ascii")
+        rules.append("  @font-face { font-family:'%s'; src:url(data:font/ttf;base64,%s); }"
+                     % (family, data))
+    return "\n".join(rules)
+
+
+def build_preview(doc, width, height):
+    """Self-contained HTML: fonts, layout engine and resolved tree inline."""
+    tree = umg_resolve.resolve(doc)
+    config = json.dumps({"tree": tree, "width": width, "height": height})
+    with open(LAYOUT_JS, "r", encoding="utf-8") as fh:
+        layout_js = fh.read()
+    return PAGE % {
+        "title": html.escape(tree["asset"]),
+        "w": width, "h": height,
+        "fonts": font_faces(tree["fonts"]),
+        # "</" would end the script element early.
+        "config": config.replace("</", "<\\/"),
+        "layout_js": layout_js,
     }
+
+
+def parse_size(text):
+    try:
+        w, h = (int(v) for v in text.lower().split("x"))
+    except ValueError:
+        raise argparse.ArgumentTypeError("size must look like 1280x860")
+    if w <= 0 or h <= 0:
+        raise argparse.ArgumentTypeError("size must be positive")
+    return w, h
 
 
 EXACT_PAGE = """<!doctype html>
@@ -384,9 +259,12 @@ def main(argv=None):
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("json_file")
     ap.add_argument("-o", "--out", help="output .html (default: stdout)")
+    ap.add_argument("-s", "--size", type=parse_size, default=DEFAULT_SIZE,
+                    help="draw size WxH, as the widget would get on screen "
+                         "(default %dx%d)" % DEFAULT_SIZE)
     ap.add_argument("-g", "--geometry",
-                    help="geometry JSON from ue_render_widgets.py. With this the "
-                         "output is exact rather than approximate.")
+                    help="geometry JSON from ue_render_widgets.py: place every widget "
+                         "at the rect Unreal measured instead of laying it out")
     args = ap.parse_args(argv)
 
     with open(args.json_file, "r", encoding="utf-8") as fh:
@@ -396,7 +274,7 @@ def main(argv=None):
         with open(args.geometry, "r", encoding="utf-8") as fh:
             page = render_exact(doc, json.load(fh))
     else:
-        page = convert(doc)
+        page = build_preview(doc, *args.size)
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
             fh.write(page)

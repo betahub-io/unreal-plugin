@@ -1,0 +1,133 @@
+{
+	"widgetClass": "BugReportFormPopup_C",
+	"drawWidth": 1280,
+	"drawHeight": 860,
+	"widgets": [
+		{
+			"name": "CanvasPanel_63",
+			"class": "CanvasPanel",
+			"depth": 0,
+			"x": 0,
+			"y": 0,
+			"width": 1280,
+			"height": 860,
+			"absWidth": 1280,
+			"absHeight": 860,
+			"visible": true
+		},
+		{
+			"name": "Border_0",
+			"class": "Border",
+			"depth": 1,
+			"x": 353.01300048828125,
+			"y": 290.130126953125,
+			"width": 573.9739990234375,
+			"height": 279.73974609375,
+			"absWidth": 573.9739990234375,
+			"absHeight": 279.73974609375,
+			"visible": true
+		},
+		{
+			"name": "VerticalBox_0",
+			"class": "VerticalBox",
+			"depth": 2,
+			"x": 363.01300048828125,
+			"y": 300.130126953125,
+			"width": 553.9739990234375,
+			"height": 259.73974609375,
+			"absWidth": 553.9739990234375,
+			"absHeight": 259.73974609375,
+			"visible": true
+		},
+		{
+			"name": "Title",
+			"class": "TextBlock",
+			"depth": 3,
+			"x": 363.01300048828125,
+			"y": 300.130126953125,
+			"width": 553.9739990234375,
+			"height": 39,
+			"absWidth": 553.9739990234375,
+			"absHeight": 39,
+			"visible": true,
+			"fontSize": 24,
+			"typeface": "Bold"
+		},
+		{
+			"name": "ScrollBox_283",
+			"class": "ScrollBox",
+			"depth": 3,
+			"x": 363.01300048828125,
+			"y": 359.130126953125,
+			"width": 553.9739990234375,
+			"height": 164.73974609375,
+			"absWidth": 553.9739990234375,
+			"absHeight": 164.73974609375,
+			"visible": true
+		},
+		{
+			"name": "Description",
+			"class": "TextBlock",
+			"depth": 4,
+			"x": 363.01300048828125,
+			"y": 359.130126953125,
+			"width": 553.9739990234375,
+			"height": 163.73974609375,
+			"absWidth": 553.9739990234375,
+			"absHeight": 163.73974609375,
+			"visible": true,
+			"fontSize": 15,
+			"typeface": "Regular"
+		},
+		{
+			"name": "HorizontalBox_128",
+			"class": "HorizontalBox",
+			"depth": 3,
+			"x": 363.01300048828125,
+			"y": 523.869873046875,
+			"width": 553.9739990234375,
+			"height": 36,
+			"absWidth": 553.9739990234375,
+			"absHeight": 36,
+			"visible": true
+		},
+		{
+			"name": "Spacer_127",
+			"class": "Spacer",
+			"depth": 4,
+			"x": 363.01300048828125,
+			"y": 523.869873046875,
+			"width": 460.9739990234375,
+			"height": 36,
+			"absWidth": 460.9739990234375,
+			"absHeight": 36,
+			"visible": true
+		},
+		{
+			"name": "CloseButton",
+			"class": "Button",
+			"depth": 4,
+			"x": 823.98699951171875,
+			"y": 523.869873046875,
+			"width": 93,
+			"height": 36,
+			"absWidth": 93,
+			"absHeight": 36,
+			"visible": true
+		},
+		{
+			"name": "TextBlock_383",
+			"class": "TextBlock",
+			"depth": 5,
+			"x": 839.98699951171875,
+			"y": 527.369873046875,
+			"width": 61,
+			"height": 29,
+			"absWidth": 61,
+			"absHeight": 29,
+			"visible": true,
+			"fontSize": 18,
+			"typeface": "Bold"
+		}
+	]
+}

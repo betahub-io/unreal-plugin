@@ -1,10 +1,12 @@
 """Render widget blueprints to PNG and dump the geometry Unreal computed.
 
 Requires the BetaHubWidgetGen developer module (tools/widgetgen) and a real
-RHI - do NOT pass -nullrhi.
+RHI - do NOT pass -nullrhi. Rendering needs Slate, which commandlets never
+initialise, so boot the editor instead of using -run=pythonscript:
 
-    UnrealEditor-Cmd.exe <project>.uproject -run=pythonscript \
-        -script="tools/ue_render_widgets.py" -EnablePlugins=PythonScriptPlugin \
+    UnrealEditor-Cmd.exe <project>.uproject \
+        -ExecutePythonScript="tools/ue_render_widgets.py" \
+        -EnablePlugins=PythonScriptPlugin -AllowCommandletRendering \
         -unattended -nosplash -nopause -stdout
 
 Reads bh_render_config.json from its own directory:
