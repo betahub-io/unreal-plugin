@@ -107,6 +107,56 @@ FString UBHWidgetGenLibrary::ExportPropertyText(UObject* Target, const FString& 
 	return Out;
 }
 
+namespace
+{
+	/** Describe Struct's properties, queueing any struct type they use. */
+	TSharedRef<FJsonObject> DescribeFields(const UStruct* Struct, TArray<const UScriptStruct*>& Pending)
+	{
+		TSharedRef<FJsonObject> Fields = MakeShared<FJsonObject>();
+		for (TFieldIterator<FProperty> It(Struct, EFieldIteratorFlags::IncludeSuper); It; ++It)
+		{
+			const FProperty* Prop = *It;
+			TSharedRef<FJsonObject> Info = MakeShared<FJsonObject>();
+			Info->SetStringField(TEXT("type"), Prop->GetClass()->GetName());
+			if (const FStructProperty* StructProp = CastField<FStructProperty>(Prop))
+			{
+				Info->SetStringField(TEXT("struct"), StructProp->Struct->GetName());
+				Pending.AddUnique(StructProp->Struct);
+			}
+			Fields->SetObjectField(Prop->GetName(), Info);
+		}
+		return Fields;
+	}
+}
+
+FString UBHWidgetGenLibrary::DescribePropertiesJson(const TArray<UClass*>& Classes)
+{
+	TSharedRef<FJsonObject> ClassesJson = MakeShared<FJsonObject>();
+	TArray<const UScriptStruct*> Pending;
+	for (const UClass* Class : Classes)
+	{
+		if (Class != nullptr)
+		{
+			ClassesJson->SetObjectField(Class->GetName(), DescribeFields(Class, Pending));
+		}
+	}
+
+	// Pending grows while it is walked: describing a struct queues the structs it uses.
+	TSharedRef<FJsonObject> StructsJson = MakeShared<FJsonObject>();
+	for (int32 Index = 0; Index < Pending.Num(); ++Index)
+	{
+		StructsJson->SetObjectField(Pending[Index]->GetName(), DescribeFields(Pending[Index], Pending));
+	}
+
+	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetObjectField(TEXT("classes"), ClassesJson);
+	Root->SetObjectField(TEXT("structs"), StructsJson);
+	FString Out;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Out);
+	FJsonSerializer::Serialize(Root, Writer);
+	return Out;
+}
+
 void UBHWidgetGenLibrary::RenderWidgetToPng(TSubclassOf<UUserWidget> WidgetClass,
                                             int32 Width, int32 Height,
                                             const FString& OutDirectory,

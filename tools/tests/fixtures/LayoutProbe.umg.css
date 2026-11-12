@@ -1,0 +1,84 @@
+/* Direction B compose screen, first pass, for checking the preview against
+   Unreal on every widget class the new widget needs. Colours are the Unity
+   "Dark" theme; sizes are Unity's px at 1080p. Font sizes are points (px * 0.75);
+   Unity letter-spacing Npx is N/100 em, UMG LetterSpacing is 1/1000 em. */
+:root {
+  --ground: #1B1E27;
+  --surface: #2D313E;
+  --line: #424757;
+  --text: #E5E6EB;
+  --muted: #A1A5AF;
+  --accent: #FF7A59;
+  --on-accent: #1D0F0C;
+  --field: #111318;
+  --field-hi: #181A22;
+  --bar: #101217;
+  --scrim: #1B1E27D1;
+  --scrim-left: #1B1E278C;
+
+  --barlow: ref(/Script/Engine.Font'/BetaHubBugReporter/Fonts/Barlow.Barlow');
+  --semi: ref(/Script/Engine.Font'/BetaHubBugReporter/Fonts/BarlowSemiCondensed.BarlowSemiCondensed');
+}
+
+TextBlock { ColorAndOpacity: var(--text); Font.FontObject: var(--barlow);
+            Font.TypefaceFontName: Regular; Font.Size: 18; }
+
+.kicker { Font.FontObject: var(--semi); Font.TypefaceFontName: Bold; Font.Size: 18;
+          Font.LetterSpacing: 38; ColorAndOpacity: var(--accent); }
+.title  { Font.FontObject: var(--semi); Font.TypefaceFontName: Bold; Font.Size: 36;
+          Font.LetterSpacing: 10; slot.Padding: 0 10 0 9; }
+.sub    { ColorAndOpacity: var(--muted); slot.Padding.Bottom: 29; }
+
+.label  { Font.FontObject: var(--semi); Font.TypefaceFontName: SemiBold; Font.Size: 19.5;
+          Font.LetterSpacing: 15; ColorAndOpacity: var(--muted); }
+.label-focused { Font.TypefaceFontName: Bold; ColorAndOpacity: var(--text); }
+.tag    { Font.TypefaceFontName: Medium; slot.VerticalAlignment: Bottom; }
+.label-row { slot.Padding.Bottom: 9; }
+
+.box {
+  Background.DrawAs: RoundedBox;
+  Background.TintColor: var(--field);
+  Background.OutlineSettings.CornerRadii: 10;
+  Background.OutlineSettings.RoundingType: FixedRadius;
+  Background.OutlineSettings.Width: 3;
+  Background.OutlineSettings.Color: var(--line);
+  Padding: 17 14;
+  slot.Padding.Bottom: 20;
+}
+.box-focused {
+  Background.TintColor: var(--field-hi);
+  Background.OutlineSettings.Width: 5;
+  Background.OutlineSettings.Color: var(--accent);
+  Padding: 15 12;
+}
+.input  { WidgetStyle.Font.FontObject: var(--barlow); WidgetStyle.Font.TypefaceFontName: Regular;
+          WidgetStyle.Font.Size: 22.5; WidgetStyle.ColorAndOpacity: var(--text); }
+
+.row {
+  Background.DrawAs: RoundedBox;
+  Background.TintColor: var(--surface);
+  Background.OutlineSettings.CornerRadii: 10;
+  Background.OutlineSettings.RoundingType: FixedRadius;
+  Padding: 22 0;
+  VerticalAlignment: Center;
+}
+.row-name   { Font.Size: 22.5; }
+.row-detail { ColorAndOpacity: var(--muted); slot.Padding.Left: 16; slot.VerticalAlignment: Center; }
+.row-value  { Font.FontObject: var(--semi); Font.TypefaceFontName: Bold; Font.Size: 19.5;
+              Font.LetterSpacing: 10; ColorAndOpacity: var(--accent); slot.VerticalAlignment: Center; }
+
+.cap    { Font.FontObject: var(--semi); Font.TypefaceFontName: SemiBold; Font.Size: 18;
+          Font.LetterSpacing: 14; ColorAndOpacity: var(--muted); }
+
+.keycap {
+  Background.DrawAs: RoundedBox;
+  Background.TintColor: var(--text);
+  Background.OutlineSettings.CornerRadii: 4;
+  Background.OutlineSettings.RoundingType: FixedRadius;
+  Padding: 10 4;
+  slot.VerticalAlignment: Center;
+  slot.Padding.Right: 6;
+}
+.keycap-text { Font.TypefaceFontName: Bold; Font.Size: 14.25; ColorAndOpacity: var(--bar); }
+.prompt      { Font.Size: 22.5; slot.VerticalAlignment: Center; slot.Padding.Right: 48; }
+.prompt-main { Font.TypefaceFontName: Bold; ColorAndOpacity: var(--accent); slot.Padding.Right: 0; }

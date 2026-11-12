@@ -10,7 +10,7 @@ The source of truth is `widgets/*.json`. They are committed only because Unreal 
 anything else.
 
 ```sh
-$EDITOR widgets/BugReportForm.json
+$EDITOR widgets/BugReportForm.json        # or widgets/<Asset>.umg.xml, compiled by tools/umg_markup.py
 python3 tools/validate_widget_json.py widgets/BugReportForm.json   # ~1s, no Unreal
 python3 tools/json_to_html.py widgets/BugReportForm.json -o /tmp/p.html   # ~1s, layout within 1px of UE 5.3
 # then regenerate on the build box — see tools/README.md
@@ -174,4 +174,5 @@ player ever sees.
 ```sh
 python3 tools/tests/test_widget_tools.py
 python3 tools/tests/test_preview.py   # preview vs real UE 5.3 renders; needs Chrome/Chromium
+python3 tools/tests/test_markup.py    # markup compiler, round trip of both shipped widgets
 ```

@@ -47,6 +47,8 @@ python3 tools/validate_widget_json.py widgets/BugReportForm.json
 | `measure_preview.py` | anywhere | Compares a preview with a real render: per-widget geometry, and pixels with `--png`. Needs Chrome/Chromium. |
 | `ue_dump_umg_schema.py` | UE editor | Regenerates `umg_schema.json`. Only needed when changing engine version. |
 | `ue_dump_umg_defaults.py` | UE editor | Regenerates `umg_defaults.json`, the class defaults the preview fills in. Same cadence as the schema. |
+| `ue_dump_umg_properties.py` | UE editor | Regenerates `umg_properties.json`, every reflected property of the UMG classes, which the markup compiler checks paths against. |
+| `umg_markup.py` | anywhere | Compiles `widgets/*.umg.xml` (+ `*.umg.css`) to the JSON the generator reads; `check` finds stale JSON. See "Writing widgets in markup". |
 | `ue_import_fonts.py` | **UE 5.3 only** | Builds `Content/Fonts/` from `widgets/fonts/fonts.json` and the TTFs beside it. |
 | `widgetgen/` | UE 5.3 | Editor-only C++ module reaching what Python cannot. |
 
@@ -168,6 +170,49 @@ them with `ue_render_widgets.py` at both sizes whenever the widgets change on pu
 
 Headless browsers block `file://` for other pages; the preview is self-contained (fonts
 inline), and `measure_preview.py` passes the flags it needs.
+
+## Writing widgets in markup
+
+`widgets/<Asset>.umg.xml` is the hand- and agent-writable source; `widgets/<Asset>.json`
+is compiled from it and stays what the generator reads. UMG vocabulary throughout, so
+what you write is what Unreal builds:
+
+```xml
+<Widget asset="Demo" parent="UserWidget" styles="demo.umg.css">
+  <Overlay name="Root">
+    <Border class="panel" Padding="24 16" slot.HorizontalAlignment="Center">
+      <TextBlock name="Title" class="title" key="Demo.Title">REPORT A BUG</TextBlock>
+    </Border>
+  </Overlay>
+</Widget>
+```
+
+```css
+:root  { --accent: #FF7A59; }
+.title { Font.Size: 36; Font.LetterSpacing: 10; ColorAndOpacity: var(--accent); }
+```
+
+```sh
+python3 tools/umg_markup.py compile widgets/Demo.umg.xml      # writes widgets/Demo.json
+python3 tools/umg_markup.py check                             # every .json matches its markup
+python3 tools/umg_markup.py decompile widgets/BugReportForm.json   # JSON -> markup, lossless
+```
+
+The full syntax is in the module docstring. What matters day to day:
+
+- Attributes are .T3D property names, dotted into structs (`Font.Size`); `slot.` addresses
+  the parent's slot. Paths are checked against `umg_properties.json`, so
+  `<TextBlock LetterSpacing=...>` fails with "did you mean Font.LetterSpacing?".
+- Shorthands follow Unreal, not CSS: margins are `all`, `horizontal vertical` or
+  `left top right bottom` (FMargin's constructors). Colours are sRGB `#RRGGBB[AA]`,
+  stored linear.
+- One field (`slot.Padding.Bottom="10"`) leaves the others absent, which means default.
+- Border and BackgroundBlur keep padding and alignment on themselves *and* on their
+  child's slot; the compiler fills whichever side you left out and refuses a contradiction.
+- Text without `key=` is culture-invariant (`INVTEXT`), as before.
+
+`tools/tests/fixtures/LayoutProbe.umg.xml` is a worked example: the direction-B compose
+screen, built and rendered on UE 5.3 at three sizes.
 
 ## Fonts
 
