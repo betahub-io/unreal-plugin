@@ -303,7 +303,8 @@ private:
     UPROPERTY() TObjectPtr<UBH_ReportSubmission> Submission;
     UPROPERTY() TObjectPtr<UTexture2D> ScreenshotTexture;
     UPROPERTY() TArray<TObjectPtr<UTexture2D>> ThumbnailTextures;
-    TArray<FDateTime> ThumbnailTimes;
+    /** FPlatformTime::Seconds() when each thumbnail was taken. */
+    TArray<double> ThumbnailTimes;
     UPROPERTY() TArray<TObjectPtr<UBH_AttachmentRowWidget>> RowWidgets;
     UPROPERTY() TArray<TObjectPtr<UBH_AttachmentRowWidget>> PreviewRowWidgets;
 };

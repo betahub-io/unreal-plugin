@@ -114,13 +114,13 @@ Border.box--focused { Background.TintColor: var(--bh-field-hi); Background.Outli
   Background.TintColor: var(--bh-surface);
   Background.OutlineSettings.CornerRadii: var(--bh-radius);
   Background.OutlineSettings.RoundingType: FixedRadius;
-  Background.OutlineSettings.Width: 0;
-  Background.OutlineSettings.Color: var(--bh-accent);
   Padding: 22 0;
   VerticalAlignment: Center;
 }
 Border.row--hover   { Background.TintColor: var(--bh-surface-hi); }
-Border.row--focused { Background.TintColor: var(--bh-surface-hi); Background.OutlineSettings.Width: 5; }
+/* The outline colour only with the outline: Slate antialiases a coloured 0px outline into the corners. */
+Border.row--focused { Background.TintColor: var(--bh-surface-hi); Background.OutlineSettings.Width: 5;
+                      Background.OutlineSettings.Color: var(--bh-accent); }
 .row-name  { Font.TypefaceFontName: Medium; Font.Size: 21; slot.VerticalAlignment: Center; }
 .row-meta  { ColorAndOpacity: var(--bh-muted); slot.Padding.Left: 15; slot.VerticalAlignment: Center; }
 .row-gap   { slot.Size: Fill; Size: 15 0; }
@@ -207,7 +207,7 @@ TextBlock.note--err { ColorAndOpacity: var(--bh-err); }
 /* ------------------------------------------------------------------ prompt bar */
 
 .bar-line { BrushColor: var(--bh-line); Padding: 0; }
-.bar      { BrushColor: var(--bh-bar); Padding: 82 0 82 54; VerticalAlignment: Center; }
+.bar      { BrushColor: var(--bh-bar); Padding: 82 0; }
 .prompt-size { MinDesiredHeight: 64; bOverride_MinDesiredHeight: true; }
 .prompt {
   Background.DrawAs: RoundedBox;
@@ -243,6 +243,8 @@ TextBlock.prompt-label--primary { Font.TypefaceFontName: Bold; ColorAndOpacity: 
 .key-edge { Background.TintColor: #A9ADB8; Background.OutlineSettings.CornerRadii: 6; Padding: 1 1 1 4; }
 .key-face { Background.TintColor: #E7E8EC; Background.OutlineSettings.CornerRadii: 5; Padding: 9 0; }
 .key-text { Font.Size: 14.25; ColorAndOpacity: #14161C; }
+/* Barlow has no arrows. */
+TextBlock.key-text--symbol { Font.FontObject: var(--mono); Font.TypefaceFontName: Regular; }
 
 .pad-edge { Background.TintColor: #5CB82C; Background.OutlineSettings.CornerRadii: 19; Padding: 2; }
 .pad-face { Background.TintColor: #5CB82C; Background.OutlineSettings.CornerRadii: 17; Padding: 0; }

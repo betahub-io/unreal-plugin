@@ -195,6 +195,8 @@ bool FBHTagsAndValuesTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("warning tone"), LogLineTone(Tail[1]), EBH_Tone::Warn);
     TestEqual(TEXT("error tone"), LogLineTone(Tail[2]), EBH_Tone::Err);
 
+    TestEqual(TEXT("clip start"), FormatDuration(0).ToString(), FString(TEXT("0:00")));
+    TestEqual(TEXT("over a minute"), FormatDuration(65).ToString(), FString(TEXT("1:05")));
     TestTrue(TEXT("email"), LooksLikeEmail(TEXT(" a@b ")));
     TestFalse(TEXT("not an email"), LooksLikeEmail(TEXT("ab")));
     TestEqual(TEXT("screens"), ScreenFor(EBH_SubmissionState::AwaitingPublish), EBH_Screen::Sent);

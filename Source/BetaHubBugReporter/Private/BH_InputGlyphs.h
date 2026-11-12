@@ -44,6 +44,8 @@ struct FBH_Glyph
     EBH_GlyphShape Shape = EBH_GlyphShape::Key;
     /** Face buttons only: the stylesheet variant, "xbox-a", "ps-cross" or "switch". */
     FString Variant;
+    /** A symbol rather than a word: drawn in the one bundled font that has the arrows. */
+    bool bSymbol = false;
 };
 
 /**

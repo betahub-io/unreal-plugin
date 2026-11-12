@@ -197,9 +197,6 @@ void UBH_ReportScreenWidget::InitializeScreen()
     LinkName->SetText(LOCTEXT("ReportLink", "Report link"));
     GroupLabel->SetText(LOCTEXT("AttachmentsGroup", "SENDING ALONG"));
     SentWithLabel->SetText(LOCTEXT("SentWith", "SENT WITH THIS REPORT"));
-    DescriptionInput->SetText(FText::GetEmpty());
-    StepsInput->SetText(FText::GetEmpty());
-    EmailInput->SetText(FText::GetEmpty());
 }
 
 void UBH_ReportScreenWidget::Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath,
@@ -375,14 +372,12 @@ void UBH_ReportScreenWidget::LoadThumbnails()
     {
         return;
     }
-    const double Now = FPlatformTime::Seconds();
-    const FDateTime WallNow = FDateTime::Now();
     for (const FBH_Thumbnail& Thumbnail : GameRecorder->GetThumbnails())
     {
         if (UTexture2D* Texture = TextureFrom(Thumbnail))
         {
             ThumbnailTextures.Add(Texture);
-            ThumbnailTimes.Add(WallNow - FTimespan::FromSeconds(Now - Thumbnail.CapturedAt));
+            ThumbnailTimes.Add(Thumbnail.CapturedAt);
         }
     }
 }
@@ -1439,7 +1434,9 @@ void UBH_ReportScreenWidget::FillPane(FPaneView& Pane, const FBH_ReportAttachmen
             if (ThumbnailTextures.IsValidIndex(Index))
             {
                 Frame->SetTheme(Theme);
-                Frame->Show(ThumbnailTextures[Index], TimeOfDay(ThumbnailTimes[Index]), Index == ThumbnailTextures.Num() - 1, bFullScreen);
+                // As in the Unity widget: time into the clip, from the oldest frame shown.
+                const FText Time = FormatDuration(FMath::RoundToInt(ThumbnailTimes[Index] - ThumbnailTimes[First]));
+                Frame->Show(ThumbnailTextures[Index], Time, Index == ThumbnailTextures.Num() - 1, bFullScreen);
             }
             else
             {

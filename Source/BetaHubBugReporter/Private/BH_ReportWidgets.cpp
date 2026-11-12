@@ -101,7 +101,10 @@ void UBH_GlyphWidget::Show(const FBH_Glyph& Glyph)
     SetShown(Stick, Glyph.Shape == EBH_GlyphShape::Stick);
     switch (Glyph.Shape)
     {
-        case EBH_GlyphShape::Key: KeyText->SetText(Glyph.Text); break;
+        case EBH_GlyphShape::Key:
+            KeyText->SetText(Glyph.Text);
+            SetClass(KeyText, TEXT("key-text--symbol"), Glyph.bSymbol);
+            break;
         case EBH_GlyphShape::DPad: ChipText->SetText(Glyph.Text); break;
         case EBH_GlyphShape::Stick: StickText->SetText(Glyph.Text); break;
         case EBH_GlyphShape::Pad:

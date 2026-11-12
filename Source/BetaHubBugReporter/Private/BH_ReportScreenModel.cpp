@@ -435,4 +435,10 @@ FText BH_ReportScreenModel::UpperCase(const FText& Text)
     return Text.ToUpper();
 }
 
+FText BH_ReportScreenModel::FormatDuration(int32 Seconds)
+{
+    const int32 Clamped = FMath::Max(0, Seconds);
+    return FText::AsCultureInvariant(FString::Printf(TEXT("%d:%02d"), Clamped / 60, Clamped % 60));
+}
+
 #undef LOCTEXT_NAMESPACE

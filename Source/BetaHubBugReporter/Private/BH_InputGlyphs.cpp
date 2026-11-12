@@ -87,6 +87,11 @@ namespace
     {
         return {Text, EBH_GlyphShape::Key, FString()};
     }
+
+    FBH_Glyph SymbolKey(const TCHAR* Symbol)
+    {
+        return {FText::AsCultureInvariant(Symbol), EBH_GlyphShape::Key, FString(), true};
+    }
 }
 
 FBH_InputIntent BH_InputGlyphs::IntentFor(const FKey& Key, bool bCtrlOrCmd, EBH_GlyphSet PadSet)
@@ -123,7 +128,7 @@ TArray<FBH_Glyph> BH_InputGlyphs::GlyphsFor(EBH_Action Action, EBH_GlyphSet Set)
             case EBH_Action::Alt: return {Key(FText::AsCultureInvariant(TEXT("P")))};
             case EBH_Action::Send: return {Key(LOCTEXT("KeyCtrl", "Ctrl")), Key(LOCTEXT("KeyEnter", "Enter"))};
             case EBH_Action::Next: return {Key(LOCTEXT("KeyTab", "Tab"))};
-            case EBH_Action::Navigate: return {Key(FText::AsCultureInvariant(TEXT("\u2191"))), Key(FText::AsCultureInvariant(TEXT("\u2193")))};
+            case EBH_Action::Navigate: return {SymbolKey(TEXT("\u2191")), SymbolKey(TEXT("\u2193"))};
             case EBH_Action::Scroll: return {Key(LOCTEXT("KeyPgUp", "PgUp")), Key(LOCTEXT("KeyPgDn", "PgDn"))};
         }
         return {};

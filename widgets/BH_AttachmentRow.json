@@ -32,17 +32,7 @@
                 "Z": 10.0,
                 "W": 10.0
               },
-              "RoundingType": "FixedRadius",
-              "Width": 0.0,
-              "Color": {
-                "SpecifiedColor": {
-                  "R": 1.0,
-                  "G": 0.194618,
-                  "B": 0.099899,
-                  "A": 1.0
-                },
-                "ColorUseRule": "UseColor_Specified"
-              }
+              "RoundingType": "FixedRadius"
             }
           },
           "Padding": {

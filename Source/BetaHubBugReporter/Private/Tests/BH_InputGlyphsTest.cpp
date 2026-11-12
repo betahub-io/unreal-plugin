@@ -41,6 +41,8 @@ bool FBHGlyphsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("PlayStation back"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::PlayStation)[0].Text.ToString(), FString(TEXT("\u25CB")));
     TestEqual(TEXT("Switch confirm is A on the right"), GlyphsFor(EBH_Action::Confirm, EBH_GlyphSet::Switch)[0].Text.ToString(), FString(TEXT("A")));
     TestEqual(TEXT("Switch back is B at the bottom"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::Switch)[0].Text.ToString(), FString(TEXT("B")));
+    TestTrue(TEXT("arrows are symbols"), GlyphsFor(EBH_Action::Navigate, EBH_GlyphSet::Keyboard)[0].bSymbol);
+    TestFalse(TEXT("words are not"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::Keyboard)[0].bSymbol);
     TestTrue(TEXT("pad navigation chip"), GlyphsFor(EBH_Action::Navigate, EBH_GlyphSet::Xbox)[0].Shape == EBH_GlyphShape::DPad);
     TestTrue(TEXT("pad scroll stick"), GlyphsFor(EBH_Action::Scroll, EBH_GlyphSet::PlayStation)[0].Shape == EBH_GlyphShape::Stick);
 

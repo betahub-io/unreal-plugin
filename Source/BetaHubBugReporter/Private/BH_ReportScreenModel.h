@@ -199,4 +199,7 @@ namespace BH_ReportScreenModel
     bool LooksLikeEmail(const FString& Email);
 
     FText UpperCase(const FText& Text);
+
+    /** "0:10", "1:05": a clip frame's time from the start of the clip. */
+    FText FormatDuration(int32 Seconds);
 }

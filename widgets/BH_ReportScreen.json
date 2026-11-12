@@ -267,17 +267,7 @@
                                     "Z": 10.0,
                                     "W": 10.0
                                   },
-                                  "RoundingType": "FixedRadius",
-                                  "Width": 0.0,
-                                  "Color": {
-                                    "SpecifiedColor": {
-                                      "R": 1.0,
-                                      "G": 0.194618,
-                                      "B": 0.099899,
-                                      "A": 1.0
-                                    },
-                                    "ColorUseRule": "UseColor_Specified"
-                                  }
+                                  "RoundingType": "FixedRadius"
                                 }
                               },
                               "Padding": {
@@ -1089,17 +1079,7 @@
                                     "Z": 10.0,
                                     "W": 10.0
                                   },
-                                  "RoundingType": "FixedRadius",
-                                  "Width": 0.0,
-                                  "Color": {
-                                    "SpecifiedColor": {
-                                      "R": 1.0,
-                                      "G": 0.194618,
-                                      "B": 0.099899,
-                                      "A": 1.0
-                                    },
-                                    "ColorUseRule": "UseColor_Specified"
-                                  }
+                                  "RoundingType": "FixedRadius"
                                 }
                               },
                               "Padding": {
@@ -1622,17 +1602,7 @@
                                     "Z": 10.0,
                                     "W": 10.0
                                   },
-                                  "RoundingType": "FixedRadius",
-                                  "Width": 0.0,
-                                  "Color": {
-                                    "SpecifiedColor": {
-                                      "R": 1.0,
-                                      "G": 0.194618,
-                                      "B": 0.099899,
-                                      "A": 1.0
-                                    },
-                                    "ColorUseRule": "UseColor_Specified"
-                                  }
+                                  "RoundingType": "FixedRadius"
                                 }
                               },
                               "Padding": {
@@ -2988,67 +2958,79 @@
             }
           },
           {
-            "name": "BarSize",
-            "class": "SizeBox",
+            "name": "BarFill",
+            "class": "Border",
             "properties": {
-              "HeightOverride": 124.0,
-              "bOverride_HeightOverride": true
+              "BrushColor": {
+                "R": 0.005182,
+                "G": 0.006049,
+                "B": 0.008568,
+                "A": 1.0
+              },
+              "Padding": {
+                "Left": 82.0,
+                "Top": 0.0,
+                "Right": 82.0,
+                "Bottom": 0.0
+              }
             },
             "children": [
               {
-                "name": "BarFill",
-                "class": "Border",
-                "properties": {
-                  "BrushColor": {
-                    "R": 0.005182,
-                    "G": 0.006049,
-                    "B": 0.008568,
-                    "A": 1.0
-                  },
-                  "Padding": {
-                    "Left": 82.0,
-                    "Top": 0.0,
-                    "Right": 82.0,
-                    "Bottom": 54.0
-                  },
-                  "VerticalAlignment": "VAlign_Center"
-                },
+                "name": "BarRows",
+                "class": "VerticalBox",
+                "properties": {},
                 "children": [
                   {
-                    "name": "Prompts",
-                    "class": "HorizontalBox",
-                    "properties": {},
+                    "name": "BarSize",
+                    "class": "SizeBox",
+                    "properties": {
+                      "HeightOverride": 70.0,
+                      "bOverride_HeightOverride": true
+                    },
                     "children": [
                       {
-                        "name": "PromptsLeft",
+                        "name": "Prompts",
                         "class": "HorizontalBox",
                         "properties": {},
-                        "slot": {
-                          "class": "HorizontalBoxSlot",
-                          "properties": {
-                            "VerticalAlignment": "VAlign_Center"
-                          }
-                        }
-                      },
-                      {
-                        "name": "PromptsGap",
-                        "class": "Spacer",
-                        "properties": {},
-                        "slot": {
-                          "class": "HorizontalBoxSlot",
-                          "properties": {
-                            "Size": {
-                              "SizeRule": "Fill"
+                        "children": [
+                          {
+                            "name": "PromptsLeft",
+                            "class": "HorizontalBox",
+                            "properties": {},
+                            "slot": {
+                              "class": "HorizontalBoxSlot",
+                              "properties": {
+                                "VerticalAlignment": "VAlign_Center"
+                              }
+                            }
+                          },
+                          {
+                            "name": "PromptsGap",
+                            "class": "Spacer",
+                            "properties": {},
+                            "slot": {
+                              "class": "HorizontalBoxSlot",
+                              "properties": {
+                                "Size": {
+                                  "SizeRule": "Fill"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "name": "PromptsRight",
+                            "class": "HorizontalBox",
+                            "properties": {},
+                            "slot": {
+                              "class": "HorizontalBoxSlot",
+                              "properties": {
+                                "VerticalAlignment": "VAlign_Center"
+                              }
                             }
                           }
-                        }
-                      },
-                      {
-                        "name": "PromptsRight",
-                        "class": "HorizontalBox",
-                        "properties": {},
+                        ],
                         "slot": {
-                          "class": "HorizontalBoxSlot",
+                          "class": "SizeBoxSlot",
                           "properties": {
                             "VerticalAlignment": "VAlign_Center"
                           }
@@ -3056,22 +3038,35 @@
                       }
                     ],
                     "slot": {
-                      "class": "BorderSlot",
-                      "properties": {
-                        "Padding": {
-                          "Left": 82.0,
-                          "Top": 0.0,
-                          "Right": 82.0,
-                          "Bottom": 54.0
-                        },
-                        "VerticalAlignment": "VAlign_Center"
+                      "class": "VerticalBoxSlot",
+                      "properties": {}
+                    }
+                  },
+                  {
+                    "name": "BarBottom",
+                    "class": "Spacer",
+                    "properties": {
+                      "Size": {
+                        "X": 0.0,
+                        "Y": 54.0
                       }
+                    },
+                    "slot": {
+                      "class": "VerticalBoxSlot",
+                      "properties": {}
                     }
                   }
                 ],
                 "slot": {
-                  "class": "SizeBoxSlot",
-                  "properties": {}
+                  "class": "BorderSlot",
+                  "properties": {
+                    "Padding": {
+                      "Left": 82.0,
+                      "Top": 0.0,
+                      "Right": 82.0,
+                      "Bottom": 0.0
+                    }
+                  }
                 }
               }
             ],
@@ -3092,8 +3087,8 @@
     ]
   },
   "_stats": {
-    "widgetsReachable": 124,
-    "widgetsInTree": 124,
-    "slots": 123
+    "widgetsReachable": 126,
+    "widgetsInTree": 126,
+    "slots": 125
   }
 }

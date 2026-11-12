@@ -208,20 +208,25 @@
       </HorizontalBox>
     </Overlay>
 
-    <!-- prompt bar: 1px line, then 124px with the prompts centred in the top 70 -->
+    <!-- prompt bar: a 1px line, then the prompts centred in 70px and 54px below them.
+         Not one Border with bottom padding and centring: Slate centres a child with
+         asymmetric padding by the whole difference, not half of it as CSS does. -->
     <VerticalBox name="Bar" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Bottom">
       <SizeBox name="BarLineSize" HeightOverride="1" bOverride_HeightOverride="true">
         <Border name="BarLine" class="bar-line"/>
       </SizeBox>
-      <SizeBox name="BarSize" HeightOverride="124" bOverride_HeightOverride="true">
-        <Border name="BarFill" class="bar">
-          <HorizontalBox name="Prompts">
-            <HorizontalBox name="PromptsLeft" slot.VerticalAlignment="Center"/>
-            <Spacer name="PromptsGap" slot.Size="Fill"/>
-            <HorizontalBox name="PromptsRight" slot.VerticalAlignment="Center"/>
-          </HorizontalBox>
-        </Border>
-      </SizeBox>
+      <Border name="BarFill" class="bar">
+        <VerticalBox name="BarRows">
+          <SizeBox name="BarSize" HeightOverride="70" bOverride_HeightOverride="true">
+            <HorizontalBox name="Prompts" slot.VerticalAlignment="Center">
+              <HorizontalBox name="PromptsLeft" slot.VerticalAlignment="Center"/>
+              <Spacer name="PromptsGap" slot.Size="Fill"/>
+              <HorizontalBox name="PromptsRight" slot.VerticalAlignment="Center"/>
+            </HorizontalBox>
+          </SizeBox>
+          <Spacer name="BarBottom" Size="0 54"/>
+        </VerticalBox>
+      </Border>
     </VerticalBox>
   </Overlay>
 </Widget>
