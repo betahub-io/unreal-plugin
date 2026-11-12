@@ -24,7 +24,8 @@ Full workflow, tool list and gotchas: **`tools/README.md`**.
 
 - **Generate under UE 5.3 only.** Later engines write a format UE 5.3 cannot load, which
   breaks every 5.3 customer. `tools/ue_generate_widgets.py` refuses other versions. This has
-  already happened once — commit `0503b80`, "Recreate widgets for Unreal 5.3".
+  already happened once — commit `0503b80`, "Recreate widgets for Unreal 5.3". The same
+  applies to `Content/Fonts/`, built by `tools/ue_import_fonts.py`.
 - **`tools/` and `widgets/` are developer-only and must never ship.** They are excluded by
   `RunUAT BuildPlugin` (which copies only the plugin's standard folders plus
   `Config/FilterPlugin.ini`) and by `.gitattributes` for source archives. **Never add a

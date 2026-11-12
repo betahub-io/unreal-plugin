@@ -55,12 +55,13 @@ def asset_versions(path):
 
 
 def check_versions(problems):
-    assets = sorted(glob.glob(os.path.join(REPO, "Content", "*.uasset")))
+    content = os.path.join(REPO, "Content")
+    assets = sorted(glob.glob(os.path.join(content, "**", "*.uasset"), recursive=True))
     if not assets:
         problems.append("no assets found under Content/")
         return
     for path in assets:
-        name = os.path.basename(path)
+        name = os.path.relpath(path, content)
         try:
             _ue4, ue5 = asset_versions(path)
         except Exception as exc:

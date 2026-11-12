@@ -1,0 +1,25 @@
+{
+  "fonts": [
+    {
+      "asset": "/BetaHubBugReporter/Fonts/Barlow",
+      "typefaces": {
+        "Regular": "Barlow-Regular.ttf",
+        "Medium": "Barlow-Medium.ttf",
+        "Bold": "Barlow-Bold.ttf"
+      }
+    },
+    {
+      "asset": "/BetaHubBugReporter/Fonts/BarlowSemiCondensed",
+      "typefaces": {
+        "SemiBold": "BarlowSemiCondensed-SemiBold.ttf",
+        "Bold": "BarlowSemiCondensed-Bold.ttf"
+      }
+    },
+    {
+      "asset": "/BetaHubBugReporter/Fonts/JetBrainsMono",
+      "typefaces": {
+        "Regular": "JetBrainsMono-Regular.ttf"
+      }
+    }
+  ]
+}

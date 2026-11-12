@@ -43,6 +43,7 @@ python3 tools/validate_widget_json.py widgets/BugReportForm.json
 | `compare_widget_json.py` | anywhere | Semantic diff of two widget trees. The regeneration gate. |
 | `json_to_html.py` | anywhere | Approximate visual sketch for fast iteration. **Not verification** — see below. |
 | `ue_dump_umg_schema.py` | UE editor | Regenerates `umg_schema.json`. Only needed when changing engine version. |
+| `ue_import_fonts.py` | **UE 5.3 only** | Builds `Content/Fonts/` from `widgets/fonts/fonts.json` and the TTFs beside it. |
 | `widgetgen/` | UE 5.3 | Editor-only C++ module reaching what Python cannot. |
 
 ## Regenerating
@@ -125,6 +126,14 @@ regenerated asset.
 
 Note: headless browsers block `file://`. To screenshot the preview, serve it first
 (`python3 -m http.server` in the output directory) — a normal browser opens the file fine.
+
+## Fonts
+
+`Content/Fonts/*.uasset` are build output, like the widgets. The source is
+`widgets/fonts/fonts.json` plus the TTFs and their licences beside it. A widget selects a
+face with `Font.FontObject` (the composite font) and `Font.TypefaceFontName`. Rebuild on
+UE 5.3 with `ue_import_fonts.py` (config in its docstring), then copy `Content/Fonts/`
+back.
 
 ## Before a release
 
