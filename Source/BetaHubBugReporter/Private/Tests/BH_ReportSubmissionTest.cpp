@@ -5,6 +5,9 @@
 
 #include "BH_ReportSubmission.h"
 #include "BH_ReportAttachment.h"
+#include "HAL/PlatformFileManager.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "UObject/StrongObjectPtr.h"
 
 // See BH_VideoEncoderTest.cpp: the context flags are spelt out so this compiles on every UE 5.x.
@@ -32,6 +35,7 @@ namespace
 
         bool bUploads = true;
         bool bEmail = true;
+        bool bServerPublishes = false;
         TArray<FString> Calls;
         TArray<FBH_ReportAttachment> InlineSeen;
         TFunction<void(const FBH_DraftResult&)> PendingDraft;
@@ -49,6 +53,7 @@ namespace
         }
         virtual bool SupportsUploads() const override { return bUploads; }
         virtual bool SupportsReporterEmail() const override { return bEmail; }
+        virtual bool ServerPublishesDraft() const override { return bServerPublishes; }
         virtual void Upload(const FBH_ReportAttachment& Attachment, TFunction<void(float)> OnProgress,
                             TFunction<void(const FString&)> OnDone) override
         {
@@ -115,6 +120,21 @@ namespace
     {
         return {MakeAttachment(BH_AttachmentIds::Screenshot, EBH_AttachmentKind::Image),
                 MakeAttachment(BH_AttachmentIds::GameLog, EBH_AttachmentKind::Log)};
+    }
+
+    /** A real file the submission may take over, as the screenshot is. */
+    FString WriteOwnedFile(const TCHAR* Name)
+    {
+        const FString Path = FPaths::Combine(FPaths::ProjectSavedDir(), Name);
+        FFileHelper::SaveStringToFile(TEXT("jpeg"), *Path);
+        return Path;
+    }
+
+    FBH_ReportAttachment OwnedScreenshot(const FString& Path)
+    {
+        FBH_ReportAttachment A = MakeAttachment(BH_AttachmentIds::Screenshot, EBH_AttachmentKind::Image, Path);
+        A.bRemoveAfterUpload = true;
+        return A;
     }
 
     FBH_ReportContent Content()
@@ -234,6 +254,97 @@ bool FBHSubmissionDraftFailureTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("failed"), H.Submission->GetState(), EBH_SubmissionState::Failed);
     TestEqual(TEXT("error kept"), H.Submission->GetError(), FString(TEXT("Project not found")));
     TestEqual(TEXT("nothing uploaded"), H.Client->PendingUploads.Num(), 0);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSubmissionDraftFailureKeepsFilesTest, "BetaHub.Submission.DraftFailureKeepsFiles", BH_SUBMISSION_TEST_FLAGS)
+bool FBHSubmissionDraftFailureKeepsFilesTest::RunTest(const FString& Parameters)
+{
+    // Two refused drafts below; one expectation (the framework refuses a duplicate pattern).
+    AddExpectedError(TEXT("Bug report submission failed"), EAutomationExpectedErrorFlags::Contains, 2);
+
+    // A refused draft (offline, a description under the project's minimum) must leave the
+    // screenshot to the form, so the player's retry still sends it.
+    const FString Shot = WriteOwnedFile(TEXT("BH_SubmissionTest_Refused.jpg"));
+    FHarness H;
+    H.Start({OwnedScreenshot(Shot)});
+    H.Client->CompleteDraft(TEXT("Description must be at least 50 characters long."));
+    TestTrue(TEXT("screenshot kept for the retry"), FPaths::FileExists(Shot));
+    IFileManager::Get().Delete(*Shot);
+
+    // Once BetaHub has the draft, the submission owns the file and deletes it when done.
+    const FString Sent = WriteOwnedFile(TEXT("BH_SubmissionTest_Sent.jpg"));
+    FHarness Ok;
+    Ok.Start({OwnedScreenshot(Sent)});
+    Ok.Client->CompleteDraft();
+    Ok.Client->CompleteUpload();
+    Ok.Submission->Publish(false);
+    Ok.Client->CompletePublish();
+    TestFalse(TEXT("screenshot deleted after publishing"), FPaths::FileExists(Sent));
+
+    // The form went away before the draft came back: nobody will retry, so a refused draft
+    // leaves nothing behind either.
+    const FString Abandoned = WriteOwnedFile(TEXT("BH_SubmissionTest_Abandoned.jpg"));
+    FHarness Gone;
+    Gone.Start({OwnedScreenshot(Abandoned)});
+    Gone.Submission->PublishWhenReady();
+    Gone.Client->CompleteDraft(TEXT("offline"));
+    TestFalse(TEXT("abandoned screenshot deleted"), FPaths::FileExists(Abandoned));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSubmissionPublishWhenReadyTest, "BetaHub.Submission.PublishWhenReady", BH_SUBMISSION_TEST_FLAGS)
+bool FBHSubmissionPublishWhenReadyTest::RunTest(const FString& Parameters)
+{
+    // The form closes while the draft is still on its way: the report must publish on its own.
+    FHarness H;
+    H.Start(TwoAttachments());
+    TestTrue(TEXT("kept alive while unfinished"), H.Submission->IsRooted());
+    H.Submission->PublishWhenReady();
+    TestEqual(TEXT("still creating the draft"), H.Submission->GetState(), EBH_SubmissionState::CreatingDraft);
+    H.Client->CompleteDraft();
+    H.Client->CompleteUpload();
+    H.Client->CompleteUpload();
+    TestTrue(TEXT("published without an email"), H.Client->Calls.Contains(TEXT("publish")));
+    H.Client->CompletePublish();
+    TestEqual(TEXT("published"), H.Submission->GetState(), EBH_SubmissionState::Published);
+    TestFalse(TEXT("released when done"), H.Submission->IsRooted());
+
+    // Already publishing (an email was sent): a second request changes nothing.
+    FHarness E;
+    E.Start({});
+    E.Client->CompleteDraft();
+    E.Submission->Publish(true);
+    E.Submission->PublishWhenReady();
+    TestEqual(TEXT("one publish"), E.Client->Calls.FilterByPredicate([](const FString& C) { return C.StartsWith(TEXT("publish")); }).Num(), 1);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSubmissionSentDespiteFailureTest, "BetaHub.Submission.SentDespitePublishFailure", BH_SUBMISSION_TEST_FLAGS)
+bool FBHSubmissionSentDespiteFailureTest::RunTest(const FString& Parameters)
+{
+    // A bug draft carries publish_after, so BetaHub publishes it even when our publish fails.
+    FHarness Bug;
+    Bug.Client->bServerPublishes = true;
+    Bug.Start({});
+    Bug.Client->CompleteDraft();
+    Bug.Submission->Publish(false);
+    AddExpectedError(TEXT("Bug report submission failed"), EAutomationExpectedErrorFlags::Contains, 3);
+    Bug.Client->CompletePublish(TEXT("Unauthorized"));
+    TestTrue(TEXT("bug: sent despite the failed publish"), Bug.Submission->IsSentDespiteFailure());
+
+    FHarness Idea;
+    Idea.Start({});
+    Idea.Client->CompleteDraft();
+    Idea.Submission->Publish(false);
+    Idea.Client->CompletePublish(TEXT("Unauthorized"));
+    TestFalse(TEXT("no server-side publish: not sent"), Idea.Submission->IsSentDespiteFailure());
+
+    FHarness NoDraft;
+    NoDraft.Client->bServerPublishes = true;
+    NoDraft.Start({});
+    NoDraft.Client->CompleteDraft(TEXT("offline"));
+    TestFalse(TEXT("no draft: not sent"), NoDraft.Submission->IsSentDespiteFailure());
     return true;
 }
 

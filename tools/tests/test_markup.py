@@ -62,6 +62,14 @@ class CommittedSourceTests(unittest.TestCase):
             with self.subTest(directory=directory):
                 self.assertEqual(umg_markup.check(directory), [])
 
+    def test_generated_style_tables_match_the_markup(self):
+        self.assertEqual(umg_markup.check(os.path.join(REPO, "widgets"), umg_markup.DEFAULT_STYLES_OUT), [])
+
+    def test_generated_style_tables_carry_the_copyright(self):
+        # Fab rejects a submission with a source file that has no copyright notice.
+        first = umg_markup.styles_inl(os.path.join(REPO, "widgets")).splitlines()[0]
+        self.assertTrue(first.startswith("// Copyright (c)"), first)
+
 
 class ValueTests(unittest.TestCase):
 

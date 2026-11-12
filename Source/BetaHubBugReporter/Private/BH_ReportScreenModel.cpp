@@ -424,10 +424,92 @@ EBH_Tone BH_ReportScreenModel::LogLineTone(const FString& Line)
     return EBH_Tone::Muted;
 }
 
+namespace
+{
+    // BetaHub's User::VIRTUAL_EMAIL_REGEXP, the address shape it accepts as contact info.
+    // ASCII only; RFC 5322 atext in the local part.
+    const TCHAR* EmailLocalSymbols = TEXT("!#$%&'*+/=?^_`{|}~-");
+
+    bool IsAsciiAlpha(TCHAR C)
+    {
+        return (C >= TEXT('A') && C <= TEXT('Z')) || (C >= TEXT('a') && C <= TEXT('z'));
+    }
+
+    bool IsAsciiAlnum(TCHAR C)
+    {
+        return IsAsciiAlpha(C) || (C >= TEXT('0') && C <= TEXT('9'));
+    }
+
+    bool IsEmailLocalChar(TCHAR C)
+    {
+        return IsAsciiAlnum(C) || (C != 0 && FCString::Strchr(EmailLocalSymbols, C) != nullptr);
+    }
+
+    /** Dot-separated runs of atext: no leading, trailing or doubled dot. */
+    bool IsEmailLocalPart(const FString& Local)
+    {
+        TArray<FString> Atoms;
+        Local.ParseIntoArray(Atoms, TEXT("."), /*InCullEmpty*/ false);
+        for (const FString& Atom : Atoms)
+        {
+            if (Atom.IsEmpty())
+            {
+                return false;
+            }
+            for (TCHAR C : Atom)
+            {
+                if (!IsEmailLocalChar(C))
+                {
+                    return false;
+                }
+            }
+        }
+        return Atoms.Num() > 0;
+    }
+
+    /** Alphanumerics and inner hyphens. */
+    bool IsDomainLabel(const FString& Label)
+    {
+        if (Label.IsEmpty() || !IsAsciiAlnum(Label[0]) || !IsAsciiAlnum(Label[Label.Len() - 1]))
+        {
+            return false;
+        }
+        for (TCHAR C : Label)
+        {
+            if (!IsAsciiAlnum(C) && C != TEXT('-'))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
 bool BH_ReportScreenModel::LooksLikeEmail(const FString& Email)
 {
     const FString Trimmed = Email.TrimStartAndEnd();
-    return Trimmed.Len() >= 3 && Trimmed.Contains(TEXT("@"));
+    FString Local;
+    FString Domain;
+    if (Trimmed.Len() > EmailLimit || !Trimmed.Split(TEXT("@"), &Local, &Domain) || Domain.Contains(TEXT("@")))
+    {
+        return false;
+    }
+    TArray<FString> Labels;
+    Domain.ParseIntoArray(Labels, TEXT("."), /*InCullEmpty*/ false);
+    if (!IsEmailLocalPart(Local) || Labels.Num() < 2)
+    {
+        return false;
+    }
+    for (const FString& Label : Labels)
+    {
+        if (!IsDomainLabel(Label))
+        {
+            return false;
+        }
+    }
+    // The top-level domain is at least two characters and starts with a letter ("xn--" is allowed).
+    const FString& Tld = Labels.Last();
+    return Tld.Len() >= 2 && IsAsciiAlpha(Tld[0]);
 }
 
 FText BH_ReportScreenModel::UpperCase(const FText& Text)

@@ -4,7 +4,8 @@
 
 ### Changed
 
-- **A new report form.** A full-screen report screen over the paused game, played with a keyboard, a mouse or a controller, with each action shown in a prompt bar using the glyphs of the device in use (keyboard, Xbox, PlayStation, Switch). Players can switch between a bug report and a suggestion, leave out any attachment, and preview the screenshot, recent frames of play and the game log full screen before sending; after sending they can add an email to hear when the bug is fixed, or copy a link to the report. It is the new default; the previous form stays available - set *Report Form Widget Class* to `/BetaHubBugReporter/BugReportForm` to keep it.
+- **A new report form.** A full-screen report screen over the game, played with a keyboard, a mouse or a controller, with each action shown in a prompt bar using the glyphs of the device in use (keyboard, Xbox, PlayStation, Switch). Players can switch between a bug report and a suggestion, leave out any attachment, and preview the screenshot, recent frames of play and the game log full screen before sending; after sending they can add an email to hear when the bug is fixed, or copy a link to the report. It is the new default; the previous form stays available - pick *BugReportForm* for *Report Form Widget Class* (in `DefaultGame.ini`: `/BetaHubBugReporter/BugReportForm.BugReportForm_C`) to keep it.
+- **For C++ integrators:** the previous form's widget properties (`BugDescriptionEdit`, `SubmitButton`, ...) on `UBH_ReportFormWidget` are now optional bindings, and null on the new form. Code that uses them on the pointer `SpawnBugReportWidget` returns must keep the previous form or check them. `Setup` and `SubmitReport` are now virtual.
 - *Report Form Widget Class* is now read each time the form opens, so changing it at runtime takes effect.
 
 ### Added

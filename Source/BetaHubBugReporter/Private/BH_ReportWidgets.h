@@ -10,6 +10,7 @@
 
 // The small generated widgets the report screen builds itself from (widgets/BH_*.umg.xml).
 // Each binds the named widgets of its asset and switches the stylesheet's runtime classes.
+// Abstract: only their generated assets have widgets to show.
 
 class FBH_WidgetStyler;
 class UBorder;
@@ -43,7 +44,7 @@ protected:
 };
 
 /** One button glyph: a key, a pad face button, the d-pad chip or a thumbstick. */
-UCLASS()
+UCLASS(Abstract)
 class UBH_GlyphWidget : public UBH_StyledWidget
 {
     GENERATED_BODY()
@@ -72,7 +73,7 @@ private:
 };
 
 /** One prompt of the prompt bar: glyphs and a label; clicking it acts like its button. */
-UCLASS()
+UCLASS(Abstract)
 class UBH_PromptItemWidget : public UBH_StyledWidget
 {
     GENERATED_BODY()
@@ -109,7 +110,7 @@ private:
 };
 
 /** A settings-style row: an attachment with its state. */
-UCLASS()
+UCLASS(Abstract)
 class UBH_AttachmentRowWidget : public UBH_StyledWidget
 {
     GENERATED_BODY()
@@ -143,7 +144,7 @@ private:
 };
 
 /** One thumbnail of the recording. */
-UCLASS()
+UCLASS(Abstract)
 class UBH_ClipFrameWidget : public UBH_StyledWidget
 {
     GENERATED_BODY()
@@ -168,7 +169,7 @@ private:
 };
 
 /** One line of the game log. */
-UCLASS()
+UCLASS(Abstract)
 class UBH_TextLineWidget : public UBH_StyledWidget
 {
     GENERATED_BODY()
@@ -183,7 +184,7 @@ protected:
 };
 
 /** Over the running game while a report finishes uploading, then briefly with the outcome. */
-UCLASS()
+UCLASS(Abstract)
 class UBH_UploadToastWidget : public UBH_StyledWidget
 {
     GENERATED_BODY()
@@ -215,6 +216,12 @@ private:
     FLinearColor ArcColor = FLinearColor::White;
     double HideAt = 0.0;
 };
+
+namespace BH_ReportScreens
+{
+    /** Report screens in a viewport now. The toast stays out of their way. */
+    int32& OpenCount();
+}
 
 namespace BH_WidgetPaint
 {

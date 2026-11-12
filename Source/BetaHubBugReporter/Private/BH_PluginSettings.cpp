@@ -49,14 +49,21 @@ UBH_PluginSettings::UBH_PluginSettings()
     bRequireTermsAcceptance = false;
     SuggestionMinLength = DefaultSuggestionMinLength;
 
-    // The report screen is the default; the classic form (/BetaHubBugReporter/BugReportForm) stays
-    // selectable here.
+    // The report screen is the default; the classic form stays selectable. Both are found here, so
+    // both are cooked into a game whichever it uses, and the classic form is the fallback should
+    // the report screen fail to load.
     static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BH_ReportScreen"));
+    static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> ClassicFormFinder(TEXT("/BetaHubBugReporter/BugReportForm"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
 
     if (WidgetClassFinder1.Succeeded())
     {
         ReportFormWidgetClass = WidgetClassFinder1.Class;
+    }
+    else if (ClassicFormFinder.Succeeded())
+    {
+        ReportFormWidgetClass = ClassicFormFinder.Class;
+        UE_LOG(LogBetaHub, Error, TEXT("The report screen (/BetaHubBugReporter/BH_ReportScreen) could not be loaded; using the classic report form."));
     }
     else
     {

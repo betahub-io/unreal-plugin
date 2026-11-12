@@ -363,14 +363,17 @@ void UBH_UploadToastWidget::Refresh()
         return;
     }
     const EBH_SubmissionState State = Submission->GetState();
-    const bool bFailed = State == EBH_SubmissionState::Failed;
-    const bool bDone = State == EBH_SubmissionState::Published;
+    // A bug whose own publish failed is still published by BetaHub: sent, not failed.
+    const bool bDone = State == EBH_SubmissionState::Published || Submission->IsSentDespiteFailure();
+    const bool bFailed = State == EBH_SubmissionState::Failed && !bDone;
     SetClass(Strip, TEXT("toast-strip--ok"), bDone);
     SetClass(Strip, TEXT("toast-strip--err"), bFailed);
     if (bFailed || bDone)
     {
         Title->SetText(bDone ? LOCTEXT("ToastDone", "REPORT SENT") : LOCTEXT("ToastFailed", "REPORT NOT SENT"));
-        Subtitle->SetText(bDone ? LOCTEXT("ToastDoneSub", "Thank you") : FText::FromString(Submission->GetError()));
+        Subtitle->SetText(State == EBH_SubmissionState::Published ? LOCTEXT("ToastDoneSub", "Thank you")
+            : bDone ? LOCTEXT("ToastFinishingOnServer", "BetaHub finishes it within minutes")
+            : FText::FromString(Submission->GetError()));
         ArcColor = FLinearColor(bDone ? Colors.Ok : Colors.Err);
         Sweep = 1.0f;
         bSpinning = false;
@@ -401,6 +404,15 @@ void UBH_UploadToastWidget::Refresh()
 void UBH_UploadToastWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
     Super::NativeTick(MyGeometry, InDeltaTime);
+    // Over a report screen it would cover the form (Unity hides it while the form shows).
+    if (UWidget* Root = GetRootWidget())
+    {
+        const ESlateVisibility Wanted = BH_ReportScreens::OpenCount() > 0 ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible;
+        if (Root->GetVisibility() != Wanted)
+        {
+            Root->SetVisibility(Wanted);
+        }
+    }
     Refresh();
     if (bSpinning)
     {
@@ -423,6 +435,12 @@ int32 UBH_UploadToastWidget::NativePaint(const FPaintArgs& Args, const FGeometry
                                        FLinearColor(Colors.Line));
     }
     return Layer;
+}
+
+int32& BH_ReportScreens::OpenCount()
+{
+    static int32 Count = 0;
+    return Count;
 }
 
 // ----------------------------------------------------------------------------- painting

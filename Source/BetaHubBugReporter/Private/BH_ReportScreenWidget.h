@@ -30,7 +30,7 @@ class UBH_TextLineWidget;
 class UBH_UploadToastWidget;
 
 /**
- * The report widget, direction B: a full-screen form over the paused game, played with a
+ * The report widget, direction B: a full-screen form over the game, played with a
  * keyboard, a mouse or a controller. A port of the Unity plugin's BugReportWidget; the
  * look is the generated BH_ReportScreen asset (widgets/BH_ReportScreen.umg.xml), the
  * decisions are BH_ReportScreenModel, and the report itself is a UBH_ReportSubmission
@@ -39,7 +39,9 @@ class UBH_UploadToastWidget;
  * Derives from the classic form so ReportFormWidgetClass and SpawnBugReportWidget keep
  * their types; none of the classic form's widgets are used.
  */
-UCLASS()
+// Abstract: without its BH_ReportScreen asset the class has no widgets to show, so it is kept
+// out of the Report Form Widget Class picker.
+UCLASS(Abstract)
 class UBH_ReportScreenWidget : public UBH_ReportFormWidget
 {
     GENERATED_BODY()
@@ -280,6 +282,8 @@ private:
     bool bClosing = false;
     bool bLinkCopied = false;
     bool bSteamKeyboardOpen = false;
+    /** The active send saves the recording, and restarts the recorder after it. */
+    bool bRecordingHanded = false;
     int32 PreviewIndex = 0;
     FDateTime CaptureTime;
 

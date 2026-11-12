@@ -27,6 +27,8 @@ public:
                              TFunction<void(const FBH_DraftResult&)> OnDone) override;
     virtual bool SupportsUploads() const override { return true; }
     virtual bool SupportsReporterEmail() const override { return true; }
+    /** The draft is created with publish_after: BetaHub publishes it if our publish never lands. */
+    virtual bool ServerPublishesDraft() const override { return true; }
     virtual void Upload(const FBH_ReportAttachment& Attachment, TFunction<void(float)> OnProgress,
                         TFunction<void(const FString&)> OnDone) override;
     virtual void SetReporterEmail(const FString& Email, TFunction<void(const FString&)> OnDone) override;

@@ -61,7 +61,7 @@ For full docs and guides, please visit the [BetaHub Documentation](https://betah
 
 ## The report form
 
-The form is a full-screen report screen over the paused game, played with a keyboard, a mouse or a
+The form is a full-screen report screen over the game (which keeps running), played with a keyboard, a mouse or a
 controller: what happened on the left, what gets sent along on the right, and every action in the prompt
 bar at the bottom, shown with the glyphs of the device the player last used (keyboard, Xbox,
 PlayStation or Switch). Players can switch between a bug report and a suggestion, leave out any
@@ -80,8 +80,21 @@ Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report
 On Steam Deck and in Big Picture, a controller player who starts typing gets Steam's floating keyboard,
 provided your game uses Steamworks; the plugin itself has no Steamworks dependency.
 
-The previous form is still included. To keep using it, set *Report Form Widget Class* to
-`/BetaHubBugReporter/BugReportForm`.
+The form takes keyboard and controller input only when it captures the mouse
+(`SpawnBugReportWidget(true)`, which the shortcut key uses). Opened with `false`, it leaves your game's
+controls alone, as the previous form did.
+
+The previous form is still included. To keep using it, pick *BugReportForm* for *Report Form Widget
+Class*, or set it in `DefaultGame.ini`:
+
+```ini
+[/Script/BetaHubBugReporter.BH_PluginSettings]
+ReportFormWidgetClass=/BetaHubBugReporter/BugReportForm.BugReportForm_C
+```
+
+C++ code that reaches into the previous form's widgets (`BugDescriptionEdit`, `SubmitButton` and the
+rest) through the pointer `SpawnBugReportWidget` returns finds them null on the new form: keep the
+previous form, or check them before use.
 
 ## Submission mode
 

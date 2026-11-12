@@ -25,6 +25,7 @@
 #include "Components/UniformGridSlot.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/PlayerController.h"
@@ -33,6 +34,7 @@
 #include "ImageUtils.h"
 #include "TextureResource.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Widgets/SViewport.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 
 #define LOCTEXT_NAMESPACE "BetaHubReportScreen"
@@ -57,8 +59,6 @@ namespace
     constexpr int32 FramesPerRow = 3;
     constexpr int32 FrameRows = 2;
     constexpr int32 FullScreenLogLines = 200;
-    /** The game viewport's Slate widget, where focus returns after alt-tab. */
-    const FName ViewportWidgetType(TEXT("SViewport"));
     /** Above the game's own HUD. */
     constexpr int32 ToastZOrder = 100;
     /** Frame cells: 12px from the pane, 4px between columns, 8px between rows (Unity's percentages at 1080p). */
@@ -134,20 +134,23 @@ namespace
 UBH_ReportScreenWidget::UBH_ReportScreenWidget(const FObjectInitializer& ObjectInitializer)
     : Super(ObjectInitializer)
 {
-    // Hard references from the class default, as the settings reference the form itself, so a
-    // cooked game always contains the widgets the screen is built from.
-    static ConstructorHelpers::FClassFinder<UBH_AttachmentRowWidget> RowFinder(TEXT("/BetaHubBugReporter/BH_AttachmentRow"));
-    static ConstructorHelpers::FClassFinder<UBH_PromptItemWidget> PromptFinder(TEXT("/BetaHubBugReporter/BH_PromptItem"));
-    static ConstructorHelpers::FClassFinder<UBH_GlyphWidget> GlyphFinder(TEXT("/BetaHubBugReporter/BH_Glyph"));
-    static ConstructorHelpers::FClassFinder<UBH_ClipFrameWidget> FrameFinder(TEXT("/BetaHubBugReporter/BH_ClipFrame"));
-    static ConstructorHelpers::FClassFinder<UBH_TextLineWidget> LineFinder(TEXT("/BetaHubBugReporter/BH_TextLine"));
-    static ConstructorHelpers::FClassFinder<UBH_UploadToastWidget> ToastFinder(TEXT("/BetaHubBugReporter/BH_UploadToast"));
-    AttachmentRowClass = RowFinder.Class;
-    PromptItemClass = PromptFinder.Class;
-    GlyphClass = GlyphFinder.Class;
-    ClipFrameClass = FrameFinder.Class;
-    TextLineClass = LineFinder.Class;
-    UploadToastClass = ToastFinder.Class;
+    // Loaded with the class default at startup, as the settings load the form itself, which makes
+    // them startup packages the cooker includes in every game. A dedicated server has no widgets.
+    if (!IsRunningDedicatedServer())
+    {
+        static ConstructorHelpers::FClassFinder<UBH_AttachmentRowWidget> RowFinder(TEXT("/BetaHubBugReporter/BH_AttachmentRow"));
+        static ConstructorHelpers::FClassFinder<UBH_PromptItemWidget> PromptFinder(TEXT("/BetaHubBugReporter/BH_PromptItem"));
+        static ConstructorHelpers::FClassFinder<UBH_GlyphWidget> GlyphFinder(TEXT("/BetaHubBugReporter/BH_Glyph"));
+        static ConstructorHelpers::FClassFinder<UBH_ClipFrameWidget> FrameFinder(TEXT("/BetaHubBugReporter/BH_ClipFrame"));
+        static ConstructorHelpers::FClassFinder<UBH_TextLineWidget> LineFinder(TEXT("/BetaHubBugReporter/BH_TextLine"));
+        static ConstructorHelpers::FClassFinder<UBH_UploadToastWidget> ToastFinder(TEXT("/BetaHubBugReporter/BH_UploadToast"));
+        AttachmentRowClass = RowFinder.Class;
+        PromptItemClass = PromptFinder.Class;
+        GlyphClass = GlyphFinder.Class;
+        ClipFrameClass = FrameFinder.Class;
+        TextLineClass = LineFinder.Class;
+        UploadToastClass = ToastFinder.Class;
+    }
     Theme = BH_ThemeRecipe::BuiltIn(EBH_BuiltInTheme::Dark);
 }
 
@@ -254,11 +257,32 @@ void UBH_ReportScreenWidget::NativeConstruct()
 {
     Super::NativeConstruct();
     bClosing = false;
-    FocusSelf();
+    ++BH_ReportScreens::OpenCount();
+    // Keys and pads only when the form owns the input mode (Setup with bTryCaptureMouse): a
+    // game that opens it without capturing keeps its controls.
+    if (bCursorStateModified)
+    {
+        FocusSelf();
+    }
 }
 
 void UBH_ReportScreenWidget::NativeDestruct()
 {
+    BH_ReportScreens::OpenCount() = FMath::Max(0, BH_ReportScreens::OpenCount() - 1);
+    // Removed some other way than Close (level travel, RemoveAllWidgets, the game's own code):
+    // the report still gets published, and the recorder runs again unless a send owns it.
+    if (!bClosing)
+    {
+        if (Submission)
+        {
+            Submission->PublishWhenReady();
+        }
+        const UWorld* World = GetWorld();
+        if (!bRecordingHanded && World && !World->bIsTearingDown)
+        {
+            EnsureRecording();
+        }
+    }
     Detach();
     Super::NativeDestruct();
 }
@@ -398,7 +422,11 @@ void UBH_ReportScreenWidget::ResetFocus(EBH_Field Initial)
 
 void UBH_ReportScreenWidget::SyncState()
 {
-    if (Submission && Submission->GetState() != EBH_SubmissionState::Failed)
+    if (Submission && Submission->IsSentDespiteFailure())
+    {
+        S.Screen = EBH_Screen::Sent;
+    }
+    else if (Submission && Submission->GetState() != EBH_SubmissionState::Failed)
     {
         S.Screen = ScreenFor(Submission->GetState());
     }
@@ -545,11 +573,11 @@ FReply UBH_ReportScreenWidget::NativeOnKeyDown(const FGeometry& InGeometry, cons
         ScrollPreview(Intent.Scroll);
         return FReply::Handled();
     }
-    // The key that opened the form closes it.
+    // The key that opened the form closes it, but not in the middle of typing.
     if (Settings && Settings->bEnableShortcut && Key == Settings->ShortcutKey)
     {
         SyncState();
-        if (S.Screen != EBH_Screen::Sending)
+        if (S.Screen != EBH_Screen::Sending && !S.bTyping)
         {
             Close();
         }
@@ -1041,11 +1069,8 @@ void UBH_ReportScreenWidget::Close()
     StopTyping();
     if (Submission)
     {
-        const EBH_SubmissionState State = Submission->GetState();
-        if (State == EBH_SubmissionState::UploadingMedia || State == EBH_SubmissionState::AwaitingPublish)
-        {
-            Submission->Publish(false);
-        }
+        // Published now, or as soon as the draft exists; an email already sent publishes it anyway.
+        Submission->PublishWhenReady();
         if (!Submission->IsFinished() && UploadToastClass)
         {
             UBH_UploadToastWidget* Toast = GetOwningPlayer()
@@ -1059,7 +1084,10 @@ void UBH_ReportScreenWidget::Close()
         }
         Detach();
     }
-    EnsureRecording();
+    if (!bRecordingHanded)
+    {
+        EnsureRecording();
+    }
     RemoveFromParent();
 }
 
@@ -1095,11 +1123,33 @@ void UBH_ReportScreenWidget::SubmitReport()
     FBH_SubmissionOptions Options;
     Options.bWaitForUpload = Settings->MediaUploadMode == EBH_MediaUploadMode::WaitForUpload;
     Options.bAutoPublish = S.Type == EBH_ReportType::Suggestion;
+
+    // An included recording is the send's to save; the recorder runs again right after the
+    // save, or after a failure before it, whatever happens to this form meanwhile (as in the
+    // classic submit chain). Restarting it any earlier would make the save refuse.
+    bRecordingHanded = GameRecorder && Included.ContainsByPredicate([](const FBH_ReportAttachment& A) { return A.Kind == EBH_AttachmentKind::Clip; });
     TWeakObjectPtr<UBH_GameRecorder> WeakRecorder(GameRecorder);
-    Options.SaveRecording = [WeakRecorder]() -> FString
+    const int32 RecordFps = Settings->MaxRecordedFrames;
+    const int32 RecordSeconds = Settings->MaxRecordingDuration;
+    TSharedRef<bool> bResumed = MakeShared<bool>(false);
+    auto ResumeRecording = [WeakRecorder, RecordFps, RecordSeconds, bResumed]()
+    {
+        if (*bResumed)
+        {
+            return;
+        }
+        *bResumed = true;
+        if (UBH_GameRecorder* Recorder = WeakRecorder.Get())
+        {
+            Recorder->StartRecording(RecordFps, RecordSeconds);
+        }
+    };
+    Options.SaveRecording = [WeakRecorder, ResumeRecording]() -> FString
     {
         UBH_GameRecorder* Recorder = WeakRecorder.Get();
-        return Recorder ? Recorder->SaveRecording() : FString();
+        const FString Saved = Recorder ? Recorder->SaveRecording() : FString();
+        ResumeRecording();
+        return Saved;
     };
 
     const FBH_ApiTarget Target = FBH_ApiTarget::FromSettings(*Settings);
@@ -1112,6 +1162,17 @@ void UBH_ReportScreenWidget::SubmitReport()
     Submission->OnStateChanged.AddUObject(this, &UBH_ReportScreenWidget::OnSubmissionStateChanged);
     Submission->OnAttachmentUploadChanged.AddUObject(this, &UBH_ReportScreenWidget::OnAttachmentUploadChanged);
     Submission->OnReporterEmailDone.AddUObject(this, &UBH_ReportScreenWidget::OnReporterEmailDone);
+    if (bRecordingHanded)
+    {
+        // Bound to the submission, not to this form, so it runs even after the form is gone.
+        Submission->OnStateChanged.AddLambda([ResumeRecording](UBH_ReportSubmission* Changed)
+        {
+            if (Changed->GetState() == EBH_SubmissionState::Failed)
+            {
+                ResumeRecording();
+            }
+        });
+    }
     if (KeepSubmission)
     {
         KeepSubmission(Submission);
@@ -1126,12 +1187,20 @@ void UBH_ReportScreenWidget::OnSubmissionStateChanged(UBH_ReportSubmission* InSu
     {
         return;
     }
-    if (InSubmission->GetState() == EBH_SubmissionState::Failed)
+    if (InSubmission->IsSentDespiteFailure())
+    {
+        // BetaHub has the draft and publishes it by itself: sent, and a resend would duplicate it.
+        bRecordingHanded = false;
+        EmailNote = LOCTEXT("FinishingOnServer", "Couldn't finish sending. BetaHub publishes the report within minutes.");
+        bEmailNoteIsError = false;
+    }
+    else if (InSubmission->GetState() == EBH_SubmissionState::Failed)
     {
         S.SubmissionError = InSubmission->GetError();
         LocalScreen = EBH_Screen::Compose;
-        // The draft never came to be; a retry starts a new report.
+        // Nothing reached BetaHub: the form keeps its screenshot, and a retry starts a new report.
         bScreenshotHandedToAsync = false;
+        bRecordingHanded = false;
         Detach();
     }
     Render();
@@ -1153,7 +1222,8 @@ void UBH_ReportScreenWidget::OnReporterEmailDone(UBH_ReportSubmission* InSubmiss
         return;
     }
     PendingEmail.Empty();
-    EmailNote = LOCTEXT("EmailFailed", "Couldn't save your email. Try again or just go back.");
+    // The publish was requested with the email and goes ahead without it.
+    EmailNote = LOCTEXT("EmailFailed", "Couldn't save your email, so the report is sent without it.");
     bEmailNoteIsError = true;
     Render();
 }
@@ -1167,7 +1237,7 @@ void UBH_ReportScreenWidget::Detach()
     Submission->OnStateChanged.RemoveAll(this);
     Submission->OnAttachmentUploadChanged.RemoveAll(this);
     Submission->OnReporterEmailDone.RemoveAll(this);
-    if (Submission->GetState() == EBH_SubmissionState::Failed)
+    if (Submission->GetState() == EBH_SubmissionState::Failed && !Submission->IsSentDespiteFailure())
     {
         Submission = nullptr;
     }
@@ -1205,10 +1275,13 @@ void UBH_ReportScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDel
     }
     // Focus back on the game viewport or nowhere (alt-tab, a click outside the form): take it
     // back, or keys and pads would reach the game under the form. Another widget keeps it.
-    if (!bClosing && IsInViewport() && FSlateApplication::IsInitialized() && !HasAnyUserFocus() && !HasFocusedDescendants())
+    // Only this game's own viewport: another PIE client's, or the editor's, keeps its focus.
+    if (!bClosing && bCursorStateModified && IsInViewport() && FSlateApplication::IsInitialized() && !HasAnyUserFocus() && !HasFocusedDescendants())
     {
         const TSharedPtr<SWidget> Focused = FSlateApplication::Get().GetUserFocusedWidget(FSlateApplication::Get().GetUserIndexForKeyboard());
-        if (!Focused.IsValid() || Focused->GetType() == ViewportWidgetType)
+        const UGameViewportClient* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr;
+        const TSharedPtr<SWidget> OwnViewport = Viewport ? TSharedPtr<SWidget>(Viewport->GetGameViewportWidget()) : nullptr;
+        if (!Focused.IsValid() || Focused == OwnViewport)
         {
             FocusSelf();
         }
@@ -1564,7 +1637,7 @@ void UBH_ReportScreenWidget::RenderSent()
     }
     const bool bShowEmail = S.bCanEmail || !PendingEmail.IsEmpty();
     Show(EmailField, bShowEmail);
-    Show(SentNote, bShowEmail);
+    Show(SentNote, bShowEmail || !EmailNote.IsEmpty());
     const bool bEditing = S.bTyping && S.bTypingEmail;
     RenderField(EmailView, BH_ReportScreenModel::EmailTag(S), S.bCanEmail && !bEditing, bEditing, !S.Email.IsEmpty());
     EmailInput->SetIsReadOnly(!S.bCanEmail);

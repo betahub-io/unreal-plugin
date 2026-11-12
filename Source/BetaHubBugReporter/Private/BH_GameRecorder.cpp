@@ -208,13 +208,10 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
         return;
     }
 
-    // A new recording: its preview starts empty, like its video.
     if (!Thumbnails.IsValid())
     {
         Thumbnails = MakeShared<FBH_ThumbnailRing>(ThumbnailCount);
     }
-    Thumbnails->Clear();
-    LastThumbnailTime = 0.0;
 
     UE_LOG(LogBetaHub, Log, TEXT("StartRecording called with FPS: %d, Duration: %d seconds"), InTargetFPS, InRecordingDuration);
 
@@ -314,6 +311,10 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
 
     if (!bIsRecording)
     {
+        // A new recording: its preview starts empty, like its video. Not on a call that finds
+        // the recorder already running, which would empty the preview of the running one.
+        Thumbnails->Clear();
+        LastThumbnailTime = 0.0;
         if (VideoEncoder.IsValid())
         {
             VideoEncoder->StartRecording();

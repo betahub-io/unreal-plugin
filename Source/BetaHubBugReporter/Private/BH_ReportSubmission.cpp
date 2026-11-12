@@ -41,7 +41,7 @@ void UBH_ReportSubmission::Start(TSharedRef<IBH_IssueClient> InClient,
         UploadOrder.Add(Attachment.Id);
         if (Attachment.bRemoveAfterUpload && !Attachment.FilePath.IsEmpty())
         {
-            OwnedFiles.Add(Attachment.FilePath);
+            OwnedOnceDrafted.Add(Attachment.FilePath);
         }
         if (Client->SupportsUploads())
         {
@@ -53,6 +53,9 @@ void UBH_ReportSubmission::Start(TSharedRef<IBH_IssueClient> InClient,
         }
     }
 
+    // Nothing else need hold on to a report on its way: its form may close, or the game may
+    // spawn and drop the form itself. Released in Finish.
+    AddToRoot();
     SetState(EBH_SubmissionState::CreatingDraft);
     TWeakObjectPtr<UBH_ReportSubmission> WeakThis(this);
     Client->CreateDraft(Content, Inline, [WeakThis](const FBH_DraftResult& Result)
@@ -78,6 +81,7 @@ void UBH_ReportSubmission::OnDraftDone(const FBH_DraftResult& Result)
 
     IssueId = Result.IssueId;
     IssueUrl = Result.IssueUrl;
+    OwnedFiles.Append(MoveTemp(OwnedOnceDrafted));
 
     // Items that travelled with the draft are done now.
     if (!Client->SupportsUploads())
@@ -279,6 +283,20 @@ void UBH_ReportSubmission::Finish(EBH_SubmissionState FinalState)
 {
     SetState(FinalState);
     DeleteOwnedFiles();
+    if (IsRooted())
+    {
+        RemoveFromRoot();
+    }
+}
+
+void UBH_ReportSubmission::BeginDestroy()
+{
+    // Destroyed unfinished (the game is exiting): nothing will upload these any more.
+    if (!IsFinished())
+    {
+        DeleteOwnedFiles();
+    }
+    Super::BeginDestroy();
 }
 
 bool UBH_ReportSubmission::IsMediaUploadComplete() const
@@ -353,4 +371,30 @@ void UBH_ReportSubmission::DeleteOwnedFiles()
         }
     }
     OwnedFiles.Empty();
+}
+
+void UBH_ReportSubmission::PublishWhenReady()
+{
+    switch (State)
+    {
+        case EBH_SubmissionState::CreatingDraft:
+            // OnDraftDone goes straight to Publishing. The caller is letting go, so nobody will
+            // retry with these files: they are the report's to delete however the draft ends.
+            bPublishRequested = true;
+            bEmailMyReport = false;
+            OwnedFiles.Append(MoveTemp(OwnedOnceDrafted));
+            break;
+        case EBH_SubmissionState::UploadingMedia:
+        case EBH_SubmissionState::AwaitingPublish:
+            Publish(false);
+            break;
+        default:
+            // Not started, already publishing, or finished.
+            break;
+    }
+}
+
+bool UBH_ReportSubmission::IsSentDespiteFailure() const
+{
+    return State == EBH_SubmissionState::Failed && !IssueId.IsEmpty() && Client.IsValid() && Client->ServerPublishesDraft();
 }

@@ -252,6 +252,23 @@ class ValidatorTests(unittest.TestCase):
         self.assertIn("MiniFill", row)
         self.assertNotIn("PadFace", row)
 
+    def test_classic_form_provides_every_optional_binding(self):
+        # The classic form's bindings are optional only so the report screen can derive from
+        # its class; the classic asset itself must still have every one, or it no-ops at runtime.
+        binds, _ = val_tool.find_bind_widgets("BH_ReportFormWidget")
+        with open(os.path.join(self.widgets_dir, "BugReportForm.json"), "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+        names = set()
+
+        def walk(n):
+            names.add(n["name"])
+            for c in n.get("children", []):
+                walk(c)
+
+        walk(doc["root"])
+        self.assertEqual(len(binds), 13)
+        self.assertEqual(sorted(b for b in binds if b not in names), [])
+
     def test_every_widget_has_its_bindings_checked(self):
         for path in self.real_files():
             with open(path, "r", encoding="utf-8") as fh:

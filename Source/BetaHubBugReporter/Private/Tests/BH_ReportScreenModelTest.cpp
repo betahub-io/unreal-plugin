@@ -197,8 +197,19 @@ bool FBHTagsAndValuesTest::RunTest(const FString& Parameters)
 
     TestEqual(TEXT("clip start"), FormatDuration(0).ToString(), FString(TEXT("0:00")));
     TestEqual(TEXT("over a minute"), FormatDuration(65).ToString(), FString(TEXT("1:05")));
-    TestTrue(TEXT("email"), LooksLikeEmail(TEXT(" a@b ")));
+    // The shape BetaHub accepts (User::VIRTUAL_EMAIL_REGEXP): anything else is refused there.
+    TestTrue(TEXT("email"), LooksLikeEmail(TEXT(" player.one+bugs@studio.example.com ")));
+    TestTrue(TEXT("punycode TLD"), LooksLikeEmail(TEXT("a@b.xn--p1ai")));
     TestFalse(TEXT("not an email"), LooksLikeEmail(TEXT("ab")));
+    TestFalse(TEXT("no dotted domain"), LooksLikeEmail(TEXT("a@b")));
+    TestFalse(TEXT("one-letter TLD"), LooksLikeEmail(TEXT("a@b.c")));
+    TestFalse(TEXT("TLD starts with a digit"), LooksLikeEmail(TEXT("a@b.1com")));
+    TestFalse(TEXT("consecutive dots"), LooksLikeEmail(TEXT("a..b@c.com")));
+    TestFalse(TEXT("leading dot"), LooksLikeEmail(TEXT(".a@c.com")));
+    TestFalse(TEXT("space inside"), LooksLikeEmail(TEXT("a b@c.com")));
+    TestFalse(TEXT("non-ASCII"), LooksLikeEmail(TEXT("\u00E9@c.com")));
+    TestFalse(TEXT("label ends with a hyphen"), LooksLikeEmail(TEXT("a@b-.com")));
+    TestFalse(TEXT("too long"), LooksLikeEmail(FString::ChrN(250, TEXT('a')) + TEXT("@b.com")));
     TestEqual(TEXT("screens"), ScreenFor(EBH_SubmissionState::AwaitingPublish), EBH_Screen::Sent);
     return true;
 }

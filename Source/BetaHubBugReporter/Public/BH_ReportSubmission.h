@@ -91,6 +91,17 @@ public:
     /** Mark the report failed, e.g. when it cannot even start. */
     void Fail(const FString& InError);
 
+    /**
+     * Publish without an email as soon as the report allows it: now while it awaits
+     * publishing, or right after the draft when it is still on its way. For a form that
+     * goes away before the player finished with it; the report then also takes over the
+     * files it was given, whatever happens to the draft.
+     */
+    void PublishWhenReady();
+
+    /** Failed after BetaHub had the draft, which BetaHub then publishes by itself. */
+    bool IsSentDespiteFailure() const;
+
     UFUNCTION(BlueprintPure, Category = "BetaHub")
     EBH_SubmissionState GetState() const { return State; }
 
@@ -130,12 +141,17 @@ private:
     void Finish(EBH_SubmissionState FinalState);
     void DeleteOwnedFiles();
 
+    virtual void BeginDestroy() override;
+
     TSharedPtr<IBH_IssueClient> Client;
     FBH_SubmissionOptions Options;
     TArray<FBH_ReportAttachment> PendingUploads;
     TArray<FString> UploadOrder;
     TMap<FString, FBH_UploadState> Uploads;
+    /** Deleted when the report is finished. Files the caller passed in join only once the
+        draft exists: a refused draft leaves them with the caller, for a retry. */
     TArray<FString> OwnedFiles;
+    TArray<FString> OwnedOnceDrafted;
     int32 NextUpload = 0;
 
     EBH_SubmissionState State = EBH_SubmissionState::Preparing;

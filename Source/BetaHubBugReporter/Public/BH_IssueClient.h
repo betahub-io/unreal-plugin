@@ -48,6 +48,12 @@ public:
     /** False when the report type cannot carry a reporter email. */
     virtual bool SupportsReporterEmail() const = 0;
 
+    /**
+     * True when BetaHub publishes the draft by itself later (the bug draft's publish_after
+     * safety net), so a report whose own publish failed is still sent.
+     */
+    virtual bool ServerPublishesDraft() const { return false; }
+
     virtual void Upload(const FBH_ReportAttachment& Attachment,
                         TFunction<void(float /*Progress01*/)> OnProgress,
                         TFunction<void(const FString& /*Error*/)> OnDone) = 0;

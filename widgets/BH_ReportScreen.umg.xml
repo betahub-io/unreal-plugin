@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The report widget, direction B: a full-screen form over the paused game. What
+<!-- The report widget, direction B: a full-screen form over the game. What
      happened on the left, what gets sent on the right, actions in the prompt bar.
      A port of the Unity widget (Runtime/UI/BugReportWidget.uxml).
 

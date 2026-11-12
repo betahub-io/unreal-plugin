@@ -42,6 +42,10 @@ bool FBHScreenRendersTest::RunTest(const FString& Parameters)
         return true;
     }
 
+    // The renderer adds the form to a window and takes it away again, which to the form is being
+    // removed without Close: it restarts the recorder, which in the editor has no game viewport.
+    AddExpectedError(TEXT("StartRecording failed: GameViewport is null"), EAutomationExpectedErrorFlags::Contains, 0);
+
     // A recorder that never recorded: the recording row, with no frames yet.
     UBH_GameRecorder* Recorder = NewObject<UBH_GameRecorder>(GetTransientPackage());
     auto Options = [Recorder](bool bTerms = false, TFunction<void(UBH_PluginSettings&)> Configure = nullptr)
