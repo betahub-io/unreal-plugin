@@ -163,6 +163,43 @@ void UBH_GameRecorder::CloseHardwareEncoder()
 }
 #endif // WITH_BETAHUB_HWENCODE
 
+namespace
+{
+    // The report form's clip preview: one still every ThumbnailIntervalSeconds, the last
+    // ThumbnailCount kept, so together they span the default 60 s recording.
+    constexpr int32 ThumbnailCount = 6;
+    constexpr double ThumbnailIntervalSeconds = 10.0;
+    constexpr int32 ThumbnailHeight = 180;
+}
+
+TArray<FBH_Thumbnail> UBH_GameRecorder::GetThumbnails() const
+{
+    return Thumbnails.IsValid() ? Thumbnails->Snapshot() : TArray<FBH_Thumbnail>();
+}
+
+void UBH_GameRecorder::CaptureThumbnailIfDue()
+{
+    const double Now = FPlatformTime::Seconds();
+    if (!FrameBuffer || Now - LastThumbnailTime < ThumbnailIntervalSeconds)
+    {
+        return;
+    }
+    TSharedPtr<FBH_Frame> Frame = FrameBuffer->GetFrame();
+    if (!Frame.IsValid() || Frame->Width <= 0 || Frame->Height <= 0)
+    {
+        return;
+    }
+    LastThumbnailTime = Now;
+    // Frames are never modified once published, so the shrink can run off the game thread.
+    TSharedPtr<FBH_ThumbnailRing> Ring = Thumbnails;
+    AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [Ring, Frame, Now]()
+    {
+        FBH_Thumbnail Thumbnail = FBH_ThumbnailRing::Downscale(Frame->Data, Frame->Width, Frame->Height, ThumbnailHeight);
+        Thumbnail.CapturedAt = Now;
+        Ring->Add(MoveTemp(Thumbnail));
+    });
+}
+
 void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDuration)
 {
     if (bIsStopping)
@@ -170,6 +207,14 @@ void UBH_GameRecorder::StartRecording(int32 InTargetFPS, int32 InRecordingDurati
         UE_LOG(LogBetaHub, Warning, TEXT("StartRecording ignored: stop in progress"));
         return;
     }
+
+    // A new recording: its preview starts empty, like its video.
+    if (!Thumbnails.IsValid())
+    {
+        Thumbnails = MakeShared<FBH_ThumbnailRing>(ThumbnailCount);
+    }
+    Thumbnails->Clear();
+    LastThumbnailTime = 0.0;
 
     UE_LOG(LogBetaHub, Log, TEXT("StartRecording called with FPS: %d, Duration: %d seconds"), InTargetFPS, InRecordingDuration);
 
@@ -410,6 +455,11 @@ FString UBH_GameRecorder::SaveRecording()
 void UBH_GameRecorder::Tick(float DeltaTime)
 {
     SCOPE_CYCLE_COUNTER(STAT_BetaHub_Tick);
+
+    if (bIsRecording && Thumbnails.IsValid())
+    {
+        CaptureThumbnailIfDue();
+    }
 
 #if WITH_BETAHUB_HWENCODE
     // Hardware-encode path (game thread): drain the encoded NAL packets produced on the render thread and
