@@ -242,6 +242,23 @@ class ValidatorTests(unittest.TestCase):
         self.assertIn("SuggestionCheckBox", binds)
         self.assertEqual(binds["SubmitLabel"]["type"], "TextBlock")
 
+    def test_bindwidgets_of_one_class_in_a_shared_header(self):
+        # BH_ReportWidgets.h declares several widget classes; each gets only its own bindings.
+        binds, header = val_tool.find_bind_widgets("BH_GlyphWidget")
+        self.assertIsNotNone(header, "class not located in a shared header")
+        self.assertIn("PadFace", binds)
+        self.assertNotIn("Label", binds, "a binding of the next class leaked in")
+        row, _ = val_tool.find_bind_widgets("BH_AttachmentRowWidget")
+        self.assertIn("MiniFill", row)
+        self.assertNotIn("PadFace", row)
+
+    def test_every_widget_has_its_bindings_checked(self):
+        for path in self.real_files():
+            with open(path, "r", encoding="utf-8") as fh:
+                parent = json.load(fh).get("parentClass")
+            binds, header = val_tool.find_bind_widgets(parent)
+            self.assertIsNotNone(header, "%s: no C++ class %s found, BindWidget unchecked" % (path, parent))
+
 
 class AssetVersionTests(unittest.TestCase):
     """The version check is the last line of defence against shipping an asset

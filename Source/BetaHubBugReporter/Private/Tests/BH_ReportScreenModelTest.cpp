@@ -158,7 +158,7 @@ bool FBHHeaderTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("error tone"), H.Tone, EBH_Tone::Err);
     S.Screen = EBH_Screen::Sent;
     S.IssueId = TEXT("4821");
-    TestEqual(TEXT("sent"), Header(S).Subtitle.ToString(), FString(TEXT("#4821 · saved anonymously")));
+    TestEqual(TEXT("sent"), Header(S).Subtitle.ToString(), FString(TEXT("#4821 \u00B7 saved anonymously")));
     S.Screen = EBH_Screen::Compose;
     S.bConfigured = false;
     S.ConfigurationError = TEXT("Project ID is not set.");

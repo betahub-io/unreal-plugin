@@ -35,11 +35,14 @@ bool FBHGlyphsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("first cap"), Send[0].Text.ToString(), FString(TEXT("Ctrl")));
 
     TestEqual(TEXT("Xbox confirm"), GlyphsFor(EBH_Action::Confirm, EBH_GlyphSet::Xbox)[0].Text.ToString(), FString(TEXT("A")));
-    TestEqual(TEXT("Xbox colour"), GlyphsFor(EBH_Action::Confirm, EBH_GlyphSet::Xbox)[0].CapClass, FString(TEXT("cap--xbox-a")));
-    TestEqual(TEXT("PlayStation back"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::PlayStation)[0].Text.ToString(), FString(TEXT("○")));
+    TestEqual(TEXT("Xbox colour"), GlyphsFor(EBH_Action::Confirm, EBH_GlyphSet::Xbox)[0].Variant, FString(TEXT("xbox-a")));
+    TestEqual(TEXT("Switch has one look"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::Switch)[0].Variant, FString(TEXT("switch")));
+    TestTrue(TEXT("keyboard keys are keys"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::Keyboard)[0].Shape == EBH_GlyphShape::Key);
+    TestEqual(TEXT("PlayStation back"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::PlayStation)[0].Text.ToString(), FString(TEXT("\u25CB")));
     TestEqual(TEXT("Switch confirm is A on the right"), GlyphsFor(EBH_Action::Confirm, EBH_GlyphSet::Switch)[0].Text.ToString(), FString(TEXT("A")));
     TestEqual(TEXT("Switch back is B at the bottom"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::Switch)[0].Text.ToString(), FString(TEXT("B")));
-    TestEqual(TEXT("pad navigation chip"), GlyphsFor(EBH_Action::Navigate, EBH_GlyphSet::Xbox)[0].CapClass, FString(TEXT("cap--dpad")));
+    TestTrue(TEXT("pad navigation chip"), GlyphsFor(EBH_Action::Navigate, EBH_GlyphSet::Xbox)[0].Shape == EBH_GlyphShape::DPad);
+    TestTrue(TEXT("pad scroll stick"), GlyphsFor(EBH_Action::Scroll, EBH_GlyphSet::PlayStation)[0].Shape == EBH_GlyphShape::Stick);
 
     TestEqual(TEXT("DualSense"), PadSetForHardware(TEXT("DualSense")), EBH_GlyphSet::PlayStation);
     TestEqual(TEXT("Switch Pro"), PadSetForHardware(TEXT("SwitchProController")), EBH_GlyphSet::Switch);

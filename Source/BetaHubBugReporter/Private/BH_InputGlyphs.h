@@ -25,11 +25,25 @@ struct FBH_InputIntent
     int32 Scroll = 0;
 };
 
-/** How one glyph is drawn: its text and the stylesheet class of its cap. */
+/** The cap a glyph is drawn on (the shapes of BH_Glyph). */
+enum class EBH_GlyphShape : uint8
+{
+    Key,
+    /** A face button: a coloured circle. */
+    Pad,
+    /** The d-pad chip. */
+    DPad,
+    /** A thumbstick: an outlined circle. */
+    Stick
+};
+
+/** How one glyph is drawn. */
 struct FBH_Glyph
 {
     FText Text;
-    FString CapClass;
+    EBH_GlyphShape Shape = EBH_GlyphShape::Key;
+    /** Face buttons only: the stylesheet variant, "xbox-a", "ps-cross" or "switch". */
+    FString Variant;
 };
 
 /**

@@ -6,6 +6,7 @@
 #include "BH_ReportFormWidget.h"
 #include "BH_PopupWidget.h"
 #include "BH_InputModeRestore.h"
+#include "BH_Theme.h"
 #include "BH_PluginSettings.generated.h"
 
 // Which encoder produces the recorded video.
@@ -123,6 +124,29 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Settings", 
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
     TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
+
+    UPROPERTY(EditAnywhere, Config, Category="Report Widget",
+        meta=(ToolTip="Colours of the report widget. Ignored when a Theme Asset is set."))
+    EBH_BuiltInTheme Theme;
+
+    UPROPERTY(EditAnywhere, Config, Category="Report Widget",
+        meta=(ToolTip="Your studio's colours: an accent and a neutral tint, from which the widget derives a full, contrast-checked theme. Create one with Add > Miscellaneous > Data Asset > BH_ThemeAsset. Overrides Theme."))
+    TSoftObjectPtr<UBH_ThemeAsset> ThemeAsset;
+
+    UPROPERTY(EditAnywhere, Config, Category="Report Widget",
+        meta=(ToolTip="Players must accept your terms of bug reporting before they can send a report."))
+    bool bRequireTermsAcceptance;
+
+    UPROPERTY(EditAnywhere, Config, Category="Report Widget",
+        meta=(EditCondition="bRequireTermsAcceptance", ToolTip="Opened by Read terms on the report widget."))
+    FString TermsUrl;
+
+    UPROPERTY(EditAnywhere, Config, Category="Report Widget",
+        meta=(ClampMin="1", ToolTip="Shortest suggestion the widget sends. Keep it at your BetaHub project's minimum description length (80 unless changed there): BetaHub refuses shorter suggestions."))
+    int32 SuggestionMinLength;
+
+    /** The colours the report widget uses: the theme asset when set, otherwise the built-in theme. */
+    FBH_ThemeColors ResolveTheme() const;
 
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);
 

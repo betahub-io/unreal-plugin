@@ -8,6 +8,8 @@
 #include "BH_ReportFormWidget.h"
 #include "BH_BackgroundService.generated.h"
 
+class UBH_ReportSubmission;
+
 UCLASS(Blueprintable)
 class BETAHUBBUGREPORTER_API UBH_BackgroundService : public UObject
 {
@@ -22,8 +24,12 @@ private:
 
     UBH_LogCapture* LogCapture;
 
+    /** Reports still on their way after their form closed, kept alive until they are done. */
     UPROPERTY()
-    TSubclassOf<UUserWidget> ReportFormWidgetClass;
+    TArray<TObjectPtr<UBH_ReportSubmission>> Submissions;
+
+    /** The form on screen, so the shortcut does not stack a second one over it. */
+    TWeakObjectPtr<UBH_ReportFormWidget> OpenForm;
 
     FTimerHandle TimerHandle;
 
@@ -44,4 +50,7 @@ public:
     void CaptureScreenshot();
 
     UBH_GameRecorder* GetGameRecorder();
+
+    /** Keep a report alive until it is published or has failed, whatever happens to its form. */
+    void KeepSubmission(UBH_ReportSubmission* Submission);
 };

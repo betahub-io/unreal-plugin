@@ -19,6 +19,7 @@ Refreshing the fixtures means re-rendering on UE 5.3 - see tools/README.md.
 
 import copy
 import json
+import math
 import os
 import sys
 import tempfile
@@ -182,6 +183,28 @@ class FidelityTests(unittest.TestCase):
         within, total = measure_preview.summarise(rows, TOLERANCE_PX)
         self.assertLess(within, total)
 
+
+
+class CompareTests(unittest.TestCase):
+    """compare() without a browser: rects are given."""
+
+    DOC = {"root": {"name": "Root", "class": "Overlay", "children": [
+        {"name": "Shown", "class": "Border"},
+        {"name": "Folded", "class": "VerticalBox", "children": [{"name": "Inside", "class": "TextBlock"}]}]}}
+
+    def geometry(self, *widgets):
+        return {"widgets": [dict(name=n, **{"class": c}, x=x, y=y, width=w, height=h) for n, c, x, y, w, h in widgets]}
+
+    def test_collapsed_in_both_is_not_a_mismatch(self):
+        # Unreal arranges the children of a collapsed widget at 0x0; the preview draws nothing.
+        geometry = self.geometry(("Shown", "Border", 0, 0, 10, 10), ("Inside", "TextBlock", 0, 0, 0, 0))
+        rows = measure_preview.compare(self.DOC, geometry, {"Shown": {"x": 0, "y": 0, "width": 10, "height": 10}})
+        self.assertEqual([r[1] for r in rows], ["Shown"])
+
+    def test_drawn_by_unreal_but_missing_is_a_mismatch(self):
+        geometry = self.geometry(("Shown", "Border", 0, 0, 10, 10))
+        rows = measure_preview.compare(self.DOC, geometry, {})
+        self.assertEqual(rows[0][0], math.inf)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

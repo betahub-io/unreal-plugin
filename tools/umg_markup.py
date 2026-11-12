@@ -459,6 +459,8 @@ class Compiler:
         self.asset = asset
         self.tokens = tokens
         self.rules = sorted(rules, key=lambda r: (r[0], r[1]))
+        # Classes of typed rules (Border.focused) are states the game switches at runtime.
+        self.state_classes = {c for _, _, sel, _ in rules if sel["type"] and not sel["ids"] for c in sel["classes"]}
         self.used = set()
         self.counters = {}
         # widget name -> {property path: theme token}, for runtime theming
@@ -492,6 +494,10 @@ class Compiler:
         name = el.get("name") or self.auto_name(cls)
         where = "%s (%s)" % (name, cls)
         classes = set((el.get("class") or "").split())
+        baked = sorted(classes & self.state_classes)
+        if baked:
+            raise MarkupError("%s: %s is a runtime state (a Type.class rule); switch it from code - "
+                              "baked into the asset it could never be switched off" % (where, ", ".join(baked)))
 
         decls = []
         for _, _, selector, rule_decls in self.rules:

@@ -1,0 +1,611 @@
+{
+  "$schema": "betahub-umg-widget/1",
+  "asset": "BH_Glyph",
+  "parentClass": "BH_GlyphWidget",
+  "root": {
+    "name": "Shapes",
+    "class": "Overlay",
+    "properties": {},
+    "children": [
+      {
+        "name": "Key",
+        "class": "SizeBox",
+        "properties": {
+          "HeightOverride": 37.0,
+          "bOverride_HeightOverride": true,
+          "MinDesiredWidth": 37.0,
+          "bOverride_MinDesiredWidth": true
+        },
+        "children": [
+          {
+            "name": "KeyEdge",
+            "class": "Border",
+            "properties": {
+              "Background": {
+                "DrawAs": "RoundedBox",
+                "OutlineSettings": {
+                  "RoundingType": "FixedRadius",
+                  "CornerRadii": {
+                    "X": 6.0,
+                    "Y": 6.0,
+                    "Z": 6.0,
+                    "W": 6.0
+                  }
+                },
+                "TintColor": {
+                  "SpecifiedColor": {
+                    "R": 0.396755,
+                    "G": 0.417885,
+                    "B": 0.47932,
+                    "A": 1.0
+                  },
+                  "ColorUseRule": "UseColor_Specified"
+                }
+              },
+              "Padding": {
+                "Left": 1.0,
+                "Top": 1.0,
+                "Right": 1.0,
+                "Bottom": 4.0
+              }
+            },
+            "children": [
+              {
+                "name": "KeyFace",
+                "class": "Border",
+                "properties": {
+                  "Background": {
+                    "DrawAs": "RoundedBox",
+                    "OutlineSettings": {
+                      "RoundingType": "FixedRadius",
+                      "CornerRadii": {
+                        "X": 5.0,
+                        "Y": 5.0,
+                        "Z": 5.0,
+                        "W": 5.0
+                      }
+                    },
+                    "TintColor": {
+                      "SpecifiedColor": {
+                        "R": 0.799103,
+                        "G": 0.806952,
+                        "B": 0.838799,
+                        "A": 1.0
+                      },
+                      "ColorUseRule": "UseColor_Specified"
+                    }
+                  },
+                  "HorizontalAlignment": "HAlign_Center",
+                  "VerticalAlignment": "VAlign_Center",
+                  "Padding": {
+                    "Left": 9.0,
+                    "Top": 0.0,
+                    "Right": 9.0,
+                    "Bottom": 0.0
+                  }
+                },
+                "children": [
+                  {
+                    "name": "KeyText",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Font": {
+                        "FontObject": {
+                          "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                          "__class__": "/Script/Engine.Font"
+                        },
+                        "TypefaceFontName": "Bold",
+                        "Size": 14.25
+                      },
+                      "ColorAndOpacity": {
+                        "SpecifiedColor": {
+                          "R": 0.006995,
+                          "G": 0.008023,
+                          "B": 0.011612,
+                          "A": 1.0
+                        },
+                        "ColorUseRule": "UseColor_Specified"
+                      },
+                      "ShadowOffset": {
+                        "X": 0.0,
+                        "Y": 0.0
+                      },
+                      "Text": {
+                        "__text__": "Enter"
+                      }
+                    },
+                    "slot": {
+                      "class": "BorderSlot",
+                      "properties": {
+                        "Padding": {
+                          "Left": 9.0,
+                          "Top": 0.0,
+                          "Right": 9.0,
+                          "Bottom": 0.0
+                        },
+                        "HorizontalAlignment": "HAlign_Center",
+                        "VerticalAlignment": "VAlign_Center"
+                      }
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "BorderSlot",
+                  "properties": {
+                    "Padding": {
+                      "Left": 1.0,
+                      "Top": 1.0,
+                      "Right": 1.0,
+                      "Bottom": 4.0
+                    }
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "SizeBoxSlot",
+              "properties": {}
+            }
+          }
+        ],
+        "slot": {
+          "class": "OverlaySlot",
+          "properties": {
+            "VerticalAlignment": "VAlign_Center"
+          }
+        }
+      },
+      {
+        "name": "Pad",
+        "class": "SizeBox",
+        "properties": {
+          "HeightOverride": 37.0,
+          "bOverride_HeightOverride": true,
+          "WidthOverride": 37.0,
+          "bOverride_WidthOverride": true,
+          "Visibility": "Collapsed"
+        },
+        "children": [
+          {
+            "name": "PadEdge",
+            "class": "Border",
+            "properties": {
+              "Background": {
+                "DrawAs": "RoundedBox",
+                "OutlineSettings": {
+                  "RoundingType": "FixedRadius",
+                  "CornerRadii": {
+                    "X": 19.0,
+                    "Y": 19.0,
+                    "Z": 19.0,
+                    "W": 19.0
+                  }
+                },
+                "TintColor": {
+                  "SpecifiedColor": {
+                    "R": 0.107023,
+                    "G": 0.47932,
+                    "B": 0.025187,
+                    "A": 1.0
+                  },
+                  "ColorUseRule": "UseColor_Specified"
+                }
+              },
+              "Padding": {
+                "Left": 2.0,
+                "Top": 2.0,
+                "Right": 2.0,
+                "Bottom": 2.0
+              }
+            },
+            "children": [
+              {
+                "name": "PadFace",
+                "class": "Border",
+                "properties": {
+                  "Background": {
+                    "DrawAs": "RoundedBox",
+                    "OutlineSettings": {
+                      "RoundingType": "FixedRadius",
+                      "CornerRadii": {
+                        "X": 17.0,
+                        "Y": 17.0,
+                        "Z": 17.0,
+                        "W": 17.0
+                      }
+                    },
+                    "TintColor": {
+                      "SpecifiedColor": {
+                        "R": 0.107023,
+                        "G": 0.47932,
+                        "B": 0.025187,
+                        "A": 1.0
+                      },
+                      "ColorUseRule": "UseColor_Specified"
+                    }
+                  },
+                  "HorizontalAlignment": "HAlign_Center",
+                  "VerticalAlignment": "VAlign_Center",
+                  "Padding": {
+                    "Left": 0.0,
+                    "Top": 0.0,
+                    "Right": 0.0,
+                    "Bottom": 0.0
+                  }
+                },
+                "children": [
+                  {
+                    "name": "PadText",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Font": {
+                        "FontObject": {
+                          "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                          "__class__": "/Script/Engine.Font"
+                        },
+                        "TypefaceFontName": "Bold",
+                        "Size": 15.75
+                      },
+                      "ColorAndOpacity": {
+                        "SpecifiedColor": {
+                          "R": 1.0,
+                          "G": 1.0,
+                          "B": 1.0,
+                          "A": 1.0
+                        },
+                        "ColorUseRule": "UseColor_Specified"
+                      },
+                      "ShadowOffset": {
+                        "X": 0.0,
+                        "Y": 0.0
+                      },
+                      "Text": {
+                        "__text__": "A"
+                      }
+                    },
+                    "slot": {
+                      "class": "BorderSlot",
+                      "properties": {
+                        "Padding": {
+                          "Left": 0.0,
+                          "Top": 0.0,
+                          "Right": 0.0,
+                          "Bottom": 0.0
+                        },
+                        "HorizontalAlignment": "HAlign_Center",
+                        "VerticalAlignment": "VAlign_Center"
+                      }
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "BorderSlot",
+                  "properties": {
+                    "Padding": {
+                      "Left": 2.0,
+                      "Top": 2.0,
+                      "Right": 2.0,
+                      "Bottom": 2.0
+                    }
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "SizeBoxSlot",
+              "properties": {}
+            }
+          }
+        ],
+        "slot": {
+          "class": "OverlaySlot",
+          "properties": {
+            "VerticalAlignment": "VAlign_Center"
+          }
+        }
+      },
+      {
+        "name": "Chip",
+        "class": "SizeBox",
+        "properties": {
+          "HeightOverride": 37.0,
+          "bOverride_HeightOverride": true,
+          "Visibility": "Collapsed"
+        },
+        "children": [
+          {
+            "name": "ChipEdge",
+            "class": "Border",
+            "properties": {
+              "Background": {
+                "DrawAs": "RoundedBox",
+                "OutlineSettings": {
+                  "RoundingType": "FixedRadius",
+                  "CornerRadii": {
+                    "X": 8.0,
+                    "Y": 8.0,
+                    "Z": 8.0,
+                    "W": 8.0
+                  }
+                },
+                "TintColor": {
+                  "SpecifiedColor": {
+                    "R": 0.043735,
+                    "G": 0.052861,
+                    "B": 0.08022,
+                    "A": 1.0
+                  },
+                  "ColorUseRule": "UseColor_Specified"
+                }
+              },
+              "Padding": {
+                "Left": 2.0,
+                "Top": 2.0,
+                "Right": 2.0,
+                "Bottom": 2.0
+              }
+            },
+            "children": [
+              {
+                "name": "ChipFace",
+                "class": "Border",
+                "properties": {
+                  "Background": {
+                    "DrawAs": "RoundedBox",
+                    "OutlineSettings": {
+                      "RoundingType": "FixedRadius",
+                      "CornerRadii": {
+                        "X": 6.0,
+                        "Y": 6.0,
+                        "Z": 6.0,
+                        "W": 6.0
+                      }
+                    },
+                    "TintColor": {
+                      "SpecifiedColor": {
+                        "R": 0.004025,
+                        "G": 0.004777,
+                        "B": 0.006995,
+                        "A": 1.0
+                      },
+                      "ColorUseRule": "UseColor_Specified"
+                    }
+                  },
+                  "HorizontalAlignment": "HAlign_Center",
+                  "VerticalAlignment": "VAlign_Center",
+                  "Padding": {
+                    "Left": 12.0,
+                    "Top": 0.0,
+                    "Right": 12.0,
+                    "Bottom": 0.0
+                  }
+                },
+                "children": [
+                  {
+                    "name": "ChipText",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Font": {
+                        "FontObject": {
+                          "__ref__": "/BetaHubBugReporter/Fonts/JetBrainsMono.JetBrainsMono",
+                          "__class__": "/Script/Engine.Font"
+                        },
+                        "TypefaceFontName": "Regular",
+                        "Size": 13.5,
+                        "LetterSpacing": 20
+                      },
+                      "ColorAndOpacity": {
+                        "SpecifiedColor": {
+                          "R": 0.62396,
+                          "G": 0.651406,
+                          "B": 0.715694,
+                          "A": 1.0
+                        },
+                        "ColorUseRule": "UseColor_Specified"
+                      },
+                      "ShadowOffset": {
+                        "X": 0.0,
+                        "Y": 0.0
+                      },
+                      "Text": {
+                        "__text__": "▲ ▼"
+                      }
+                    },
+                    "slot": {
+                      "class": "BorderSlot",
+                      "properties": {
+                        "Padding": {
+                          "Left": 12.0,
+                          "Top": 0.0,
+                          "Right": 12.0,
+                          "Bottom": 0.0
+                        },
+                        "HorizontalAlignment": "HAlign_Center",
+                        "VerticalAlignment": "VAlign_Center"
+                      }
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "BorderSlot",
+                  "properties": {
+                    "Padding": {
+                      "Left": 2.0,
+                      "Top": 2.0,
+                      "Right": 2.0,
+                      "Bottom": 2.0
+                    }
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "SizeBoxSlot",
+              "properties": {}
+            }
+          }
+        ],
+        "slot": {
+          "class": "OverlaySlot",
+          "properties": {
+            "VerticalAlignment": "VAlign_Center"
+          }
+        }
+      },
+      {
+        "name": "Stick",
+        "class": "SizeBox",
+        "properties": {
+          "HeightOverride": 37.0,
+          "bOverride_HeightOverride": true,
+          "WidthOverride": 37.0,
+          "bOverride_WidthOverride": true,
+          "Visibility": "Collapsed"
+        },
+        "children": [
+          {
+            "name": "StickEdge",
+            "class": "Border",
+            "properties": {
+              "Background": {
+                "DrawAs": "RoundedBox",
+                "OutlineSettings": {
+                  "RoundingType": "FixedRadius",
+                  "CornerRadii": {
+                    "X": 19.0,
+                    "Y": 19.0,
+                    "Z": 19.0,
+                    "W": 19.0
+                  }
+                },
+                "TintColor": {
+                  "SpecifiedColor": {
+                    "R": 0.104616,
+                    "G": 0.119538,
+                    "B": 0.162029,
+                    "A": 1.0
+                  },
+                  "ColorUseRule": "UseColor_Specified"
+                }
+              },
+              "Padding": {
+                "Left": 3.0,
+                "Top": 3.0,
+                "Right": 3.0,
+                "Bottom": 3.0
+              }
+            },
+            "children": [
+              {
+                "name": "StickFace",
+                "class": "Border",
+                "properties": {
+                  "Background": {
+                    "DrawAs": "RoundedBox",
+                    "OutlineSettings": {
+                      "RoundingType": "FixedRadius",
+                      "CornerRadii": {
+                        "X": 16.0,
+                        "Y": 16.0,
+                        "Z": 16.0,
+                        "W": 16.0
+                      }
+                    },
+                    "TintColor": {
+                      "SpecifiedColor": {
+                        "R": 0.004025,
+                        "G": 0.004777,
+                        "B": 0.006995,
+                        "A": 1.0
+                      },
+                      "ColorUseRule": "UseColor_Specified"
+                    }
+                  },
+                  "HorizontalAlignment": "HAlign_Center",
+                  "VerticalAlignment": "VAlign_Center",
+                  "Padding": {
+                    "Left": 0.0,
+                    "Top": 0.0,
+                    "Right": 0.0,
+                    "Bottom": 0.0
+                  }
+                },
+                "children": [
+                  {
+                    "name": "StickText",
+                    "class": "TextBlock",
+                    "properties": {
+                      "Font": {
+                        "FontObject": {
+                          "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                          "__class__": "/Script/Engine.Font"
+                        },
+                        "TypefaceFontName": "Bold",
+                        "Size": 14.25
+                      },
+                      "ColorAndOpacity": {
+                        "SpecifiedColor": {
+                          "R": 0.62396,
+                          "G": 0.651406,
+                          "B": 0.715694,
+                          "A": 1.0
+                        },
+                        "ColorUseRule": "UseColor_Specified"
+                      },
+                      "ShadowOffset": {
+                        "X": 0.0,
+                        "Y": 0.0
+                      },
+                      "Text": {
+                        "__text__": "R"
+                      }
+                    },
+                    "slot": {
+                      "class": "BorderSlot",
+                      "properties": {
+                        "Padding": {
+                          "Left": 0.0,
+                          "Top": 0.0,
+                          "Right": 0.0,
+                          "Bottom": 0.0
+                        },
+                        "HorizontalAlignment": "HAlign_Center",
+                        "VerticalAlignment": "VAlign_Center"
+                      }
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "BorderSlot",
+                  "properties": {
+                    "Padding": {
+                      "Left": 3.0,
+                      "Top": 3.0,
+                      "Right": 3.0,
+                      "Bottom": 3.0
+                    }
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "SizeBoxSlot",
+              "properties": {}
+            }
+          }
+        ],
+        "slot": {
+          "class": "OverlaySlot",
+          "properties": {
+            "VerticalAlignment": "VAlign_Center"
+          }
+        }
+      }
+    ]
+  },
+  "_stats": {
+    "widgetsReachable": 17,
+    "widgetsInTree": 17,
+    "slots": 16
+  }
+}

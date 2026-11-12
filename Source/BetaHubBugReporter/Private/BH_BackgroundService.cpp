@@ -2,6 +2,8 @@
 #include "BH_BackgroundService.h"
 #include "BH_Log.h"
 #include "BH_FFmpeg.h"
+#include "BH_ReportScreenWidget.h"
+#include "BH_ReportSubmission.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Blueprint/UserWidget.h"
@@ -16,7 +18,6 @@ UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
-    ReportFormWidgetClass = Settings->ReportFormWidgetClass;
 }
 
 void UBH_BackgroundService::StartService()
@@ -164,10 +165,18 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
         return nullptr;
     }
 
+    // Read at every spawn, not once at construction, so a class changed at runtime (or in the editor
+    // between play sessions) takes effect.
+    const TSubclassOf<UBH_ReportFormWidget> ReportFormWidgetClass = Settings ? Settings->ReportFormWidgetClass : nullptr;
     if (!ReportFormWidgetClass)
     {
         UE_LOG(LogBetaHub, Error, TEXT("ReportFormWidgetClass is null."));
         return nullptr;
+    }
+
+    if (OpenForm.IsValid() && OpenForm->IsInViewport())
+    {
+        return OpenForm.Get();
     }
 
     CaptureScreenshot();
@@ -180,7 +189,20 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
         return nullptr;
     }
 
+    if (UBH_ReportScreenWidget* Screen = Cast<UBH_ReportScreenWidget>(ReportForm))
+    {
+        TWeakObjectPtr<UBH_BackgroundService> WeakSelf(this);
+        Screen->KeepSubmission = [WeakSelf](UBH_ReportSubmission* Submission)
+        {
+            if (UBH_BackgroundService* Self = WeakSelf.Get())
+            {
+                Self->KeepSubmission(Submission);
+            }
+        };
+    }
+
     ReportForm->Setup(Settings, GameRecorder, ScreenshotPath, LogCapture->GetCapturedLogs(), bTryCaptureMouse);
+    OpenForm = ReportForm;
 
     UE_LOG(LogBetaHub, Log, TEXT("ReportForm widget created successfully."));
 
@@ -193,4 +215,10 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
 UBH_GameRecorder* UBH_BackgroundService::GetGameRecorder()
 {
     return GameRecorder;
+}
+
+void UBH_BackgroundService::KeepSubmission(UBH_ReportSubmission* Submission)
+{
+    Submissions.RemoveAll([](const TObjectPtr<UBH_ReportSubmission>& Kept) { return !Kept || Kept->IsFinished(); });
+    Submissions.Add(Submission);
 }

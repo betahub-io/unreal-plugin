@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shown over the running game while a report uploads in the background, then
+     briefly when it is sent or has failed. UBH_UploadToastWidget paints the progress
+     ring over Ring. -->
+<Widget asset="BH_UploadToast" parent="BH_UploadToastWidget" styles="BH_Widgets.umg.css">
+  <Overlay name="Root" Visibility="HitTestInvisible">
+    <SizeBox name="ToastSize" MinDesiredHeight="64" bOverride_MinDesiredHeight="true"
+        slot.HorizontalAlignment="Right" slot.VerticalAlignment="Bottom" slot.Padding="0 0 96 158">
+      <Border name="Toast" class="toast">
+        <HorizontalBox name="Line">
+          <SizeBox name="StripSize" WidthOverride="7" bOverride_WidthOverride="true">
+            <Border name="Strip" class="toast-strip"/>
+          </SizeBox>
+          <SizeBox name="Ring" WidthOverride="46" bOverride_WidthOverride="true"
+              HeightOverride="46" bOverride_HeightOverride="true"
+              slot.VerticalAlignment="Center" slot.Padding="27 22 19 22"/>
+          <VerticalBox name="Texts" slot.VerticalAlignment="Center" slot.Padding="0 22 30 22">
+            <TextBlock name="Title" class="toast-title">UPLOADING YOUR REPORT</TextBlock>
+            <TextBlock name="Subtitle" class="toast-sub">45% · the game continues</TextBlock>
+          </VerticalBox>
+        </HorizontalBox>
+      </Border>
+    </SizeBox>
+  </Overlay>
+</Widget>

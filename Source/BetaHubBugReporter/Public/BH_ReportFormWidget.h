@@ -24,7 +24,7 @@ class BETAHUBBUGREPORTER_API UBH_ReportFormWidget : public UUserWidget
 {
     GENERATED_BODY()
 
-private:
+protected:
     UPROPERTY()
     UBH_GameRecorder* GameRecorder;
 
@@ -33,8 +33,10 @@ private:
 
     UBH_PluginSettings* Settings;
 
+private:
     EBH_ReportType CurrentReportType;
 
+protected:
     // True once SetCursorState() has forced UI-only input and captured InputSnapshot, i.e. this form
     // owns an input-mode restore. Gates RestoreCursorState() and tells ShowPopup() whether the form's
     // snapshot is authoritative when it hands off to a popup on a successful submit.
@@ -42,7 +44,11 @@ private:
     // The game's real input/cursor state captured in SetCursorState() before UI-only input was forced.
     FBH_InputModeSnapshot InputSnapshot;
     bool bSuppressCursorRestore;
+
+private:
     bool bIsSubmitting;
+
+protected:
 
     // The auto-captured screenshot (ScreenshotPath) has a unique per-report filename, so unlike the old
     // fixed name it is not self-overwriting: whoever opens a form owns its screenshot file and must delete
@@ -53,8 +59,11 @@ private:
     // NativeDestruct deletes the file so screenshots do not accumulate across a session.
     bool bScreenshotHandedToAsync;
 
+private:
     void SetSubmittingState();
     void ResetSubmitButton();
+
+protected:
 
     // Idempotent restart of gameplay recording. The recorder is stopped while the form is open
     // (Setup -> StopRecording); this resumes it once the form is done with it, so the NEXT report
@@ -65,6 +74,7 @@ private:
     // no-op. See betahub.tasks#165.
     void EnsureRecording();
 
+private:
     UFUNCTION()
     void OnCloseClicked();
 
@@ -94,54 +104,57 @@ public:
     // constructor
     UBH_ReportFormWidget(const FObjectInitializer& ObjectInitializer);
 
-    UPROPERTY(meta = (BindWidget))
+    // The classic form's widgets. Optional, so the newer report screen can derive from this class
+    // without them; the classic BugReportForm asset still has every one.
+
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UButton> CloseButton;
 
     // Report type checkboxes
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UCheckBox> BugReportCheckBox;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UCheckBox> SuggestionCheckBox;
 
     // Description field (shared between bug reports and suggestions)
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UMultiLineEditableTextBox> BugDescriptionEdit;
 
     // Bug report specific fields
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UTextBlock> StepsToReproduceLabel;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UMultiLineEditableTextBox> StepsToReproduceEdit;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UHorizontalBox> IncludeGameplayVideoContainer;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UCheckBox> IncludeVideoCheckbox;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UCheckBox> IncludeLogsCheckbox;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UHorizontalBox> IncludeLogsContainer;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UCheckBox> IncludeScreenshotCheckbox;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UButton> SubmitButton;
 
-    UPROPERTY(meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UTextBlock> SubmitLabel;
 
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
-    void Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents, bool bTryCaptureMouse);
+    virtual void Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath, const FString& InLogFileContents, bool bTryCaptureMouse);
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
-    void SubmitReport();
+    virtual void SubmitReport();
 
     UFUNCTION(BlueprintCallable, Category="Cursor")
     void SetCursorState();

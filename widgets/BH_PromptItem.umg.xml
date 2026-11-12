@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One prompt of the prompt bar: glyphs, then the label. UBH_PromptItemWidget fills
+     Glyphs with BH_Glyph widgets, paints the spinner over Spinner while busy, and
+     handles hover and clicks. -->
+<Widget asset="BH_PromptItem" parent="BH_PromptItemWidget" styles="BH_Widgets.umg.css">
+  <SizeBox name="PromptSize" class="prompt-size">
+    <Border name="Prompt" class="prompt">
+      <HorizontalBox name="Line">
+        <HorizontalBox name="Glyphs" slot.VerticalAlignment="Center"/>
+        <SizeBox name="Spinner" Visibility="Collapsed" slot.VerticalAlignment="Center"
+            WidthOverride="31" bOverride_WidthOverride="true" HeightOverride="31" bOverride_HeightOverride="true"/>
+        <TextBlock name="Label" class="prompt-label">Send report</TextBlock>
+      </HorizontalBox>
+    </Border>
+  </SizeBox>
+</Widget>

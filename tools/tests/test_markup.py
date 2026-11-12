@@ -193,6 +193,13 @@ class RuntimeStyleTests(unittest.TestCase):
         with self.assertRaises(umg_markup.MarkupError):
             umg_markup.runtime_rules("s", ":root { --bh-radius: 10; } Border.x { Padding: 0 var(--bh-radius); }")
 
+    def test_runtime_state_class_in_markup_is_refused(self):
+        # Border.focused is a state the game switches; baked into the asset it could never be
+        # switched off, because the runtime only knows the asset's own values.
+        with self.assertRaises(umg_markup.MarkupError) as ctx:
+            compile_text('<Border name="Box" class="plain focused"/>', styles=self.SHEET)
+        self.assertIn("focused", str(ctx.exception))
+
     def test_runtime_rules_cannot_set_slot_properties(self):
         with self.assertRaises(umg_markup.MarkupError):
             umg_markup.runtime_rules("s", "TextBlock.x { slot.Padding: 4; }")

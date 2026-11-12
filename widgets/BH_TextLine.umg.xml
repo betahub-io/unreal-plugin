@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One line of the game log tail, in the pane and in the full-screen preview. -->
+<Widget asset="BH_TextLine" parent="BH_TextLineWidget" styles="BH_Widgets.umg.css">
+  <TextBlock name="Line" class="log-line">[13:27:39] LogInventory: Warning: item 1043 has no owner</TextBlock>
+</Widget>

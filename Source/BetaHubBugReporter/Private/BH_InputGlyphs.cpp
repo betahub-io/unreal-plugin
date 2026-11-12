@@ -15,12 +15,6 @@ namespace
         North
     };
 
-    // Stylesheet classes of the glyph caps (BH_PromptItem): keyboard keys, coloured pad
-    // buttons, and the chips for the d-pad and the right stick.
-    const TCHAR* KeyCapClass = TEXT("cap--key");
-    const TCHAR* DPadCapClass = TEXT("cap--dpad");
-    const TCHAR* StickCapClass = TEXT("cap--stick");
-
     FBH_InputIntent ActionIntent(EBH_Action Action)
     {
         FBH_InputIntent I;
@@ -75,23 +69,23 @@ namespace
     FBH_Glyph PadGlyph(EPadButton Button, EBH_GlyphSet Set)
     {
         static const TCHAR* XboxLabels[] = {TEXT("A"), TEXT("B"), TEXT("X"), TEXT("Y")};
-        static const TCHAR* XboxClasses[] = {TEXT("cap--xbox-a"), TEXT("cap--xbox-b"), TEXT("cap--xbox-x"), TEXT("cap--xbox-y")};
-        static const TCHAR* PsLabels[] = {TEXT("✕"), TEXT("○"), TEXT("□"), TEXT("△")};
-        static const TCHAR* PsClasses[] = {TEXT("cap--ps-cross"), TEXT("cap--ps-circle"), TEXT("cap--ps-square"), TEXT("cap--ps-triangle")};
+        static const TCHAR* XboxVariants[] = {TEXT("xbox-a"), TEXT("xbox-b"), TEXT("xbox-x"), TEXT("xbox-y")};
+        static const TCHAR* PsLabels[] = {TEXT("\u2715"), TEXT("\u25CB"), TEXT("\u25A1"), TEXT("\u25B3")};
+        static const TCHAR* PsVariants[] = {TEXT("ps-cross"), TEXT("ps-circle"), TEXT("ps-square"), TEXT("ps-triangle")};
         // Switch labels sit where Nintendo prints them: B at the bottom, A on the right.
         static const TCHAR* SwitchLabels[] = {TEXT("B"), TEXT("A"), TEXT("Y"), TEXT("X")};
         const int32 Index = static_cast<int32>(Button);
         switch (Set)
         {
-            case EBH_GlyphSet::PlayStation: return {FText::AsCultureInvariant(PsLabels[Index]), PsClasses[Index]};
-            case EBH_GlyphSet::Switch: return {FText::AsCultureInvariant(SwitchLabels[Index]), TEXT("cap--switch")};
-            default: return {FText::AsCultureInvariant(XboxLabels[Index]), XboxClasses[Index]};
+            case EBH_GlyphSet::PlayStation: return {FText::AsCultureInvariant(PsLabels[Index]), EBH_GlyphShape::Pad, PsVariants[Index]};
+            case EBH_GlyphSet::Switch: return {FText::AsCultureInvariant(SwitchLabels[Index]), EBH_GlyphShape::Pad, TEXT("switch")};
+            default: return {FText::AsCultureInvariant(XboxLabels[Index]), EBH_GlyphShape::Pad, XboxVariants[Index]};
         }
     }
 
     FBH_Glyph Key(const FText& Text)
     {
-        return {Text, KeyCapClass};
+        return {Text, EBH_GlyphShape::Key, FString()};
     }
 }
 
@@ -129,18 +123,18 @@ TArray<FBH_Glyph> BH_InputGlyphs::GlyphsFor(EBH_Action Action, EBH_GlyphSet Set)
             case EBH_Action::Alt: return {Key(FText::AsCultureInvariant(TEXT("P")))};
             case EBH_Action::Send: return {Key(LOCTEXT("KeyCtrl", "Ctrl")), Key(LOCTEXT("KeyEnter", "Enter"))};
             case EBH_Action::Next: return {Key(LOCTEXT("KeyTab", "Tab"))};
-            case EBH_Action::Navigate: return {Key(FText::AsCultureInvariant(TEXT("↑"))), Key(FText::AsCultureInvariant(TEXT("↓")))};
+            case EBH_Action::Navigate: return {Key(FText::AsCultureInvariant(TEXT("\u2191"))), Key(FText::AsCultureInvariant(TEXT("\u2193")))};
             case EBH_Action::Scroll: return {Key(LOCTEXT("KeyPgUp", "PgUp")), Key(LOCTEXT("KeyPgDn", "PgDn"))};
         }
         return {};
     }
     if (Action == EBH_Action::Navigate)
     {
-        return {{FText::AsCultureInvariant(TEXT("▲ ▼")), DPadCapClass}};
+        return {{FText::AsCultureInvariant(TEXT("\u25B2 \u25BC")), EBH_GlyphShape::DPad, FString()}};
     }
     if (Action == EBH_Action::Scroll)
     {
-        return {{FText::AsCultureInvariant(TEXT("R")), StickCapClass}};
+        return {{FText::AsCultureInvariant(TEXT("R")), EBH_GlyphShape::Stick, FString()}};
     }
     EPadButton Button;
     if (PadButtonFor(Action, Set, Button))

@@ -228,7 +228,7 @@ FBH_Header BH_ReportScreenModel::Header(const FBH_ScreenState& S)
             return {LOCTEXT("UploadingTitle", "ALMOST THERE"), LOCTEXT("UploadingSub", "Your report is saved. Uploading attachments."), EBH_Tone::Normal};
         case EBH_Screen::Sent:
             return {bSuggestion ? LOCTEXT("SentSuggestionTitle", "SUGGESTION SENT") : LOCTEXT("SentTitle", "REPORT SENT"),
-                    FText::Format(LOCTEXT("SentSub", "#{0} · saved anonymously"), FText::FromString(S.IssueId)),
+                    FText::Format(LOCTEXT("SentSub", "#{0} \u00B7 saved anonymously"), FText::FromString(S.IssueId)),
                     EBH_Tone::Normal};
         default:
             break;
@@ -257,11 +257,11 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
     switch (S.Screen)
     {
         case EBH_Screen::Sending:
-            Bar.Right.Add(Prompt(EBH_Action::Send, LOCTEXT("Sending", "Sending…"), false, false, true));
+            Bar.Right.Add(Prompt(EBH_Action::Send, LOCTEXT("Sending", "Sending\u2026"), false, false, true));
             return Bar;
 
         case EBH_Screen::Uploading:
-            Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackUploading", "Back to game · the upload continues")));
+            Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackUploading", "Back to game \u00B7 the upload continues")));
             return Bar;
 
         case EBH_Screen::Preview:

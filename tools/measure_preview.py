@@ -157,6 +157,9 @@ def compare(widget_doc, geometry, rects):
             continue
         ue = (w["x"], w["y"], w["width"], w["height"])
         r = rects.get(w["name"])
+        if r is None and w["width"] == 0 and w["height"] == 0:
+            # Inside a collapsed widget: Unreal arranges it at 0x0, the preview draws nothing.
+            continue
         if r is None:
             rows.append((math.inf, w["name"], w["class"], ue, None))
             continue

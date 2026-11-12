@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One button glyph of the prompt bar: a keyboard key, a pad face button, the d-pad
+     chip or a thumbstick. UBH_GlyphWidget shows one shape and sets its variant class
+     (pad - -xbox-a, pad - -ps-cross, ...). The default shape and text are what the
+     designer sees. -->
+<Widget asset="BH_Glyph" parent="BH_GlyphWidget" styles="BH_Widgets.umg.css">
+  <Overlay name="Shapes">
+    <SizeBox name="Key" class="cap-size key-size">
+      <Border name="KeyEdge" class="cap-edge key-edge">
+        <Border name="KeyFace" class="cap-face key-face">
+          <TextBlock name="KeyText" class="cap-text key-text">Enter</TextBlock>
+        </Border>
+      </Border>
+    </SizeBox>
+    <SizeBox name="Pad" class="cap-size round-size" Visibility="Collapsed">
+      <Border name="PadEdge" class="cap-edge pad-edge">
+        <Border name="PadFace" class="cap-face pad-face">
+          <TextBlock name="PadText" class="cap-text pad-text">A</TextBlock>
+        </Border>
+      </Border>
+    </SizeBox>
+    <SizeBox name="Chip" class="cap-size" Visibility="Collapsed">
+      <Border name="ChipEdge" class="cap-edge chip-edge">
+        <Border name="ChipFace" class="cap-face chip-face">
+          <TextBlock name="ChipText" class="chip-text">▲ ▼</TextBlock>
+        </Border>
+      </Border>
+    </SizeBox>
+    <SizeBox name="Stick" class="cap-size round-size" Visibility="Collapsed">
+      <Border name="StickEdge" class="cap-edge stick-edge">
+        <Border name="StickFace" class="cap-face stick-face">
+          <TextBlock name="StickText" class="cap-text stick-text">R</TextBlock>
+        </Border>
+      </Border>
+    </SizeBox>
+  </Overlay>
+</Widget>

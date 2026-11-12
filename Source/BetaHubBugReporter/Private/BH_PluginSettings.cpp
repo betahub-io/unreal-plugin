@@ -5,6 +5,12 @@
 #include "BH_Log.h"
 #include "UObject/ConstructorHelpers.h"
 
+namespace
+{
+    /** BetaHub's default minimum description length for feature requests. */
+    constexpr int32 DefaultSuggestionMinLength = 80;
+}
+
 UBH_PluginSettings::UBH_PluginSettings()
 {
     // Set default values
@@ -39,7 +45,13 @@ UBH_PluginSettings::UBH_PluginSettings()
     // hardware path is compiled out, so offering "Hardware (GPU)" would silently do nothing.
     bHardwareEncodeSupported = (WITH_BETAHUB_HWENCODE != 0);
 
-    static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BugReportForm"));
+    Theme = EBH_BuiltInTheme::Dark;
+    bRequireTermsAcceptance = false;
+    SuggestionMinLength = DefaultSuggestionMinLength;
+
+    // The report screen is the default; the classic form (/BetaHubBugReporter/BugReportForm) stays
+    // selectable here.
+    static ConstructorHelpers::FClassFinder<UBH_ReportFormWidget> WidgetClassFinder1(TEXT("/BetaHubBugReporter/BH_ReportScreen"));
     static ConstructorHelpers::FClassFinder<UBH_PopupWidget> WidgetClassFinder2(TEXT("/BetaHubBugReporter/BugReportFormPopup"));
 
     if (WidgetClassFinder1.Succeeded())
@@ -84,4 +96,12 @@ void UBH_PluginSettings::ValidateSettings()
     {
         MaxVideoHeight = 512;
     }
+}
+FBH_ThemeColors UBH_PluginSettings::ResolveTheme() const
+{
+    if (const UBH_ThemeAsset* Asset = ThemeAsset.LoadSynchronous())
+    {
+        return Asset->ToColors();
+    }
+    return BH_ThemeRecipe::BuiltIn(Theme);
 }
