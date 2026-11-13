@@ -66,7 +66,10 @@ controller: what happened on the left, what gets sent along on the right, and ev
 bar at the bottom, shown with the glyphs of the device the player last used (keyboard, Xbox,
 PlayStation or Switch). Players can switch between a bug report and a suggestion, leave out any
 attachment, preview the screenshot, the last seconds of play and the game log full screen, and after
-sending add an email to hear when the bug is fixed or copy a link to the report.
+sending add an email to hear when the bug is fixed or copy a link to the report. The report and its
+attachments are two tabs, switched with 1 and 2 on a keyboard or the shoulder buttons on a controller;
+the arrow keys or the d-pad move between items, Tab and Shift+Tab go through them in order, and the
+first prompt in the bar always goes back.
 
 Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report Widget*:
 

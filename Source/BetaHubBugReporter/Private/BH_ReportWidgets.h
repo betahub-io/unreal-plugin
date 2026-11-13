@@ -119,18 +119,27 @@ public:
     void SetTexts(const FText& InName, const FText& InMeta);
     void SetValue(const FBH_RowValue& InValue);
     void SetFocused(bool bFocused);
+    /** The checkbox: ticked when the attachment goes with the report. */
+    void SetIncluded(bool bIncluded);
     void SetTwoColumns(bool bTwo);
     void SetInteractive(bool bInteractive);
 
+    /** A click on the row: select it. */
     TFunction<void()> OnClicked;
+    /** A click on the checkbox: include or leave out. */
+    TFunction<void()> OnCheckClicked;
 
 protected:
     virtual FString StyleAsset() const override { return TEXT("BH_AttachmentRow"); }
     virtual void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
     virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
+    virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
     virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> Row;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<USizeBox> Check;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> CheckBox;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> CheckMark;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Name;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Meta;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<USizeBox> Mini;
@@ -141,6 +150,48 @@ private:
     bool bInteractive = true;
     bool bTwoColumns = false;
     EBH_Tone Tone = EBH_Tone::Accent;
+};
+
+/** The report and attachments tabs, with the keys that switch them. */
+UCLASS(Abstract)
+class UBH_TabsWidget : public UBH_StyledWidget
+{
+    GENERATED_BODY()
+
+public:
+    /** The open tab, the report tab's label, how many attachments go along, and whose keys to show:
+        1 and 2 in the tabs on a keyboard, the shoulder buttons either side on a pad. */
+    void Show(EBH_Tab Open, const FText& ReportLabel, int32 IncludedCount, EBH_GlyphSet Set,
+              TSubclassOf<UBH_GlyphWidget> GlyphClass);
+
+    TFunction<void(EBH_Tab)> OnTabClicked;
+
+protected:
+    virtual FString StyleAsset() const override { return TEXT("BH_Tabs"); }
+    virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
+    virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+    virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UHorizontalBox> PrevButton;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> ReportTab;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UHorizontalBox> ReportKey;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> ReportText;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> ReportMark;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> AttachmentsTab;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UHorizontalBox> AttachmentsKey;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> AttachmentsText;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> AttachmentsBadge;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> AttachmentsCount;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> AttachmentsMark;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UHorizontalBox> NextButton;
+
+private:
+    bool TabAt(const FVector2D& ScreenPosition, EBH_Tab& OutTab) const;
+    void SetHover(const EBH_Tab* Tab);
+    void BuildKeys(EBH_GlyphSet Set, TSubclassOf<UBH_GlyphWidget> GlyphClass);
+
+    bool bKeysBuilt = false;
+    EBH_GlyphSet KeySet = EBH_GlyphSet::Keyboard;
 };
 
 /** One thumbnail of the recording. */

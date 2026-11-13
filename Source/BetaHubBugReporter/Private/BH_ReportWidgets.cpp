@@ -267,6 +267,13 @@ void UBH_AttachmentRowWidget::SetFocused(bool bFocused)
     SetClass(Name, TEXT("row-name--focused"), bFocused);
 }
 
+void UBH_AttachmentRowWidget::SetIncluded(bool bIncluded)
+{
+    SetClass(CheckBox, TEXT("check--on"), bIncluded);
+    SetClass(CheckMark, TEXT("check-mark--on"), bIncluded);
+    SetClass(Name, TEXT("row-name--off"), !bIncluded);
+}
+
 void UBH_AttachmentRowWidget::SetTwoColumns(bool bTwo)
 {
     bTwoColumns = bTwo;
@@ -281,6 +288,7 @@ void UBH_AttachmentRowWidget::SetInteractive(bool bInInteractive)
     if (!bInteractive)
     {
         SetClass(Row, TEXT("row--hover"), false);
+        SetClass(CheckBox, TEXT("check--hover"), false);
     }
 }
 
@@ -294,6 +302,13 @@ void UBH_AttachmentRowWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEve
 {
     Super::NativeOnMouseLeave(InMouseEvent);
     SetClass(Row, TEXT("row--hover"), false);
+    SetClass(CheckBox, TEXT("check--hover"), false);
+}
+
+FReply UBH_AttachmentRowWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+    SetClass(CheckBox, TEXT("check--hover"), bInteractive && Check->GetCachedGeometry().IsUnderLocation(InMouseEvent.GetScreenSpacePosition()));
+    return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 }
 
 FReply UBH_AttachmentRowWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -302,9 +317,104 @@ FReply UBH_AttachmentRowWidget::NativeOnMouseButtonDown(const FGeometry& InGeome
     {
         return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
     }
-    if (OnClicked)
+    const bool bOnCheck = Check->GetCachedGeometry().IsUnderLocation(InMouseEvent.GetScreenSpacePosition());
+    if (const TFunction<void()>& Handler = bOnCheck ? OnCheckClicked : OnClicked)
     {
-        OnClicked();
+        Handler();
+    }
+    return FReply::Handled();
+}
+
+// ----------------------------------------------------------------------------- tabs
+
+void UBH_TabsWidget::Show(EBH_Tab Open, const FText& ReportLabel, int32 IncludedCount, EBH_GlyphSet Set,
+                          TSubclassOf<UBH_GlyphWidget> GlyphClass)
+{
+    ReportText->SetText(ReportLabel);
+    AttachmentsCount->SetText(FText::AsNumber(IncludedCount));
+    const bool bReport = Open == EBH_Tab::Report;
+    SetClass(ReportText, TEXT("tab-text--on"), bReport);
+    SetClass(ReportMark, TEXT("tab-mark--on"), bReport);
+    SetClass(AttachmentsText, TEXT("tab-text--on"), !bReport);
+    SetClass(AttachmentsMark, TEXT("tab-mark--on"), !bReport);
+    SetClass(AttachmentsBadge, TEXT("tab-badge--on"), !bReport);
+    SetClass(AttachmentsCount, TEXT("tab-badge-text--on"), !bReport);
+    BuildKeys(Set, GlyphClass);
+}
+
+void UBH_TabsWidget::BuildKeys(EBH_GlyphSet Set, TSubclassOf<UBH_GlyphWidget> GlyphClass)
+{
+    if ((bKeysBuilt && KeySet == Set) || !GlyphClass)
+    {
+        return;
+    }
+    bKeysBuilt = true;
+    KeySet = Set;
+    // A keyboard's keys sit in the tabs; a pad's shoulder buttons either side of them.
+    const bool bKeyboard = Set == EBH_GlyphSet::Keyboard;
+    UHorizontalBox* ReportBox = bKeyboard ? ReportKey.Get() : PrevButton.Get();
+    UHorizontalBox* AttachmentsBox = bKeyboard ? AttachmentsKey.Get() : NextButton.Get();
+    for (UHorizontalBox* Box : {PrevButton.Get(), ReportKey.Get(), AttachmentsKey.Get(), NextButton.Get()})
+    {
+        Box->ClearChildren();
+        Box->SetVisibility(Box == ReportBox || Box == AttachmentsBox ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+    }
+    for (const TPair<UHorizontalBox*, EBH_Action>& Target : {TPair<UHorizontalBox*, EBH_Action>(ReportBox, EBH_Action::TabReport),
+                                                             TPair<UHorizontalBox*, EBH_Action>(AttachmentsBox, EBH_Action::TabAttachments)})
+    {
+        for (const FBH_Glyph& Cap : BH_InputGlyphs::GlyphsFor(Target.Value, Set))
+        {
+            UBH_GlyphWidget* Glyph = CreateWidget<UBH_GlyphWidget>(this, GlyphClass);
+            Glyph->Show(Cap);
+            Target.Key->AddChildToHorizontalBox(Glyph)->SetVerticalAlignment(VAlign_Center);
+        }
+    }
+}
+
+bool UBH_TabsWidget::TabAt(const FVector2D& ScreenPosition, EBH_Tab& OutTab) const
+{
+    if (ReportTab->GetCachedGeometry().IsUnderLocation(ScreenPosition))
+    {
+        OutTab = EBH_Tab::Report;
+        return true;
+    }
+    if (AttachmentsTab->GetCachedGeometry().IsUnderLocation(ScreenPosition))
+    {
+        OutTab = EBH_Tab::Attachments;
+        return true;
+    }
+    return false;
+}
+
+void UBH_TabsWidget::SetHover(const EBH_Tab* Tab)
+{
+    SetClass(ReportText, TEXT("tab-text--hover"), Tab && *Tab == EBH_Tab::Report);
+    SetClass(AttachmentsText, TEXT("tab-text--hover"), Tab && *Tab == EBH_Tab::Attachments);
+}
+
+void UBH_TabsWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
+{
+    Super::NativeOnMouseLeave(InMouseEvent);
+    SetHover(nullptr);
+}
+
+FReply UBH_TabsWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+    EBH_Tab Tab = EBH_Tab::Report;
+    SetHover(TabAt(InMouseEvent.GetScreenSpacePosition(), Tab) ? &Tab : nullptr);
+    return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+FReply UBH_TabsWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+    EBH_Tab Tab = EBH_Tab::Report;
+    if (InMouseEvent.GetEffectingButton() != EKeys::LeftMouseButton || !TabAt(InMouseEvent.GetScreenSpacePosition(), Tab))
+    {
+        return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+    }
+    if (OnTabClicked)
+    {
+        OnTabClicked(Tab);
     }
     return FReply::Handled();
 }

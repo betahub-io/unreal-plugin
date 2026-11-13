@@ -92,9 +92,25 @@ namespace
     {
         return {FText::AsCultureInvariant(Symbol), EBH_GlyphShape::Key, FString(), true};
     }
+
+    FBH_Glyph Chip(const TCHAR* Text)
+    {
+        return {FText::AsCultureInvariant(Text), EBH_GlyphShape::DPad, FString()};
+    }
+
+    /** The shoulder buttons by the names each pad prints on them. */
+    FBH_Glyph Bumper(bool bLeft, EBH_GlyphSet Set)
+    {
+        switch (Set)
+        {
+            case EBH_GlyphSet::PlayStation: return Chip(bLeft ? TEXT("L1") : TEXT("R1"));
+            case EBH_GlyphSet::Switch: return Chip(bLeft ? TEXT("L") : TEXT("R"));
+            default: return Chip(bLeft ? TEXT("LB") : TEXT("RB"));
+        }
+    }
 }
 
-FBH_InputIntent BH_InputGlyphs::IntentFor(const FKey& Key, bool bCtrlOrCmd, EBH_GlyphSet PadSet)
+FBH_InputIntent BH_InputGlyphs::IntentFor(const FKey& Key, bool bCtrlOrCmd, EBH_GlyphSet PadSet, bool bShift)
 {
     if (Key == EKeys::Enter)
     {
@@ -103,7 +119,16 @@ FBH_InputIntent BH_InputGlyphs::IntentFor(const FKey& Key, bool bCtrlOrCmd, EBH_
     if (Key == EKeys::SpaceBar) return ActionIntent(EBH_Action::Confirm);
     if (Key == EKeys::Escape) return ActionIntent(EBH_Action::Back);
     if (Key == EKeys::P) return ActionIntent(EBH_Action::Alt);
-    if (Key == EKeys::Tab) return ActionIntent(EBH_Action::Next);
+    if (Key == EKeys::Tab) return ActionIntent(bShift ? EBH_Action::Prev : EBH_Action::Next);
+    // AZERTY's number row is & and \u00E9 unshifted: the keys that read 1 and 2 there.
+    if (Key == EKeys::One || Key == EKeys::NumPadOne || Key == EKeys::Ampersand || Key == EKeys::Gamepad_LeftShoulder)
+    {
+        return ActionIntent(EBH_Action::TabReport);
+    }
+    if (Key == EKeys::Two || Key == EKeys::NumPadTwo || Key == EKeys::E_AccentAigu || Key == EKeys::Gamepad_RightShoulder)
+    {
+        return ActionIntent(EBH_Action::TabAttachments);
+    }
     if (Key == EKeys::Up || Key == EKeys::Gamepad_DPad_Up || Key == EKeys::Gamepad_LeftStick_Up) return MoveIntent(EBH_Direction::Up);
     if (Key == EKeys::Down || Key == EKeys::Gamepad_DPad_Down || Key == EKeys::Gamepad_LeftStick_Down) return MoveIntent(EBH_Direction::Down);
     if (Key == EKeys::Left || Key == EKeys::Gamepad_DPad_Left || Key == EKeys::Gamepad_LeftStick_Left) return MoveIntent(EBH_Direction::Left);
@@ -128,18 +153,29 @@ TArray<FBH_Glyph> BH_InputGlyphs::GlyphsFor(EBH_Action Action, EBH_GlyphSet Set)
             case EBH_Action::Alt: return {Key(FText::AsCultureInvariant(TEXT("P")))};
             case EBH_Action::Send: return {Key(LOCTEXT("KeyCtrl", "Ctrl")), Key(LOCTEXT("KeyEnter", "Enter"))};
             case EBH_Action::Next: return {Key(LOCTEXT("KeyTab", "Tab"))};
+            case EBH_Action::Prev: return {Key(LOCTEXT("KeyShift", "Shift")), Key(LOCTEXT("KeyTab", "Tab"))};
             case EBH_Action::Navigate: return {SymbolKey(TEXT("\u2191")), SymbolKey(TEXT("\u2193"))};
             case EBH_Action::Scroll: return {Key(LOCTEXT("KeyPgUp", "PgUp")), Key(LOCTEXT("KeyPgDn", "PgDn"))};
+            case EBH_Action::Move: return {SymbolKey(TEXT("\u2191")), SymbolKey(TEXT("\u2193")), SymbolKey(TEXT("\u2190")), SymbolKey(TEXT("\u2192"))};
+            case EBH_Action::ChangeType: return {SymbolKey(TEXT("\u2190")), SymbolKey(TEXT("\u2192"))};
+            case EBH_Action::TabReport: return {Key(FText::AsCultureInvariant(TEXT("1")))};
+            case EBH_Action::TabAttachments: return {Key(FText::AsCultureInvariant(TEXT("2")))};
+            case EBH_Action::ScrollUp: return {Key(LOCTEXT("KeyPgUp", "PgUp"))};
+            case EBH_Action::ScrollDown: return {Key(LOCTEXT("KeyPgDn", "PgDn"))};
         }
         return {};
     }
-    if (Action == EBH_Action::Navigate)
+    switch (Action)
     {
-        return {{FText::AsCultureInvariant(TEXT("\u25B2 \u25BC")), EBH_GlyphShape::DPad, FString()}};
-    }
-    if (Action == EBH_Action::Scroll)
-    {
-        return {{FText::AsCultureInvariant(TEXT("R")), EBH_GlyphShape::Stick, FString()}};
+        case EBH_Action::Navigate: return {Chip(TEXT("\u25B2 \u25BC"))};
+        case EBH_Action::Move: return {Chip(TEXT("\u25B2 \u25BC \u25C0 \u25B6"))};
+        case EBH_Action::ChangeType: return {Chip(TEXT("\u25C0 \u25B6"))};
+        case EBH_Action::Scroll: return {{FText::AsCultureInvariant(TEXT("R")), EBH_GlyphShape::Stick, FString()}};
+        case EBH_Action::ScrollUp: return {Chip(TEXT("R \u25B2"))};
+        case EBH_Action::ScrollDown: return {Chip(TEXT("R \u25BC"))};
+        case EBH_Action::TabReport: return {Bumper(true, Set)};
+        case EBH_Action::TabAttachments: return {Bumper(false, Set)};
+        default: break;
     }
     EPadButton Button;
     if (PadButtonFor(Action, Set, Button))

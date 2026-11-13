@@ -113,6 +113,21 @@ void FBH_ComposeFocus::Move(EBH_Direction Direction)
     }
 }
 
+void FBH_ComposeFocus::Step(int32 Delta)
+{
+    const int32 Count = Fields.Num() + Attachments;
+    const int32 Current = bOnField ? FieldIndex : Fields.Num() + AttachmentIndex;
+    const int32 Target = ((Current + Delta) % Count + Count) % Count;
+    if (Target < Fields.Num())
+    {
+        FocusField(Fields[Target]);
+    }
+    else
+    {
+        FocusAttachment(Target - Fields.Num());
+    }
+}
+
 // ----------------------------------------------------------------------------- model
 
 namespace
@@ -219,6 +234,11 @@ bool BH_ReportScreenModel::CanSend(const FBH_ScreenState& S)
     return true;
 }
 
+FText BH_ReportScreenModel::ReportTitle(EBH_ReportType Type)
+{
+    return Type == EBH_ReportType::Suggestion ? LOCTEXT("SuggestTitle", "SUGGEST AN IDEA") : LOCTEXT("ReportTitle", "REPORT A BUG");
+}
+
 FBH_Header BH_ReportScreenModel::Header(const FBH_ScreenState& S)
 {
     const bool bSuggestion = S.Type == EBH_ReportType::Suggestion;
@@ -240,20 +260,22 @@ FBH_Header BH_ReportScreenModel::Header(const FBH_ScreenState& S)
             : LOCTEXT("UnavailablePlayer", "Bug reporting isn't available right now.");
         return {LOCTEXT("UnavailableTitle", "BUG REPORTING UNAVAILABLE"), Sub, EBH_Tone::Warn};
     }
+    // The tabs take the title's place, so a failed send says so in the subtitle.
     if (S.Screen == EBH_Screen::Compose && !S.SubmissionError.IsEmpty())
     {
         return {LOCTEXT("ErrorTitle", "COULDN'T SEND"),
-                FText::Format(LOCTEXT("ErrorSub", "{0} Your text is kept."), FText::FromString(S.SubmissionError)),
-                EBH_Tone::Err};
+                FText::Format(LOCTEXT("ErrorSub", "Couldn't send. {0} Your text is kept."), FText::FromString(S.SubmissionError)),
+                EBH_Tone::Err, true};
     }
-    return {bSuggestion ? LOCTEXT("SuggestTitle", "SUGGEST AN IDEA") : LOCTEXT("ReportTitle", "REPORT A BUG"),
-            LOCTEXT("ComposeSub", "Goes straight to the developers"), EBH_Tone::Normal};
+    return {ReportTitle(S.Type), LOCTEXT("ComposeSub", "Goes straight to the developers"), EBH_Tone::Normal, true};
 }
 
 FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
 {
+    // Back is always the first prompt, so it never moves between screens.
     FBH_PromptBar Bar;
     const FText Close = LOCTEXT("Close", "Close");
+    const FText Attachments = LOCTEXT("AttachmentsTab", "Attachments");
     switch (S.Screen)
     {
         case EBH_Screen::Sending:
@@ -265,35 +287,42 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
             return Bar;
 
         case EBH_Screen::Preview:
+            Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackToReport", "Back to report")));
             Bar.Left.Add(Prompt(EBH_Action::Navigate, LOCTEXT("Item", "Item")));
             if (S.bPreviewIsLog)
             {
-                Bar.Left.Add(Prompt(EBH_Action::Scroll, LOCTEXT("Scroll", "Scroll")));
+                Bar.Left.Add(Prompt(EBH_Action::ScrollUp, LOCTEXT("OlderLines", "Older lines"), false, S.bLogAtTop));
+                Bar.Left.Add(Prompt(EBH_Action::ScrollDown, LOCTEXT("NewerLines", "Newer lines"), false, S.bLogAtEnd));
             }
             Bar.Left.Add(Prompt(EBH_Action::Confirm, FocusedIncluded(S) ? LOCTEXT("LeaveOut", "Leave out") : LOCTEXT("Include", "Include")));
-            Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackToForm", "Back to form")));
             return Bar;
 
         case EBH_Screen::Sent:
-            if (S.bCanEmail)
+            if (!S.bCanEmail)
             {
-                if (S.bTyping)
+                Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackToGame", "Back to game"), true));
+                Bar.Left.Add(Prompt(EBH_Action::Alt, LOCTEXT("CopyLink", "Copy link")));
+                return Bar;
+            }
+            if (S.bTyping)
+            {
+                Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("Done", "Done")));
+            }
+            else
+            {
+                Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackToGame", "Back to game")));
+                Bar.Left.Add(Prompt(EBH_Action::Move, LOCTEXT("Move", "Move")));
+                if (S.SentFocus == EBH_SentFocus::Link)
                 {
-                    Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("Done", "Done")));
+                    Bar.Left.Add(Prompt(EBH_Action::Confirm, LOCTEXT("CopyLink", "Copy link")));
                 }
                 else
                 {
                     Bar.Left.Add(Prompt(EBH_Action::Confirm, LOCTEXT("Write", "Write")));
                     Bar.Left.Add(Prompt(EBH_Action::Alt, LOCTEXT("CopyLink", "Copy link")));
-                    Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackToGame", "Back to game")));
                 }
-                Bar.Right.Add(Prompt(EBH_Action::Send, LOCTEXT("EmailMe", "Email me a link"), true));
             }
-            else
-            {
-                Bar.Left.Add(Prompt(EBH_Action::Alt, LOCTEXT("CopyLink", "Copy link")));
-                Bar.Right.Add(Prompt(EBH_Action::Back, LOCTEXT("BackToGame", "Back to game"), true));
-            }
+            Bar.Right.Add(Prompt(EBH_Action::Send, LOCTEXT("EmailMe", "Email me a link"), true));
             return Bar;
 
         case EBH_Screen::Compose:
@@ -309,37 +338,45 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
         return Bar;
     }
     const bool bCanSend = CanSend(S);
+    const bool bHasAttachments = S.AttachmentIncluded.Num() > 0;
     if (S.bTyping)
     {
         Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("Done", "Done")));
         if (!S.bPadGlyphs)
         {
-            Bar.Left.Add(Prompt(EBH_Action::Next, LOCTEXT("NextField", "Next field")));
+            Bar.Left.Add(Prompt(EBH_Action::Next, LOCTEXT("Next", "Next")));
+            Bar.Left.Add(Prompt(EBH_Action::Prev, LOCTEXT("Previous", "Previous")));
         }
-    }
-    else if (S.Focus.OnField())
-    {
-        switch (S.Focus.Field())
-        {
-            case EBH_Field::Type:
-                Bar.Left.Add(Prompt(EBH_Action::Confirm, S.Type == EBH_ReportType::Bug
-                    ? LOCTEXT("MakeSuggestion", "Make it a suggestion") : LOCTEXT("MakeBug", "Make it a bug report")));
-                break;
-            case EBH_Field::Terms:
-                Bar.Left.Add(Prompt(EBH_Action::Confirm, S.bTermsAccepted ? LOCTEXT("Withdraw", "Withdraw") : LOCTEXT("Accept", "Accept")));
-                Bar.Left.Add(Prompt(EBH_Action::Alt, LOCTEXT("ReadTerms", "Read terms")));
-                break;
-            default:
-                Bar.Left.Add(Prompt(EBH_Action::Confirm, LOCTEXT("Write", "Write")));
-                break;
-        }
-        Bar.Left.Add(Prompt(EBH_Action::Back, Close));
     }
     else
     {
-        Bar.Left.Add(Prompt(EBH_Action::Confirm, FocusedIncluded(S) ? LOCTEXT("LeaveOut", "Leave out") : LOCTEXT("Include", "Include")));
-        Bar.Left.Add(Prompt(EBH_Action::Alt, LOCTEXT("FullScreen", "Full screen")));
         Bar.Left.Add(Prompt(EBH_Action::Back, Close));
+        Bar.Left.Add(Prompt(EBH_Action::Move, LOCTEXT("Move", "Move")));
+        if (!S.Focus.OnField())
+        {
+            Bar.Left.Add(Prompt(EBH_Action::Confirm, FocusedIncluded(S) ? LOCTEXT("LeaveOut", "Leave out") : LOCTEXT("Include", "Include")));
+            Bar.Left.Add(Prompt(EBH_Action::Alt, Attachments));
+        }
+        else
+        {
+            switch (S.Focus.Field())
+            {
+                case EBH_Field::Type:
+                    Bar.Left.Add(Prompt(EBH_Action::ChangeType, LOCTEXT("BugOrSuggestion", "Bug or suggestion")));
+                    break;
+                case EBH_Field::Terms:
+                    Bar.Left.Add(Prompt(EBH_Action::Confirm, S.bTermsAccepted ? LOCTEXT("Withdraw", "Withdraw") : LOCTEXT("Accept", "Accept")));
+                    Bar.Left.Add(Prompt(EBH_Action::Alt, LOCTEXT("ReadTerms", "Read terms")));
+                    break;
+                default:
+                    Bar.Left.Add(Prompt(EBH_Action::Confirm, LOCTEXT("Write", "Write")));
+                    if (bHasAttachments)
+                    {
+                        Bar.Left.Add(Prompt(EBH_Action::Alt, Attachments));
+                    }
+                    break;
+            }
+        }
     }
     Bar.Right.Add(Prompt(EBH_Action::Send, SendLabel, bCanSend, !bCanSend));
     return Bar;
@@ -370,7 +407,8 @@ FBH_TagText BH_ReportScreenModel::EmailTag(const FBH_ScreenState& S)
 
 FBH_RowValue BH_ReportScreenModel::IncludedValue(bool bIncluded)
 {
-    return bIncluded ? FBH_RowValue{LOCTEXT("Included", "INCLUDED"), EBH_Tone::Accent}
+    // The row's checkbox shows it is included; only leaving something out is spelt out.
+    return bIncluded ? FBH_RowValue{FText::GetEmpty(), EBH_Tone::Accent}
                      : FBH_RowValue{LOCTEXT("LeftOut", "LEFT OUT"), EBH_Tone::Muted};
 }
 

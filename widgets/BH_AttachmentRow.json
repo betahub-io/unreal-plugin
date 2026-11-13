@@ -50,6 +50,121 @@
             "properties": {},
             "children": [
               {
+                "name": "Check",
+                "class": "SizeBox",
+                "properties": {
+                  "WidthOverride": 38.0,
+                  "bOverride_WidthOverride": true,
+                  "HeightOverride": 38.0,
+                  "bOverride_HeightOverride": true
+                },
+                "children": [
+                  {
+                    "name": "CheckBox",
+                    "class": "Border",
+                    "properties": {
+                      "Background": {
+                        "DrawAs": "RoundedBox",
+                        "TintColor": {
+                          "SpecifiedColor": {
+                            "R": 0.0,
+                            "G": 0.0,
+                            "B": 0.0,
+                            "A": 0.0
+                          },
+                          "ColorUseRule": "UseColor_Specified"
+                        },
+                        "OutlineSettings": {
+                          "CornerRadii": {
+                            "X": 7.0,
+                            "Y": 7.0,
+                            "Z": 7.0,
+                            "W": 7.0
+                          },
+                          "RoundingType": "FixedRadius",
+                          "Width": 3.0,
+                          "Color": {
+                            "SpecifiedColor": {
+                              "R": 0.3564,
+                              "G": 0.376262,
+                              "B": 0.42869,
+                              "A": 1.0
+                            },
+                            "ColorUseRule": "UseColor_Specified"
+                          }
+                        }
+                      },
+                      "Padding": {
+                        "Left": 0.0,
+                        "Top": 0.0,
+                        "Right": 0.0,
+                        "Bottom": 0.0
+                      },
+                      "HorizontalAlignment": "HAlign_Center",
+                      "VerticalAlignment": "VAlign_Center"
+                    },
+                    "children": [
+                      {
+                        "name": "CheckMark",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Font": {
+                            "FontObject": {
+                              "__ref__": "/BetaHubBugReporter/Fonts/JetBrainsMono.JetBrainsMono",
+                              "__class__": "/Script/Engine.Font"
+                            },
+                            "TypefaceFontName": "Regular",
+                            "Size": 21.0
+                          },
+                          "ColorAndOpacity": {
+                            "SpecifiedColor": {
+                              "R": 0.0,
+                              "G": 0.0,
+                              "B": 0.0,
+                              "A": 0.0
+                            },
+                            "ColorUseRule": "UseColor_Specified"
+                          },
+                          "ShadowOffset": {
+                            "X": 0.0,
+                            "Y": 0.0
+                          },
+                          "Text": {
+                            "__text__": "✓"
+                          }
+                        },
+                        "slot": {
+                          "class": "BorderSlot",
+                          "properties": {
+                            "Padding": {
+                              "Left": 0.0,
+                              "Top": 0.0,
+                              "Right": 0.0,
+                              "Bottom": 0.0
+                            },
+                            "HorizontalAlignment": "HAlign_Center",
+                            "VerticalAlignment": "VAlign_Center"
+                          }
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "SizeBoxSlot",
+                      "properties": {}
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "HorizontalBoxSlot",
+                  "properties": {
+                    "VerticalAlignment": "VAlign_Center",
+                    "Padding": {
+                      "Right": 18.0
+                    }
+                  }
+                }
+              },
+              {
                 "name": "Name",
                 "class": "TextBlock",
                 "properties": {
@@ -293,8 +408,8 @@
     ]
   },
   "_stats": {
-    "widgetsReachable": 11,
-    "widgetsInTree": 11,
-    "slots": 10
+    "widgetsReachable": 14,
+    "widgetsInTree": 14,
+    "slots": 13
   }
 }

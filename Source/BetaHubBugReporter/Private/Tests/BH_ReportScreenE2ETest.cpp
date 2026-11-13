@@ -98,7 +98,10 @@ bool FBHScreenE2ETest::RunTest(const FString& Parameters)
             }
             TestEqual(TEXT("sent title"), Screen->Text(TEXT("Title")), FString(TEXT("REPORT SENT")));
             TestEqual(TEXT("sent subtitle"), Screen->Text(TEXT("Subtitle")), FString::Printf(TEXT("#%s \u00B7 saved anonymously"), *S->GetIssueId()));
-            TestEqual(TEXT("sent prompts"), Screen->Prompts(false), TArray<FString>{TEXT("Write"), TEXT("Copy link"), TEXT("Back to game")});
+            TestEqual(TEXT("sent prompts"), Screen->Prompts(false), TArray<FString>{TEXT("Back to game"), TEXT("Move"), TEXT("Write"), TEXT("Copy link")});
+            Screen->Press(EKeys::Down);
+            TestEqual(TEXT("down to the link"), Screen->Prompts(false), TArray<FString>{TEXT("Back to game"), TEXT("Move"), TEXT("Copy link")});
+            Screen->Press(EKeys::Up);
             TestEqual(TEXT("email is the main action"), Screen->Prompts(true), TArray<FString>{TEXT("Email me a link")});
             TestTrue(TEXT("email field shown"), Screen->Shown(TEXT("EmailField")));
             if (bRenders)
@@ -117,7 +120,8 @@ bool FBHScreenE2ETest::RunTest(const FString& Parameters)
             return false;
         }
         TestTrue(TEXT("email saved"), S->IsEmailSaved());
-        TestEqual(TEXT("after the email, back to game is the main action"), Screen->Prompts(true), TArray<FString>{TEXT("Back to game")});
+        TestEqual(TEXT("after the email, back to game is the main action, first as everywhere"), Screen->Prompts(false),
+                  TArray<FString>{TEXT("Back to game"), TEXT("Copy link")});
         FBH_UploadState Shot;
         TestTrue(TEXT("screenshot sent"), S->TryGetUpload(BH_AttachmentIds::Screenshot, Shot) && Shot.Status == EBH_UploadStatus::Sent);
         if (bRenders)

@@ -63,6 +63,35 @@ TextBlock.title--warn { ColorAndOpacity: var(--bh-warn); }
 TextBlock.sub--err   { ColorAndOpacity: var(--bh-err); }
 TextBlock.sub--warn  { ColorAndOpacity: var(--bh-warn); }
 
+/* ------------------------------------------------------------------ tabs (BH_Tabs) */
+
+/* The title's height and padding, so the form stays where it is under either. */
+.tabs-slot { HeightOverride: 58; bOverride_HeightOverride: true; slot.Padding: 0 10 0 9; }
+.tabs-prev { slot.VerticalAlignment: Center; slot.Padding.Right: 18; }
+.tabs-next { slot.VerticalAlignment: Center; }
+.tab       { slot.VerticalAlignment: Bottom; slot.Padding.Right: 34; }
+.tab-line  { slot.Padding.Bottom: 6; }
+.tab-key   { slot.VerticalAlignment: Center; slot.Padding.Right: 12; }
+.tab-text  { Font.FontObject: var(--semi); Font.TypefaceFontName: Bold; Font.Size: 28.5; Font.LetterSpacing: 10;
+             ColorAndOpacity: var(--bh-muted); slot.VerticalAlignment: Center; }
+TextBlock.tab-text--on    { ColorAndOpacity: var(--bh-text); }
+TextBlock.tab-text--hover { ColorAndOpacity: var(--bh-text); }
+.tab-mark-size { HeightOverride: 5; bOverride_HeightOverride: true; }
+.tab-mark  { BrushColor: #00000000; Padding: 0; }
+Border.tab-mark--on { BrushColor: var(--bh-accent); }
+.tab-badge {
+  Background.DrawAs: RoundedBox;
+  Background.TintColor: var(--bh-line);
+  Background.OutlineSettings.CornerRadii: 14;
+  Background.OutlineSettings.RoundingType: FixedRadius;
+  Padding: 11 1;
+  slot.Padding.Left: 12;
+  slot.VerticalAlignment: Center;
+}
+Border.tab-badge--on { Background.TintColor: var(--bh-accent); }
+.tab-badge-text { Font.FontObject: var(--semi); Font.TypefaceFontName: Bold; Font.Size: 16.5; }
+TextBlock.tab-badge-text--on { ColorAndOpacity: var(--bh-on-accent); }
+
 /* ------------------------------------------------------------------ fields */
 
 .field     { slot.Padding.Bottom: 20; }
@@ -129,10 +158,55 @@ Border.row--focused { Background.TintColor: var(--bh-surface-hi); Background.Out
 TextBlock.row-name--focused { Font.TypefaceFontName: Bold; }
 TextBlock.row-name--two     { Font.Size: 19.5; }
 TextBlock.row-value--two    { Font.Size: 18; }
+TextBlock.row-name--off     { ColorAndOpacity: var(--bh-muted); }
 TextBlock.value--muted { ColorAndOpacity: var(--bh-muted); }
 TextBlock.value--ok    { ColorAndOpacity: var(--bh-ok); }
 TextBlock.value--warn  { ColorAndOpacity: var(--bh-warn); }
 TextBlock.value--err   { ColorAndOpacity: var(--bh-err); }
+
+/* Include or leave out: a box ticked in the accent colour. The tick is JetBrains Mono's,
+   the only bundled font that has one; unticked it is drawn clear. */
+.check-size { WidthOverride: 38; bOverride_WidthOverride: true; HeightOverride: 38; bOverride_HeightOverride: true;
+              slot.VerticalAlignment: Center; slot.Padding.Right: 18; }
+.check {
+  Background.DrawAs: RoundedBox;
+  Background.TintColor: #00000000;
+  Background.OutlineSettings.CornerRadii: 7;
+  Background.OutlineSettings.RoundingType: FixedRadius;
+  Background.OutlineSettings.Width: 3;
+  Background.OutlineSettings.Color: var(--bh-muted);
+  Padding: 0;
+  HorizontalAlignment: Center;
+  VerticalAlignment: Center;
+}
+Border.check--hover { Background.OutlineSettings.Color: var(--bh-text); }
+Border.check--on    { Background.TintColor: var(--bh-accent); Background.OutlineSettings.Color: var(--bh-accent); }
+.check-mark { Font.FontObject: var(--mono); Font.TypefaceFontName: Regular; Font.Size: 21; ColorAndOpacity: #00000000; }
+TextBlock.check-mark--on { ColorAndOpacity: var(--bh-on-accent); }
+
+/* The report type: both values in view, the chosen one filled. */
+.switch {
+  Background.DrawAs: RoundedBox;
+  Background.TintColor: var(--bh-field);
+  Background.OutlineSettings.CornerRadii: 8;
+  Background.OutlineSettings.RoundingType: FixedRadius;
+  Padding: 4;
+  slot.VerticalAlignment: Center;
+}
+.switch-option {
+  Background.DrawAs: RoundedBox;
+  Background.TintColor: #00000000;
+  Background.OutlineSettings.CornerRadii: 6;
+  Background.OutlineSettings.RoundingType: FixedRadius;
+  Padding: 18 7;
+  HorizontalAlignment: Center;
+  VerticalAlignment: Center;
+}
+Border.switch-option--on { Background.TintColor: var(--bh-accent); }
+.switch-text { Font.FontObject: var(--semi); Font.TypefaceFontName: Bold; Font.Size: 18; Font.LetterSpacing: 60;
+               ColorAndOpacity: var(--bh-muted); }
+TextBlock.switch-text--hover { ColorAndOpacity: var(--bh-text); }
+TextBlock.switch-text--on    { ColorAndOpacity: var(--bh-on-accent); }
 
 .mini       { WidthOverride: 86; bOverride_WidthOverride: true; HeightOverride: 10; bOverride_HeightOverride: true;
               Visibility: Collapsed; slot.Padding.Right: 12; slot.VerticalAlignment: Center; }
@@ -154,6 +228,10 @@ TextBlock.value--err   { ColorAndOpacity: var(--bh-err); }
 .empty { ColorAndOpacity: var(--bh-muted); Justification: Center;
          slot.HorizontalAlignment: Center; slot.VerticalAlignment: Center; }
 
+/* The full-screen log's scrollbar, shown when there is more than fits, in the theme's colours. */
+.log-scroll { WidgetBarStyle.NormalThumbImage.TintColor: var(--bh-line);
+              WidgetBarStyle.HoveredThumbImage.TintColor: var(--bh-muted);
+              WidgetBarStyle.DraggedThumbImage.TintColor: var(--bh-accent); }
 .log-line { Font.FontObject: var(--mono); Font.Size: 15; ColorAndOpacity: var(--bh-muted); }
 TextBlock.log--warn { ColorAndOpacity: var(--bh-warn); }
 TextBlock.log--err  { ColorAndOpacity: var(--bh-err); }

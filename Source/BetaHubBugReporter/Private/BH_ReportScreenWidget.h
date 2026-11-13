@@ -26,6 +26,7 @@ class UBH_ClipFrameWidget;
 class UBH_GlyphWidget;
 class UBH_PromptItemWidget;
 class UBH_ReportSubmission;
+class UBH_TabsWidget;
 class UBH_TextLineWidget;
 class UBH_UploadToastWidget;
 
@@ -80,6 +81,9 @@ public:
     UPROPERTY(EditDefaultsOnly, Category = "BetaHub|Widgets")
     TSubclassOf<UBH_UploadToastWidget> UploadToastClass;
 
+    UPROPERTY(EditDefaultsOnly, Category = "BetaHub|Widgets")
+    TSubclassOf<UBH_TabsWidget> TabsClass;
+
 protected:
     virtual void NativeOnInitialized() override;
     virtual void NativeConstruct() override;
@@ -94,6 +98,7 @@ protected:
     // Header
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Kicker;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Title;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<USizeBox> TabsSlot;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> Subtitle;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> Screen;
 
@@ -101,7 +106,10 @@ protected:
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> Form;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> TypeRowBox;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TypeName;
-    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TypeValue;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> TypeBug;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TypeBugText;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> TypeSuggestion;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TypeSuggestionText;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> DescriptionLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> DescriptionTag;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> DescriptionGlow;
@@ -117,8 +125,10 @@ protected:
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> StepsHint;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> TermsRow;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> TermsRowBox;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> TermsCheck;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> TermsCheckBox;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TermsCheckMark;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TermsName;
-    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TermsValue;
 
     // Sent
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> Sent;
@@ -158,7 +168,7 @@ protected:
     // Full-screen preview
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> Preview;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> PreviewKicker;
-    UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> PreviewTitle;
+    UPROPERTY(meta = (BindWidget)) TObjectPtr<USizeBox> PreviewTabsSlot;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> PreviewSubtitle;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> PreviewCount;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UVerticalBox> PreviewList;
@@ -228,7 +238,15 @@ private:
     void FocusSelf();
     void NoteDevice(const FKey& Key, int32 UserIndex);
     void OnRowClicked(int32 Index);
+    void OnRowCheckClicked(int32 Index);
     void OnPreviewRowClicked(int32 Index);
+    void OnPreviewRowCheckClicked(int32 Index);
+    void OnTabClicked(EBH_Tab Tab);
+    void SetType(EBH_ReportType Type);
+    /** Tab, Shift+Tab, or an arrow out of a field's first or last character: the next or previous item. */
+    void StepFocus(int32 Delta);
+    /** The caret of the field being typed in sits before its first character, or after its last. */
+    bool CaretAtEdge(bool bStart) const;
 
     // Input fields
     UFUNCTION() void OnDescriptionChanged(const FText& Text);
@@ -265,6 +283,10 @@ private:
     void FillPane(FPaneView& Pane, const FBH_ReportAttachment* Item, bool bFullScreen);
     void UpdateHover();
     void UpdatePaneSizes();
+    /** Where the full-screen log is scrolled; true when that changed the prompts. */
+    bool UpdateLogEdges();
+    UBH_TabsWidget* MakeTabs(USizeBox* Holder);
+    int32 IncludedCount() const;
     void SetTextTone(UTextBlock* Text, const TCHAR* Base, EBH_Tone Tone);
     void SetRowValue(UTextBlock* Value, const FBH_RowValue& RowValue);
 
@@ -312,4 +334,6 @@ private:
     TArray<double> ThumbnailTimes;
     UPROPERTY() TArray<TObjectPtr<UBH_AttachmentRowWidget>> RowWidgets;
     UPROPERTY() TArray<TObjectPtr<UBH_AttachmentRowWidget>> PreviewRowWidgets;
+    UPROPERTY() TObjectPtr<UBH_TabsWidget> HeadTabs;
+    UPROPERTY() TObjectPtr<UBH_TabsWidget> PreviewTabs;
 };

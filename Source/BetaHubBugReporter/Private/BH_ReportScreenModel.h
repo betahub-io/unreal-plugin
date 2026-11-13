@@ -27,8 +27,20 @@ enum class EBH_Action : uint8
     Alt,
     Send,
     Next,
+    /** Shift+Tab. */
+    Prev,
     Navigate,
-    Scroll
+    Scroll,
+    /** The arrow keys or d-pad: a hint in the bar, not something to press there. */
+    Move,
+    /** Left and right on the report type switch. */
+    ChangeType,
+    /** The header's tabs: 1 and 2 on a keyboard, the bumpers on a pad. */
+    TabReport,
+    TabAttachments,
+    /** The full-screen log, one page towards the oldest or the newest line. */
+    ScrollUp,
+    ScrollDown
 };
 
 enum class EBH_Direction : uint8
@@ -46,6 +58,20 @@ enum class EBH_Field : uint8
     Description,
     Steps,
     Terms
+};
+
+/** The header's tabs: the report form, and its attachments full screen. */
+enum class EBH_Tab : uint8
+{
+    Report,
+    Attachments
+};
+
+/** What has focus on the sent screen. */
+enum class EBH_SentFocus : uint8
+{
+    Email,
+    Link
 };
 
 enum class EBH_Tone : uint8
@@ -79,6 +105,8 @@ struct FBH_Header
     FText Title;
     FText Subtitle;
     EBH_Tone Tone = EBH_Tone::Normal;
+    /** The report and attachments tabs stand in the title's place. */
+    bool bTabs = false;
 };
 
 struct FBH_TagText
@@ -108,12 +136,16 @@ public:
     bool OnField() const { return bOnField; }
     EBH_Field Field() const { return Fields.IsValidIndex(FieldIndex) ? Fields[FieldIndex] : EBH_Field::Description; }
     int32 Attachment() const { return AttachmentIndex; }
+    /** The attachment focus last left, where the full-screen preview opens from a field. */
+    int32 LastAttachment() const { return RememberedAttachment; }
     int32 Columns() const { return Attachments >= TwoColumnsFrom ? 2 : 1; }
     const TArray<EBH_Field>& GetFields() const { return Fields; }
 
     void FocusField(EBH_Field InField);
     void FocusAttachment(int32 Index);
     void Move(EBH_Direction Direction);
+    /** Tab and Shift+Tab: every field, then every attachment, round again. */
+    void Step(int32 Delta);
 
 private:
     TArray<EBH_Field> Fields;
@@ -154,10 +186,14 @@ struct FBH_ScreenState
     FBH_ComposeFocus Focus;
     TArray<bool> AttachmentIncluded;
     bool bPreviewIsLog = false;
+    /** Where the full-screen log is scrolled: nothing older, nothing newer to show. */
+    bool bLogAtTop = false;
+    bool bLogAtEnd = true;
 
     FString IssueId;
     bool bCanEmail = false;
     bool bEmailSaved = false;
+    EBH_SentFocus SentFocus = EBH_SentFocus::Email;
 };
 
 namespace BH_ReportScreenModel
@@ -179,6 +215,8 @@ namespace BH_ReportScreenModel
     TArray<EBH_Field> FieldsFor(EBH_ReportType Type, bool bTermsRequired);
 
     bool CanSend(const FBH_ScreenState& S);
+    /** "REPORT A BUG" or "SUGGEST AN IDEA": the compose title and the report tab. */
+    FText ReportTitle(EBH_ReportType Type);
     FBH_Header Header(const FBH_ScreenState& S);
     FBH_PromptBar Prompts(const FBH_ScreenState& S);
 

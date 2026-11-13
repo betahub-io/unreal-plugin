@@ -67,6 +67,20 @@ bool FBHFocusTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("left from column 0 returns to the remembered field"), F.Field(), EBH_Field::Description);
     F.Move(EBH_Direction::Right);
     TestEqual(TEXT("right returns to the remembered attachment"), F.Attachment(), 4);
+
+    // Tab and Shift+Tab: every field, then every attachment, round again.
+    F.FocusField(EBH_Field::Type);
+    F.Step(-1);
+    TestFalse(TEXT("Shift+Tab from the first field wraps to the attachments"), F.OnField());
+    TestEqual(TEXT("to the last attachment"), F.Attachment(), 6);
+    F.Step(1);
+    TestEqual(TEXT("Tab from the last attachment wraps to the first field"), F.Field(), EBH_Field::Type);
+    F.FocusField(EBH_Field::Steps);
+    F.Step(1);
+    TestEqual(TEXT("Tab from the last field reaches the attachments"), F.Attachment(), 0);
+    F.Step(-1);
+    TestEqual(TEXT("and Shift+Tab goes back"), F.Field(), EBH_Field::Steps);
+    TestEqual(TEXT("the last attachment left is remembered"), F.LastAttachment(), 0);
     return true;
 }
 
@@ -100,21 +114,30 @@ bool FBHCanSendTest::RunTest(const FString& Parameters)
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHPromptsTest, "BetaHub.ReportScreen.Prompts", BH_MODEL_TEST_FLAGS)
 bool FBHPromptsTest::RunTest(const FString& Parameters)
 {
+    // Back is always first, so it never moves; the arrows are always explained.
     FBH_ScreenState S = Compose();
     FBH_PromptBar Bar = Prompts(S);
-    TestEqual(TEXT("field focused"), Labels(Bar.Left), TArray<FString>{TEXT("Write"), TEXT("Close")});
+    TestEqual(TEXT("field focused"), Labels(Bar.Left), TArray<FString>{TEXT("Close"), TEXT("Move"), TEXT("Write"), TEXT("Attachments")});
+    TestEqual(TEXT("back first"), Bar.Left[0].Action, EBH_Action::Back);
+    TestEqual(TEXT("then the arrows"), Bar.Left[1].Action, EBH_Action::Move);
     TestTrue(TEXT("send is primary"), Bar.Right[0].bPrimary);
 
+    S.Focus.FocusField(EBH_Field::Type);
+    Bar = Prompts(S);
+    TestEqual(TEXT("type row"), Labels(Bar.Left), TArray<FString>{TEXT("Close"), TEXT("Move"), TEXT("Bug or suggestion")});
+    TestEqual(TEXT("left and right change the type"), Bar.Left[2].Action, EBH_Action::ChangeType);
+    S.Focus.FocusField(EBH_Field::Description);
+
     S.bTyping = true;
-    TestEqual(TEXT("typing on keyboard"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Done"), TEXT("Next field")});
+    TestEqual(TEXT("typing on keyboard"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Done"), TEXT("Next"), TEXT("Previous")});
     S.bPadGlyphs = true;
     TestEqual(TEXT("typing on a pad"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Done")});
     S.bTyping = false;
 
     S.Focus.FocusAttachment(0);
-    TestEqual(TEXT("attachment"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Leave out"), TEXT("Full screen"), TEXT("Close")});
+    TestEqual(TEXT("attachment"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Close"), TEXT("Move"), TEXT("Leave out"), TEXT("Attachments")});
     S.AttachmentIncluded[0] = false;
-    TestEqual(TEXT("left out attachment"), Prompts(S).Left[0].Label.ToString(), FString(TEXT("Include")));
+    TestEqual(TEXT("left out attachment"), Prompts(S).Left[2].Label.ToString(), FString(TEXT("Include")));
 
     S.Description.Empty();
     Bar = Prompts(S);
@@ -131,15 +154,28 @@ bool FBHPromptsTest::RunTest(const FString& Parameters)
     S.Screen = EBH_Screen::Sent;
     S.bCanEmail = true;
     Bar = Prompts(S);
-    TestEqual(TEXT("sent, can email"), Labels(Bar.Left), TArray<FString>{TEXT("Write"), TEXT("Copy link"), TEXT("Back to game")});
+    TestEqual(TEXT("sent, email focused"), Labels(Bar.Left), TArray<FString>{TEXT("Back to game"), TEXT("Move"), TEXT("Write"), TEXT("Copy link")});
     TestEqual(TEXT("email is the main action"), Bar.Right[0].Label.ToString(), FString(TEXT("Email me a link")));
+    S.SentFocus = EBH_SentFocus::Link;
+    TestEqual(TEXT("sent, link focused"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Back to game"), TEXT("Move"), TEXT("Copy link")});
     S.bCanEmail = false;
     Bar = Prompts(S);
-    TestEqual(TEXT("sent, done"), Bar.Right[0].Label.ToString(), FString(TEXT("Back to game")));
+    TestEqual(TEXT("sent, done: back first here too"), Labels(Bar.Left), TArray<FString>{TEXT("Back to game"), TEXT("Copy link")});
+    TestTrue(TEXT("and it is the main action"), Bar.Left[0].bPrimary);
+    TestEqual(TEXT("nothing on the right"), Bar.Right.Num(), 0);
 
     S.Screen = EBH_Screen::Preview;
     S.bPreviewIsLog = true;
-    TestEqual(TEXT("log preview"), Labels(Prompts(S).Left).Num(), 4);
+    S.bLogAtTop = false;
+    S.bLogAtEnd = true;
+    Bar = Prompts(S);
+    TestEqual(TEXT("log preview"), Labels(Bar.Left), TArray<FString>{TEXT("Back to report"), TEXT("Item"), TEXT("Older lines"), TEXT("Newer lines"), TEXT("Include")});
+    TestFalse(TEXT("older lines to show"), Bar.Left[2].bDisabled);
+    TestTrue(TEXT("nothing newer at the end"), Bar.Left[3].bDisabled);
+    S.bLogAtTop = true;
+    TestTrue(TEXT("nothing older at the top"), Prompts(S).Left[2].bDisabled);
+    S.bPreviewIsLog = false;
+    TestEqual(TEXT("other previews"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Back to report"), TEXT("Item"), TEXT("Include")});
     return true;
 }
 
@@ -148,17 +184,22 @@ bool FBHHeaderTest::RunTest(const FString& Parameters)
 {
     FBH_ScreenState S = Compose();
     TestEqual(TEXT("bug"), Header(S).Title.ToString(), FString(TEXT("REPORT A BUG")));
+    TestTrue(TEXT("compose shows the tabs"), Header(S).bTabs);
     S.Type = EBH_ReportType::Suggestion;
     TestEqual(TEXT("suggestion"), Header(S).Title.ToString(), FString(TEXT("SUGGEST AN IDEA")));
     S.Type = EBH_ReportType::Bug;
     S.SubmissionError = TEXT("Network down.");
     FBH_Header H = Header(S);
-    TestEqual(TEXT("error title"), H.Title.ToString(), FString(TEXT("COULDN'T SEND")));
-    TestEqual(TEXT("error keeps the text"), H.Subtitle.ToString(), FString(TEXT("Network down. Your text is kept.")));
+    TestTrue(TEXT("a failed send keeps the tabs"), H.bTabs);
+    TestEqual(TEXT("so the subtitle says it"), H.Subtitle.ToString(), FString(TEXT("Couldn't send. Network down. Your text is kept.")));
     TestEqual(TEXT("error tone"), H.Tone, EBH_Tone::Err);
+    S.SubmissionError.Empty();
+    S.Screen = EBH_Screen::Preview;
+    TestTrue(TEXT("the preview is the attachments tab"), Header(S).bTabs);
     S.Screen = EBH_Screen::Sent;
     S.IssueId = TEXT("4821");
     TestEqual(TEXT("sent"), Header(S).Subtitle.ToString(), FString(TEXT("#4821 \u00B7 saved anonymously")));
+    TestFalse(TEXT("sent has a title, no tabs"), Header(S).bTabs);
     S.Screen = EBH_Screen::Compose;
     S.bConfigured = false;
     S.ConfigurationError = TEXT("Project ID is not set.");
@@ -166,6 +207,7 @@ bool FBHHeaderTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("dev build sees why"), Header(S).Subtitle.ToString(), FString(TEXT("Project ID is not set. (see console)")));
     S.bDevelopmentBuild = false;
     TestEqual(TEXT("players do not"), Header(S).Subtitle.ToString(), FString(TEXT("Bug reporting isn't available right now.")));
+    TestFalse(TEXT("nothing to switch to while unavailable"), Header(S).bTabs);
     return true;
 }
 
@@ -187,6 +229,8 @@ bool FBHTagsAndValuesTest::RunTest(const FString& Parameters)
     Upload.Status = EBH_UploadStatus::Sent;
     TestEqual(TEXT("sent"), UploadValue(true, Upload).Tone, EBH_Tone::Ok);
     TestEqual(TEXT("left out"), UploadValue(false, Upload).Text.ToString(), FString(TEXT("LEFT OUT")));
+    TestTrue(TEXT("the checkbox says included"), IncludedValue(true).Text.IsEmpty());
+    TestEqual(TEXT("leaving out is spelt out"), IncludedValue(false).Text.ToString(), FString(TEXT("LEFT OUT")));
 
     const FString Log = TEXT("a\n\nb\nLogTemp: Warning: slow\nLogTemp: Error: broke\n");
     TArray<FString> Tail = LogTail(Log, 3);

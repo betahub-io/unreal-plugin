@@ -20,6 +20,16 @@ bool FBHInputIntentTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("stick moves"), IntentFor(EKeys::Gamepad_LeftStick_Down, false, EBH_GlyphSet::Xbox).bMove);
     TestEqual(TEXT("PgDn scrolls"), IntentFor(EKeys::PageDown, false, EBH_GlyphSet::Xbox).Scroll, 1);
     TestFalse(TEXT("other keys are ignored"), IntentFor(EKeys::Q, false, EBH_GlyphSet::Xbox).bAction);
+    TestEqual(TEXT("Tab goes on"), IntentFor(EKeys::Tab, false, EBH_GlyphSet::Xbox).Action, EBH_Action::Next);
+    TestEqual(TEXT("Shift+Tab goes back"), IntentFor(EKeys::Tab, false, EBH_GlyphSet::Xbox, /*bShift*/ true).Action, EBH_Action::Prev);
+    TestEqual(TEXT("1 is the report tab"), IntentFor(EKeys::One, false, EBH_GlyphSet::Keyboard).Action, EBH_Action::TabReport);
+    TestEqual(TEXT("2 is the attachments tab"), IntentFor(EKeys::Two, false, EBH_GlyphSet::Keyboard).Action, EBH_Action::TabAttachments);
+    // AZERTY's number row gives the symbols unshifted: & and \u00E9 are its 1 and 2.
+    TestEqual(TEXT("AZERTY 1"), IntentFor(EKeys::Ampersand, false, EBH_GlyphSet::Keyboard).Action, EBH_Action::TabReport);
+    TestEqual(TEXT("AZERTY 2"), IntentFor(EKeys::E_AccentAigu, false, EBH_GlyphSet::Keyboard).Action, EBH_Action::TabAttachments);
+    TestEqual(TEXT("left bumper is the report tab"), IntentFor(EKeys::Gamepad_LeftShoulder, false, EBH_GlyphSet::Xbox).Action, EBH_Action::TabReport);
+    TestEqual(TEXT("right bumper is the attachments tab"), IntentFor(EKeys::Gamepad_RightShoulder, false, EBH_GlyphSet::PlayStation).Action, EBH_Action::TabAttachments);
+    TestEqual(TEXT("West opens and closes the preview"), IntentFor(EKeys::Gamepad_FaceButton_Left, false, EBH_GlyphSet::Xbox).Action, EBH_Action::Alt);
 
     TestEqual(TEXT("Xbox bottom confirms"), IntentFor(EKeys::Gamepad_FaceButton_Bottom, false, EBH_GlyphSet::Xbox).Action, EBH_Action::Confirm);
     TestEqual(TEXT("Switch bottom backs out"), IntentFor(EKeys::Gamepad_FaceButton_Bottom, false, EBH_GlyphSet::Switch).Action, EBH_Action::Back);
@@ -46,6 +56,14 @@ bool FBHGlyphsTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("words are not"), GlyphsFor(EBH_Action::Back, EBH_GlyphSet::Keyboard)[0].bSymbol);
     TestTrue(TEXT("pad navigation chip"), GlyphsFor(EBH_Action::Navigate, EBH_GlyphSet::Xbox)[0].Shape == EBH_GlyphShape::DPad);
     TestTrue(TEXT("pad scroll stick"), GlyphsFor(EBH_Action::Scroll, EBH_GlyphSet::PlayStation)[0].Shape == EBH_GlyphShape::Stick);
+    TestEqual(TEXT("Shift + Tab"), GlyphsFor(EBH_Action::Prev, EBH_GlyphSet::Keyboard).Num(), 2);
+    TestEqual(TEXT("four arrows to move"), GlyphsFor(EBH_Action::Move, EBH_GlyphSet::Keyboard).Num(), 4);
+    TestEqual(TEXT("tab keys"), GlyphsFor(EBH_Action::TabAttachments, EBH_GlyphSet::Keyboard)[0].Text.ToString(), FString(TEXT("2")));
+    TestEqual(TEXT("Xbox bumper"), GlyphsFor(EBH_Action::TabReport, EBH_GlyphSet::Xbox)[0].Text.ToString(), FString(TEXT("LB")));
+    TestEqual(TEXT("PlayStation bumper"), GlyphsFor(EBH_Action::TabAttachments, EBH_GlyphSet::PlayStation)[0].Text.ToString(), FString(TEXT("R1")));
+    TestEqual(TEXT("Switch bumper"), GlyphsFor(EBH_Action::TabReport, EBH_GlyphSet::Switch)[0].Text.ToString(), FString(TEXT("L")));
+    TestEqual(TEXT("one key per scroll direction"), GlyphsFor(EBH_Action::ScrollUp, EBH_GlyphSet::Keyboard)[0].Text.ToString(), FString(TEXT("PgUp")));
+    TestEqual(TEXT("no Tab on a pad"), GlyphsFor(EBH_Action::Prev, EBH_GlyphSet::Xbox).Num(), 0);
 
     TestEqual(TEXT("DualSense"), PadSetForHardware(TEXT("DualSense")), EBH_GlyphSet::PlayStation);
     TestEqual(TEXT("Switch Pro"), PadSetForHardware(TEXT("SwitchProController")), EBH_GlyphSet::Switch);

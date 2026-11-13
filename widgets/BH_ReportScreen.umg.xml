@@ -6,6 +6,7 @@
      UBH_ReportScreenWidget binds the named widgets below, fills the texts, builds the
      attachment rows, panes and prompts from BH_AttachmentRow, BH_ClipFrame,
      BH_TextLine and BH_PromptItem, and switches state classes from the stylesheet.
+     The header's tabs are BH_Tabs, created into TabsSlot and PreviewTabsSlot.
      Keep the names when customizing. The texts here are what the designer sees;
      focus, hover and the other states are classes the widget switches at runtime. -->
 <Widget asset="BH_ReportScreen" parent="BH_ReportScreenWidget" styles="BH_Widgets.umg.css">
@@ -30,6 +31,8 @@
         <VerticalBox name="Head" class="head">
           <TextBlock name="Kicker" class="kicker">BETAHUB</TextBlock>
           <TextBlock name="Title" class="title">REPORT A BUG</TextBlock>
+          <!-- the tabs take the title's place and height; filled with BH_Tabs at runtime -->
+          <SizeBox name="TabsSlot" class="tabs-slot" Visibility="Collapsed"/>
           <TextBlock name="Subtitle" class="sub">Goes straight to the developers</TextBlock>
         </VerticalBox>
 
@@ -39,7 +42,16 @@
               <HorizontalBox name="TypeRowLine">
                 <TextBlock name="TypeName" class="row-name">Report type</TextBlock>
                 <Spacer name="TypeGap" class="row-gap"/>
-                <TextBlock name="TypeValue" class="row-value">BUG</TextBlock>
+                <Border name="TypeSwitch" class="switch">
+                  <HorizontalBox name="TypeSwitchLine">
+                    <Border name="TypeBug" class="switch-option">
+                      <TextBlock name="TypeBugText" class="switch-text">BUG</TextBlock>
+                    </Border>
+                    <Border name="TypeSuggestion" class="switch-option">
+                      <TextBlock name="TypeSuggestionText" class="switch-text">SUGGESTION</TextBlock>
+                    </Border>
+                  </HorizontalBox>
+                </Border>
               </HorizontalBox>
             </Border>
           </SizeBox>
@@ -86,9 +98,12 @@
           <SizeBox name="TermsRow" class="row-size">
             <Border name="TermsRowBox" class="row">
               <HorizontalBox name="TermsRowLine">
-                <TextBlock name="TermsName" class="row-name">Terms of bug reporting</TextBlock>
-                <Spacer name="TermsGap" class="row-gap"/>
-                <TextBlock name="TermsValue" class="row-value">NOT ACCEPTED</TextBlock>
+                <SizeBox name="TermsCheck" class="check-size">
+                  <Border name="TermsCheckBox" class="check">
+                    <TextBlock name="TermsCheckMark" class="check-mark">✓</TextBlock>
+                  </Border>
+                </SizeBox>
+                <TextBlock name="TermsName" class="row-name">I accept the terms of bug reporting</TextBlock>
               </HorizontalBox>
             </Border>
           </SizeBox>
@@ -181,8 +196,8 @@
           slot.Padding="96 54 96 0">
         <VerticalBox name="PreviewTitles" slot.Size="Fill">
           <TextBlock name="PreviewKicker" class="kicker">BETAHUB</TextBlock>
-          <TextBlock name="PreviewTitle" class="title">GAME LOG</TextBlock>
-          <TextBlock name="PreviewSubtitle" class="sub">Last lines · the full file is sent</TextBlock>
+          <SizeBox name="PreviewTabsSlot" class="tabs-slot"/>
+          <TextBlock name="PreviewSubtitle" class="sub">Game log · Last lines · the full file is sent</TextBlock>
         </VerticalBox>
         <TextBlock name="PreviewCount" class="caption" slot.VerticalAlignment="Bottom" slot.Padding.Left="24">3 OF 3</TextBlock>
       </HorizontalBox>
@@ -199,7 +214,7 @@
             <TextBlock name="PreviewEmpty" class="empty" Visibility="Collapsed">No screenshot this time</TextBlock>
             <UniformGridPanel name="PreviewFrames" Visibility="Collapsed" SlotPadding="2 4"
                 slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill" slot.Padding="10 8"/>
-            <ScrollBox name="PreviewLog" Visibility="Collapsed" ScrollbarThickness="10"
+            <ScrollBox name="PreviewLog" class="log-scroll" Visibility="Collapsed" ScrollbarThickness="10"
                 slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill" slot.Padding="23 19 8 19">
               <VerticalBox name="PreviewLogLines"/>
             </ScrollBox>

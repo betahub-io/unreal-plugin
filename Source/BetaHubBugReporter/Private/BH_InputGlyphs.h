@@ -55,7 +55,7 @@ struct FBH_Glyph
  */
 namespace BH_InputGlyphs
 {
-    FBH_InputIntent IntentFor(const FKey& Key, bool bCtrlOrCmd, EBH_GlyphSet PadSet);
+    FBH_InputIntent IntentFor(const FKey& Key, bool bCtrlOrCmd, EBH_GlyphSet PadSet, bool bShift = false);
 
     /** The caps for an action on this device; Send is two caps on a keyboard. */
     TArray<FBH_Glyph> GlyphsFor(EBH_Action Action, EBH_GlyphSet Set);

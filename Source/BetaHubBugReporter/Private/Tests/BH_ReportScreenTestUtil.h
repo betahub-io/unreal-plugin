@@ -11,6 +11,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/HorizontalBox.h"
 #include "Components/MultiLineEditableText.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Engine/Engine.h"
@@ -117,9 +118,9 @@ namespace BH_ScreenTest
             return true;
         }
 
-        void Press(const FKey& Key, bool bControl = false)
+        void Press(const FKey& Key, bool bControl = false, bool bShift = false)
         {
-            const FModifierKeysState Modifiers(false, false, bControl, false, false, false, false, false, false);
+            const FModifierKeysState Modifiers(bShift, false, bControl, false, false, false, false, false, false);
             const FKeyEvent Event(Key, Modifiers, 0, false, 0, 0);
             const FGeometry Geometry = FGeometry::MakeRoot(ScreenSize, FSlateLayoutTransform());
             if (!Slate->OnPreviewKeyDown(Geometry, Event).IsEventHandled())
@@ -176,6 +177,22 @@ namespace BH_ScreenTest
         {
             const UVerticalBox* Rows = Find<UVerticalBox>(TEXT("Rows"));
             return Rows ? Cast<UBH_AttachmentRowWidget>(Rows->GetChildAt(Index)) : nullptr;
+        }
+
+        /** The row's checkbox is ticked. */
+        bool RowChecked(int32 Index) const
+        {
+            UBH_AttachmentRowWidget* R = Row(Index);
+            return R && R->HasClass(R->GetWidgetFromName(TEXT("CheckBox")), TEXT("check--on"));
+        }
+
+        /** A text of the header's tabs, on the form or on the full-screen preview. */
+        FString TabText(bool bPreview, const TCHAR* Part) const
+        {
+            const USizeBox* TabSlot = Find<USizeBox>(bPreview ? TEXT("PreviewTabsSlot") : TEXT("TabsSlot"));
+            const UUserWidget* Tabs = TabSlot ? Cast<UUserWidget>(TabSlot->GetContent()) : nullptr;
+            const UTextBlock* Block = Tabs ? Cast<UTextBlock>(Tabs->GetWidgetFromName(Part)) : nullptr;
+            return Block ? Block->GetText().ToString() : FString(TEXT("<missing>"));
         }
 
         FString RowText(int32 Index, const TCHAR* Part) const

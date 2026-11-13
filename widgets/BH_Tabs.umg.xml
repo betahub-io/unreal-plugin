@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The header's two tabs: the report form and its attachments (the full-screen
+     preview). UBH_TabsWidget sets the labels and the count, marks the open tab, and
+     builds the key glyphs: 1 and 2 inside the tabs on a keyboard, the shoulder
+     buttons either side on a pad. -->
+<Widget asset="BH_Tabs" parent="BH_TabsWidget" styles="BH_Widgets.umg.css">
+  <HorizontalBox name="Tabs">
+    <HorizontalBox name="PrevButton" class="tabs-prev"/>
+    <VerticalBox name="ReportTab" class="tab" Visibility="Visible">
+      <HorizontalBox name="ReportLine" class="tab-line">
+        <HorizontalBox name="ReportKey" class="tab-key"/>
+        <TextBlock name="ReportText" class="tab-text">REPORT A BUG</TextBlock>
+      </HorizontalBox>
+      <SizeBox name="ReportMarkSize" class="tab-mark-size">
+        <Border name="ReportMark" class="tab-mark"/>
+      </SizeBox>
+    </VerticalBox>
+    <VerticalBox name="AttachmentsTab" class="tab" Visibility="Visible">
+      <HorizontalBox name="AttachmentsLine" class="tab-line">
+        <HorizontalBox name="AttachmentsKey" class="tab-key"/>
+        <TextBlock name="AttachmentsText" class="tab-text">ATTACHMENTS</TextBlock>
+        <Border name="AttachmentsBadge" class="tab-badge">
+          <TextBlock name="AttachmentsCount" class="tab-badge-text">3</TextBlock>
+        </Border>
+      </HorizontalBox>
+      <SizeBox name="AttachmentsMarkSize" class="tab-mark-size">
+        <Border name="AttachmentsMark" class="tab-mark"/>
+      </SizeBox>
+    </VerticalBox>
+    <HorizontalBox name="NextButton" class="tabs-next"/>
+  </HorizontalBox>
+</Widget>

@@ -22,6 +22,8 @@ using BH_ScreenTest::Render;
 namespace BH_ScreenRenders
 {
     const TCHAR* RendersFlag = TEXT("BetaHubRenders");
+    /** Several pages of the full-screen log. */
+    constexpr int32 LongLogLines = 90;
     const TCHAR* Description = TEXT("Dragging the sword onto the shield in the inventory freezes the game for about two seconds, then the sword is gone.");
     const TCHAR* Log =
         TEXT("[13:27:31] LogInit: Display: Game started\n")
@@ -92,6 +94,37 @@ bool FBHScreenRendersTest::RunTest(const FString& Parameters)
         Screen.Press(EKeys::Gamepad_DPad_Up);
         Screen.Press(EKeys::Gamepad_DPad_Up);
         Render(Screen, 1920, 1080, TEXT("compose-xbox-steps"));
+        Screen.Close();
+    }
+    {
+        // A log longer than the pane opens at its newest line: older lines to show, nothing newer.
+        // Only a real layout knows where the log ends, so this is checked here and not headless.
+        FString LongLog;
+        for (int32 Line = 0; Line < LongLogLines; ++Line)
+        {
+            LongLog += FString::Printf(TEXT("[13:%02d:%02d] LogTemp: Display: frame %d\n"), 20 + Line / 60, Line % 60, Line);
+        }
+        BH_ScreenTest::FOpenOptions O = Options();
+        O.Log = LongLog;
+        FScreen Screen;
+        if (!Screen.Open(*this, O))
+        {
+            return false;
+        }
+        for (int32 i = 0; i < 4; ++i)
+        {
+            Screen.Press(EKeys::Down);
+        }
+        Screen.Press(EKeys::P);
+        Render(Screen, 1920, 1080, TEXT("preview-log-end"));
+        TestEqual(TEXT("log prompts"), Screen.Prompts(false),
+                  TArray<FString>{TEXT("Back to report"), TEXT("Item"), TEXT("Older lines"), TEXT("Newer lines"), TEXT("Leave out")});
+        TestEqual(TEXT("older lines to show"), Screen.PromptOpacity(false, 2), 1.0f);
+        TestTrue(TEXT("nothing newer at the end"), FMath::IsWithin(Screen.PromptOpacity(false, 3), 0.0f, 1.0f));
+        Screen.Press(EKeys::PageUp);
+        Render(Screen, 1920, 1080, TEXT("preview-log-older"));
+        TestEqual(TEXT("a page up: newer lines again"), Screen.PromptOpacity(false, 3), 1.0f);
+        TestEqual(TEXT("and still older ones"), Screen.PromptOpacity(false, 2), 1.0f);
         Screen.Close();
     }
     {

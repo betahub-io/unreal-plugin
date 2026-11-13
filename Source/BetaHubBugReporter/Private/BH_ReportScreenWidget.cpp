@@ -59,6 +59,8 @@ namespace
     constexpr int32 FramesPerRow = 3;
     constexpr int32 FrameRows = 2;
     constexpr int32 FullScreenLogLines = 200;
+    /** Scroll offsets this close to an end count as at it. */
+    constexpr float ScrollEdgeTolerance = 0.5f;
     /** Above the game's own HUD. */
     constexpr int32 ToastZOrder = 100;
     /** Frame cells: 12px from the pane, 4px between columns, 8px between rows (Unity's percentages at 1080p). */
@@ -144,12 +146,14 @@ UBH_ReportScreenWidget::UBH_ReportScreenWidget(const FObjectInitializer& ObjectI
         static ConstructorHelpers::FClassFinder<UBH_ClipFrameWidget> FrameFinder(TEXT("/BetaHubBugReporter/BH_ClipFrame"));
         static ConstructorHelpers::FClassFinder<UBH_TextLineWidget> LineFinder(TEXT("/BetaHubBugReporter/BH_TextLine"));
         static ConstructorHelpers::FClassFinder<UBH_UploadToastWidget> ToastFinder(TEXT("/BetaHubBugReporter/BH_UploadToast"));
+        static ConstructorHelpers::FClassFinder<UBH_TabsWidget> TabsFinder(TEXT("/BetaHubBugReporter/BH_Tabs"));
         AttachmentRowClass = RowFinder.Class;
         PromptItemClass = PromptFinder.Class;
         GlyphClass = GlyphFinder.Class;
         ClipFrameClass = FrameFinder.Class;
         TextLineClass = LineFinder.Class;
         UploadToastClass = ToastFinder.Class;
+        TabsClass = TabsFinder.Class;
     }
     Theme = BH_ThemeRecipe::BuiltIn(EBH_BuiltInTheme::Dark);
 }
@@ -198,12 +202,37 @@ void UBH_ReportScreenWidget::InitializeScreen()
     DescriptionHint->SetText(LOCTEXT("DescriptionPrompt", "Describe what happened"));
     StepsLabel->SetText(LOCTEXT("StepsLabel", "STEPS TO REPRODUCE"));
     StepsHint->SetText(LOCTEXT("StepsPrompt", "Add steps if you can. It helps a lot."));
-    TermsName->SetText(LOCTEXT("TermsLabel", "Terms of bug reporting"));
+    TermsName->SetText(LOCTEXT("TermsLabel", "I accept the terms of bug reporting"));
+    TypeBugText->SetText(LOCTEXT("TypeBug", "BUG"));
+    TypeSuggestionText->SetText(LOCTEXT("TypeSuggestion", "SUGGESTION"));
     EmailLabel->SetText(LOCTEXT("EmailLabel", "EMAIL ME WHEN IT'S FIXED"));
     EmailHint->SetText(LOCTEXT("EmailPrompt", "you@example.com"));
     LinkName->SetText(LOCTEXT("ReportLink", "Report link"));
     GroupLabel->SetText(LOCTEXT("AttachmentsGroup", "SENDING ALONG"));
     SentWithLabel->SetText(LOCTEXT("SentWith", "SENT WITH THIS REPORT"));
+
+    HeadTabs = MakeTabs(TabsSlot);
+    PreviewTabs = MakeTabs(PreviewTabsSlot);
+}
+
+UBH_TabsWidget* UBH_ReportScreenWidget::MakeTabs(USizeBox* Holder)
+{
+    if (!TabsClass)
+    {
+        return nullptr;
+    }
+    UBH_TabsWidget* Tabs = CreateWidget<UBH_TabsWidget>(this, TabsClass);
+    Tabs->SetTheme(Theme);
+    TWeakObjectPtr<UBH_ReportScreenWidget> WeakSelf(this);
+    Tabs->OnTabClicked = [WeakSelf](EBH_Tab Tab)
+    {
+        if (UBH_ReportScreenWidget* Self = WeakSelf.Get())
+        {
+            Self->OnTabClicked(Tab);
+        }
+    };
+    Holder->SetContent(Tabs);
+    return Tabs;
 }
 
 void UBH_ReportScreenWidget::Setup(UBH_PluginSettings* InSettings, UBH_GameRecorder* InGameRecorder, const FString& InScreenshotPath,
@@ -301,6 +330,13 @@ void UBH_ReportScreenWidget::SetTheme(const FBH_ThemeColors& InTheme)
     for (UBH_AttachmentRowWidget* Row : PreviewRowWidgets)
     {
         Row->SetTheme(Theme);
+    }
+    for (UBH_TabsWidget* Tabs : {HeadTabs.Get(), PreviewTabs.Get()})
+    {
+        if (Tabs)
+        {
+            Tabs->SetTheme(Theme);
+        }
     }
     for (UHorizontalBox* Side : {PromptsLeft.Get(), PromptsRight.Get()})
     {
@@ -524,7 +560,8 @@ FReply UBH_ReportScreenWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometr
     }
 
     // Typing: our verbs first, everything else reaches the text field.
-    const FBH_InputIntent Intent = BH_InputGlyphs::IntentFor(Key, InKeyEvent.IsControlDown() || InKeyEvent.IsCommandDown(), GlyphSet);
+    const FBH_InputIntent Intent = BH_InputGlyphs::IntentFor(Key, InKeyEvent.IsControlDown() || InKeyEvent.IsCommandDown(), GlyphSet,
+                                                             InKeyEvent.IsShiftDown());
     if (Key == EKeys::Escape || (Key.IsGamepadKey() && Intent.bAction && Intent.Action == EBH_Action::Back))
     {
         Act(EBH_Action::Back);
@@ -532,7 +569,13 @@ FReply UBH_ReportScreenWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometr
     }
     if (Key == EKeys::Tab)
     {
-        Act(EBH_Action::Next);
+        Act(InKeyEvent.IsShiftDown() ? EBH_Action::Prev : EBH_Action::Next);
+        return FReply::Handled();
+    }
+    // Up from the first character or down from the last leaves the field, as Tab does.
+    if (!S.bTypingEmail && ((Key == EKeys::Up && CaretAtEdge(true)) || (Key == EKeys::Down && CaretAtEdge(false))))
+    {
+        Act(Key == EKeys::Up ? EBH_Action::Prev : EBH_Action::Next);
         return FReply::Handled();
     }
     if (Intent.bAction && Intent.Action == EBH_Action::Send && (Key.IsGamepadKey() || InKeyEvent.IsControlDown() || InKeyEvent.IsCommandDown()))
@@ -557,7 +600,8 @@ FReply UBH_ReportScreenWidget::NativeOnKeyDown(const FGeometry& InGeometry, cons
 {
     const FKey Key = InKeyEvent.GetKey();
     NoteDevice(Key, InKeyEvent.GetUserIndex());
-    const FBH_InputIntent Intent = BH_InputGlyphs::IntentFor(Key, InKeyEvent.IsControlDown() || InKeyEvent.IsCommandDown(), GlyphSet);
+    const FBH_InputIntent Intent = BH_InputGlyphs::IntentFor(Key, InKeyEvent.IsControlDown() || InKeyEvent.IsCommandDown(), GlyphSet,
+                                                             InKeyEvent.IsShiftDown());
     if (Intent.bAction)
     {
         Act(Intent.Action);
@@ -617,23 +661,27 @@ FReply UBH_ReportScreenWidget::NativeOnMouseButtonDown(const FGeometry& InGeomet
     SyncState();
     const FVector2D At = InMouseEvent.GetScreenSpacePosition();
     const bool bCompose = S.Screen == EBH_Screen::Compose && S.bConfigured;
+    // A click selects; only the switch's values and the checkbox change anything.
     auto ClickField = [this](EBH_Field Field)
     {
-        const bool bAlreadyFocused = S.Focus.OnField() && S.Focus.Field() == Field;
         StopTyping();
         S.Focus.FocusField(Field);
-        if (bAlreadyFocused)
-        {
-            ActCompose(EBH_Action::Confirm);
-        }
-        else
-        {
-            Render();
-        }
+        Render();
     };
-    if (bCompose && IsUnder(TypeRowBox, At))
+    if (bCompose && (IsUnder(TypeBug, At) || IsUnder(TypeSuggestion, At)))
     {
         ClickField(EBH_Field::Type);
+        SetType(IsUnder(TypeBug, At) ? EBH_ReportType::Bug : EBH_ReportType::Suggestion);
+    }
+    else if (bCompose && IsUnder(TypeRowBox, At))
+    {
+        ClickField(EBH_Field::Type);
+    }
+    else if (bCompose && S.bTermsRequired && IsUnder(TermsCheck, At))
+    {
+        ClickField(EBH_Field::Terms);
+        S.bTermsAccepted = !S.bTermsAccepted;
+        Render();
     }
     else if (bCompose && IsUnder(TermsRowBox, At))
     {
@@ -641,7 +689,10 @@ FReply UBH_ReportScreenWidget::NativeOnMouseButtonDown(const FGeometry& InGeomet
     }
     else if (S.Screen == EBH_Screen::Sent && IsUnder(LinkRowBox, At))
     {
+        StopTyping();
+        S.SentFocus = EBH_SentFocus::Link;
         CopyLink();
+        Render();
     }
     else if (PaneShowsAttachment() && IsUnder(CaptionAction, At))
     {
@@ -705,8 +756,8 @@ void UBH_ReportScreenWidget::ActOnScreen(EBH_Action Action)
     switch (S.Screen)
     {
         case EBH_Screen::Preview:
-            // The key that opened the preview (P, X, Square) closes it as well as Back does.
-            if (Action == EBH_Action::Back || Action == EBH_Action::Alt)
+            // The key that opened the preview (P, or the pad's left face button) closes it, as do Back and the report tab.
+            if (Action == EBH_Action::Back || Action == EBH_Action::Alt || Action == EBH_Action::TabReport)
             {
                 LocalScreen = EBH_Screen::Compose;
                 S.Focus.FocusAttachment(PreviewIndex);
@@ -716,13 +767,21 @@ void UBH_ReportScreenWidget::ActOnScreen(EBH_Action Action)
             {
                 ToggleAttachment(PreviewIndex);
             }
-            else if (Action == EBH_Action::Navigate)
+            else if (Action == EBH_Action::Navigate || Action == EBH_Action::Next)
             {
                 MovePreview(1);
             }
-            else if (Action == EBH_Action::Scroll)
+            else if (Action == EBH_Action::Prev)
+            {
+                MovePreview(-1);
+            }
+            else if (Action == EBH_Action::Scroll || Action == EBH_Action::ScrollDown)
             {
                 ScrollPreview(1);
+            }
+            else if (Action == EBH_Action::ScrollUp)
+            {
+                ScrollPreview(-1);
             }
             break;
         case EBH_Screen::Compose:
@@ -772,17 +831,14 @@ void UBH_ReportScreenWidget::ActCompose(EBH_Action Action)
             }
             break;
         case EBH_Action::Next:
-            if (S.bTyping)
-            {
-                const EBH_Field NextField = (S.TypingField == EBH_Field::Description && S.Type == EBH_ReportType::Bug)
-                    ? EBH_Field::Steps : EBH_Field::Description;
-                S.Focus.FocusField(NextField);
-                StartTyping(NextField);
-            }
-            else
-            {
-                Move(EBH_Direction::Down);
-            }
+        case EBH_Action::Prev:
+            StepFocus(Action == EBH_Action::Next ? 1 : -1);
+            break;
+        case EBH_Action::ChangeType:
+            SwitchType();
+            break;
+        case EBH_Action::TabAttachments:
+            OpenPreview(S.Focus.OnField() ? S.Focus.LastAttachment() : S.Focus.Attachment());
             break;
         case EBH_Action::Confirm:
             if (!S.Focus.OnField())
@@ -808,9 +864,16 @@ void UBH_ReportScreenWidget::ActCompose(EBH_Action Action)
             {
                 OpenPreview(S.Focus.Attachment());
             }
-            else if (S.Focus.Field() == EBH_Field::Terms && Settings && !Settings->TermsUrl.IsEmpty())
+            else if (S.Focus.Field() == EBH_Field::Terms)
             {
-                FPlatformProcess::LaunchURL(*Settings->TermsUrl, nullptr, nullptr);
+                if (Settings && !Settings->TermsUrl.IsEmpty())
+                {
+                    FPlatformProcess::LaunchURL(*Settings->TermsUrl, nullptr, nullptr);
+                }
+            }
+            else
+            {
+                OpenPreview(S.Focus.LastAttachment());
             }
             break;
         default:
@@ -833,9 +896,22 @@ void UBH_ReportScreenWidget::ActSent(EBH_Action Action)
             }
             break;
         case EBH_Action::Confirm:
-            if (S.bCanEmail)
+            if (S.bCanEmail && S.SentFocus == EBH_SentFocus::Link)
+            {
+                CopyLink();
+            }
+            else if (S.bCanEmail)
             {
                 StartTyping(EBH_Field::Description);
+            }
+            break;
+        case EBH_Action::Next:
+        case EBH_Action::Prev:
+            if (S.bCanEmail)
+            {
+                StopTyping();
+                S.SentFocus = S.SentFocus == EBH_SentFocus::Email ? EBH_SentFocus::Link : EBH_SentFocus::Email;
+                Render();
             }
             break;
         case EBH_Action::Alt:
@@ -863,11 +939,65 @@ void UBH_ReportScreenWidget::Move(EBH_Direction Direction)
         }
         return;
     }
+    if (S.Screen == EBH_Screen::Sent)
+    {
+        if (S.bCanEmail && !S.bTyping && (Direction == EBH_Direction::Up || Direction == EBH_Direction::Down))
+        {
+            S.SentFocus = Direction == EBH_Direction::Up ? EBH_SentFocus::Email : EBH_SentFocus::Link;
+            Render();
+        }
+        return;
+    }
     if (S.Screen == EBH_Screen::Compose && S.bConfigured && !S.bTyping)
     {
+        // Left and right on the type row choose the type, as on a game's settings screen.
+        if (S.Focus.OnField() && S.Focus.Field() == EBH_Field::Type
+            && (Direction == EBH_Direction::Left || Direction == EBH_Direction::Right))
+        {
+            SetType(Direction == EBH_Direction::Left ? EBH_ReportType::Bug : EBH_ReportType::Suggestion);
+            return;
+        }
         S.Focus.Move(Direction);
         Render();
     }
+}
+
+void UBH_ReportScreenWidget::StepFocus(int32 Delta)
+{
+    SyncState();
+    if (S.bTyping && !S.bTypingEmail)
+    {
+        S.Focus.FocusField(S.TypingField);
+    }
+    S.Focus.Step(Delta);
+    // On a keyboard, Tab into a text field types there, as in a browser.
+    if (S.Focus.OnField() && InputFor(S.Focus.Field()) && GlyphSet == EBH_GlyphSet::Keyboard)
+    {
+        StartTyping(S.Focus.Field());
+        return;
+    }
+    StopTyping();
+    Render();
+}
+
+bool UBH_ReportScreenWidget::CaretAtEdge(bool bStart) const
+{
+    const UMultiLineEditableText* Input = Cast<UMultiLineEditableText>(InputFor(S.TypingField));
+    const TSharedPtr<SWidget> Slate = Input ? Input->GetCachedWidget() : nullptr;
+    if (!Slate.IsValid() || Slate->GetType() != FName(TEXT("SMultiLineEditableText")))
+    {
+        return false;
+    }
+    const FTextLocation Caret = StaticCastSharedPtr<SMultiLineEditableText>(Slate)->GetCursorLocation();
+    if (bStart)
+    {
+        return Caret.GetLineIndex() == 0 && Caret.GetOffset() == 0;
+    }
+    TArray<FString> Lines;
+    Input->GetText().ToString().ParseIntoArray(Lines, TEXT("\n"), /*InCullEmpty*/ false);
+    const int32 LastLine = FMath::Max(0, Lines.Num() - 1);
+    const int32 LastLength = Lines.IsValidIndex(LastLine) ? Lines[LastLine].Len() : 0;
+    return Caret.GetLineIndex() == LastLine && Caret.GetOffset() >= LastLength;
 }
 
 void UBH_ReportScreenWidget::MovePreview(int32 Delta)
@@ -878,6 +1008,8 @@ void UBH_ReportScreenWidget::MovePreview(int32 Delta)
         return;
     }
     PreviewIndex = (PreviewIndex + Delta + Count) % Count;
+    S.bLogAtTop = false;
+    S.bLogAtEnd = true;
     Render();
 }
 
@@ -901,6 +1033,9 @@ void UBH_ReportScreenWidget::OpenPreview(int32 Index)
     }
     StopTyping();
     PreviewIndex = Index;
+    // A log opens at its newest line.
+    S.bLogAtTop = false;
+    S.bLogAtEnd = true;
     LocalScreen = EBH_Screen::Preview;
     FullPaneKey.Empty();
     Render();
@@ -941,17 +1076,22 @@ void UBH_ReportScreenWidget::OnRowClicked(int32 Index)
     {
         return;
     }
-    const bool bAlreadyFocused = !S.Focus.OnField() && S.Focus.Attachment() == Index;
     StopTyping();
     S.Focus.FocusAttachment(Index);
-    if (bAlreadyFocused)
+    Render();
+    FocusSelf();
+}
+
+void UBH_ReportScreenWidget::OnRowCheckClicked(int32 Index)
+{
+    SyncState();
+    if (S.Screen != EBH_Screen::Compose || !S.bConfigured)
     {
-        ToggleAttachment(Index);
+        return;
     }
-    else
-    {
-        Render();
-    }
+    StopTyping();
+    S.Focus.FocusAttachment(Index);
+    ToggleAttachment(Index);
     FocusSelf();
 }
 
@@ -962,14 +1102,46 @@ void UBH_ReportScreenWidget::OnPreviewRowClicked(int32 Index)
     {
         return;
     }
-    if (PreviewIndex == Index)
+    if (PreviewIndex != Index)
     {
-        ToggleAttachment(Index);
-    }
-    else
-    {
-        PreviewIndex = Index;
+        MovePreview(Index - PreviewIndex);
         Render();
+    }
+}
+
+void UBH_ReportScreenWidget::OnPreviewRowCheckClicked(int32 Index)
+{
+    SyncState();
+    if (S.Screen != EBH_Screen::Preview)
+    {
+        return;
+    }
+    if (PreviewIndex != Index)
+    {
+        MovePreview(Index - PreviewIndex);
+    }
+    ToggleAttachment(Index);
+}
+
+void UBH_ReportScreenWidget::OnTabClicked(EBH_Tab Tab)
+{
+    SyncState();
+    if (Tab == EBH_Tab::Attachments && S.Screen == EBH_Screen::Compose && S.bConfigured)
+    {
+        Act(EBH_Action::TabAttachments);
+    }
+    else if (Tab == EBH_Tab::Report && S.Screen == EBH_Screen::Preview)
+    {
+        Act(EBH_Action::TabReport);
+    }
+    FocusSelf();
+}
+
+void UBH_ReportScreenWidget::SetType(EBH_ReportType Type)
+{
+    if (S.Type != Type)
+    {
+        SwitchType();
     }
 }
 
@@ -1272,7 +1444,16 @@ void UBH_ReportScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDel
         {
             S.Focus.FocusField(Field);
         }
+        if (bTyping && bEmail)
+        {
+            S.SentFocus = EBH_SentFocus::Email;
+        }
         Render();
+    }
+    // The log scrolls a frame after the key or the wheel (and on open, to its end).
+    if (UpdateLogEdges())
+    {
+        RenderPrompts();
     }
     // Focus back on the game viewport or nowhere (alt-tab, a click outside the form): take it
     // back, or keys and pads would reach the game under the form. Another widget keeps it.
@@ -1319,6 +1500,11 @@ void UBH_ReportScreenWidget::UpdateHover()
     const FVector2D Pointer = bPointer && FSlateApplication::IsInitialized() ? FSlateApplication::Get().GetCursorPos() : FVector2D(-1, -1);
     SetClass(TypeRowBox, TEXT("row--hover"), bCompose && bPointer && IsUnder(TypeRowBox, Pointer));
     SetClass(TermsRowBox, TEXT("row--hover"), bCompose && bPointer && IsUnder(TermsRowBox, Pointer));
+    SetClass(TermsCheckBox, TEXT("check--hover"), bCompose && bPointer && IsUnder(TermsCheck, Pointer));
+    // Only the value not chosen reacts: the chosen one is filled already.
+    SetClass(TypeBugText, TEXT("switch-text--hover"), bCompose && bPointer && S.Type != EBH_ReportType::Bug && IsUnder(TypeBug, Pointer));
+    SetClass(TypeSuggestionText, TEXT("switch-text--hover"),
+             bCompose && bPointer && S.Type != EBH_ReportType::Suggestion && IsUnder(TypeSuggestion, Pointer));
     SetClass(DescriptionBox, TEXT("box--hover"), bCompose && bPointer && IsUnder(DescriptionBox, Pointer));
     SetClass(StepsBox, TEXT("box--hover"), bCompose && bPointer && IsUnder(StepsBox, Pointer));
     SetClass(EmailBox, TEXT("box--hover"), S.Screen == EBH_Screen::Sent && S.bCanEmail && bPointer && IsUnder(EmailBox, Pointer));
@@ -1350,7 +1536,28 @@ void UBH_ReportScreenWidget::Render()
         RenderPane();
         RenderSent();
     }
+    UpdateLogEdges();
     RenderPrompts();
+}
+
+bool UBH_ReportScreenWidget::UpdateLogEdges()
+{
+    if (S.Screen != EBH_Screen::Preview || !S.bPreviewIsLog)
+    {
+        return false;
+    }
+    const float Offset = PreviewLog->GetScrollOffset();
+    const bool bTop = Offset <= ScrollEdgeTolerance;
+    const bool bEnd = Offset >= PreviewLog->GetScrollOffsetOfEnd() - ScrollEdgeTolerance;
+    const bool bChanged = bTop != S.bLogAtTop || bEnd != S.bLogAtEnd;
+    S.bLogAtTop = bTop;
+    S.bLogAtEnd = bEnd;
+    return bChanged;
+}
+
+int32 UBH_ReportScreenWidget::IncludedCount() const
+{
+    return S.AttachmentIncluded.FilterByPredicate([](bool bIncluded) { return bIncluded; }).Num();
 }
 
 void UBH_ReportScreenWidget::SetTextTone(UTextBlock* Text, const TCHAR* Base, EBH_Tone Tone)
@@ -1371,10 +1578,22 @@ void UBH_ReportScreenWidget::SetRowValue(UTextBlock* Value, const FBH_RowValue& 
 void UBH_ReportScreenWidget::RenderHeader()
 {
     const FBH_Header H = Header(S);
+    const bool bTabs = H.bTabs && HeadTabs;
+    Show(Title, !bTabs);
+    Show(TabsSlot, bTabs);
     Title->SetText(H.Title);
     Subtitle->SetText(H.Subtitle);
     SetTextTone(Title, TEXT("title"), H.Tone);
     SetTextTone(Subtitle, TEXT("sub"), H.Tone);
+    const FText ReportLabel = ReportTitle(S.Type);
+    if (HeadTabs)
+    {
+        HeadTabs->Show(EBH_Tab::Report, ReportLabel, IncludedCount(), GlyphSet, GlyphClass);
+    }
+    if (PreviewTabs)
+    {
+        PreviewTabs->Show(EBH_Tab::Attachments, ReportLabel, IncludedCount(), GlyphSet, GlyphClass);
+    }
 }
 
 void UBH_ReportScreenWidget::RenderField(const FFieldView& View, const FBH_TagText& Tag, bool bFocused, bool bEditing, bool bHasText)
@@ -1407,7 +1626,11 @@ void UBH_ReportScreenWidget::RenderForm()
     auto Focused = [&](EBH_Field Field) { return bOnField && !S.bTyping && S.Focus.Field() == Field; };
     auto Editing = [&](EBH_Field Field) { return bCompose && S.bTyping && !S.bTypingEmail && S.TypingField == Field; };
 
-    TypeValue->SetText(S.Type == EBH_ReportType::Bug ? LOCTEXT("TypeBug", "BUG") : LOCTEXT("TypeSuggestion", "SUGGESTION"));
+    const bool bBug = S.Type == EBH_ReportType::Bug;
+    SetClass(TypeBug, TEXT("switch-option--on"), bBug);
+    SetClass(TypeBugText, TEXT("switch-text--on"), bBug);
+    SetClass(TypeSuggestion, TEXT("switch-option--on"), !bBug);
+    SetClass(TypeSuggestionText, TEXT("switch-text--on"), !bBug);
     SetClass(TypeRowBox, TEXT("row--focused"), Focused(EBH_Field::Type));
     SetClass(TypeName, TEXT("row-name--focused"), Focused(EBH_Field::Type));
 
@@ -1420,8 +1643,9 @@ void UBH_ReportScreenWidget::RenderForm()
     Show(TermsRow, S.bTermsRequired);
     SetClass(TermsRowBox, TEXT("row--focused"), Focused(EBH_Field::Terms));
     SetClass(TermsName, TEXT("row-name--focused"), Focused(EBH_Field::Terms));
-    SetRowValue(TermsValue, S.bTermsAccepted ? FBH_RowValue{LOCTEXT("TermsAccepted", "ACCEPTED"), EBH_Tone::Accent}
-                                             : FBH_RowValue{LOCTEXT("TermsNotAccepted", "NOT ACCEPTED"), EBH_Tone::Muted});
+    SetClass(TermsName, TEXT("row-name--off"), !S.bTermsAccepted);
+    SetClass(TermsCheckBox, TEXT("check--on"), S.bTermsAccepted);
+    SetClass(TermsCheckMark, TEXT("check-mark--on"), S.bTermsAccepted);
 }
 
 void UBH_ReportScreenWidget::RebuildRows()
@@ -1451,6 +1675,13 @@ void UBH_ReportScreenWidget::RebuildRows()
             if (UBH_ReportScreenWidget* Self = WeakSelf.Get())
             {
                 Self->OnRowClicked(i);
+            }
+        };
+        Row->OnCheckClicked = [WeakSelf, i]()
+        {
+            if (UBH_ReportScreenWidget* Self = WeakSelf.Get())
+            {
+                Self->OnRowCheckClicked(i);
             }
         };
         RowWidgets.Add(Row);
@@ -1495,11 +1726,11 @@ void UBH_ReportScreenWidget::RenderRows()
         FBH_UploadState Upload;
         const bool bHasUpload = bUploading && Submission && Submission->TryGetUpload(Item->Id, Upload);
         RowWidgets[i]->SetValue(bHasUpload ? UploadValue(bIncluded, Upload) : IncludedValue(bIncluded));
+        RowWidgets[i]->SetIncluded(bIncluded);
         RowWidgets[i]->SetFocused(bCompose && !S.bTyping && !S.Focus.OnField() && S.Focus.Attachment() == i);
         RowWidgets[i]->SetInteractive(bCompose);
     }
-    GroupCount->SetText(Caps(FText::Format(LOCTEXT("AttachmentsCount", "{0} of {1}"),
-        FText::AsNumber(S.AttachmentIncluded.FilterByPredicate([](bool b) { return b; }).Num()), FText::AsNumber(VisibleCount()))));
+    GroupCount->SetText(Caps(FText::Format(LOCTEXT("AttachmentsCount", "{0} of {1}"), FText::AsNumber(IncludedCount()), FText::AsNumber(VisibleCount()))));
 }
 
 void UBH_ReportScreenWidget::FillPane(FPaneView& Pane, const FBH_ReportAttachment* Item, bool bFullScreen)
@@ -1598,7 +1829,7 @@ void UBH_ReportScreenWidget::RenderPane()
         : LOCTEXT("ScreenshotCaption", "YOUR SCREENSHOT \u00B7 THIS FRAME"));
     if (Item)
     {
-        CaptionRightText->SetText(LOCTEXT("FullScreen", "Full screen"));
+        CaptionRightText->SetText(LOCTEXT("AttachmentsTab", "Attachments"));
         RenderCaptionGlyph();
         CaptionGlyph->SetVisibility(ESlateVisibility::HitTestInvisible);
     }
@@ -1640,7 +1871,11 @@ void UBH_ReportScreenWidget::RenderSent()
     Show(EmailField, bShowEmail);
     Show(SentNote, bShowEmail || !EmailNote.IsEmpty());
     const bool bEditing = S.bTyping && S.bTypingEmail;
-    RenderField(EmailView, BH_ReportScreenModel::EmailTag(S), S.bCanEmail && !bEditing, bEditing, !S.Email.IsEmpty());
+    RenderField(EmailView, BH_ReportScreenModel::EmailTag(S), S.bCanEmail && !bEditing && S.SentFocus == EBH_SentFocus::Email, bEditing,
+                !S.Email.IsEmpty());
+    const bool bLinkFocused = S.bCanEmail && !bEditing && S.SentFocus == EBH_SentFocus::Link;
+    SetClass(LinkRowBox, TEXT("row--focused"), bLinkFocused);
+    SetClass(LinkName, TEXT("row-name--focused"), bLinkFocused);
     EmailInput->SetIsReadOnly(!S.bCanEmail);
 
     FText Note = EmailNote;
@@ -1670,7 +1905,6 @@ void UBH_ReportScreenWidget::RenderSent()
 void UBH_ReportScreenWidget::RenderPreview()
 {
     const FBH_ReportAttachment* Item = VisibleItem(PreviewIndex);
-    PreviewTitle->SetText(Caps(Item->Name));
     FText Describe;
     if (Item->Id == BH_AttachmentIds::Screenshot)
     {
@@ -1691,7 +1925,8 @@ void UBH_ReportScreenWidget::RenderPreview()
     {
         Describe = LOCTEXT("FileAddedBy", "Added by the game");
     }
-    PreviewSubtitle->SetText(Describe);
+    // The tabs stand where the title was, so the subtitle names the attachment.
+    PreviewSubtitle->SetText(FText::Format(LOCTEXT("NameMeta", "{0}{1}{2}"), Item->Name, Separator, Describe));
     PreviewCount->SetText(Caps(FText::Format(LOCTEXT("PreviewCount", "{0} of {1}"), FText::AsNumber(PreviewIndex + 1), FText::AsNumber(VisibleCount()))));
 
     if (PreviewRowWidgets.Num() != VisibleCount() && AttachmentRowClass)
@@ -1711,6 +1946,13 @@ void UBH_ReportScreenWidget::RenderPreview()
                     Self->OnPreviewRowClicked(i);
                 }
             };
+            Row->OnCheckClicked = [WeakSelf, i]()
+            {
+                if (UBH_ReportScreenWidget* Self = WeakSelf.Get())
+                {
+                    Self->OnPreviewRowCheckClicked(i);
+                }
+            };
             PreviewRowWidgets.Add(Row);
             Cast<UVerticalBoxSlot>(PreviewList->AddChild(Row))->SetPadding(FMargin(0, 0, 0, RowGap));
         }
@@ -1718,6 +1960,7 @@ void UBH_ReportScreenWidget::RenderPreview()
     for (int32 i = 0; i < PreviewRowWidgets.Num(); ++i)
     {
         PreviewRowWidgets[i]->SetValue(IncludedValue(S.AttachmentIncluded[i]));
+        PreviewRowWidgets[i]->SetIncluded(S.AttachmentIncluded[i]);
         PreviewRowWidgets[i]->SetFocused(i == PreviewIndex);
     }
     if (Item->Id != FullPaneKey)
