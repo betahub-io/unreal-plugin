@@ -31,17 +31,15 @@ All features have been tested and verified on these versions.
 
 ## FFmpeg Installation
 
-The plugin requires FFmpeg for video recording. Place the FFmpeg executable in the following location based on your platform:
-
-- **Windows:** `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe`
-- **Mac:** `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Mac/ffmpeg`
-- **Linux:** `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Linux/ffmpeg`
-
-For packaged builds, place the executable (renamed to `bh_ffmpeg` or `bh_ffmpeg.exe`) in `Binaries/<Platform>/`.
+The plugin requires FFmpeg for video recording. The plugin is built for Windows (Win64), and the GitHub
+release includes FFmpeg at `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe`; packaging
+your game copies it next to the game as `bh_ffmpeg.exe` automatically. The Fab build has no FFmpeg: place
+`ffmpeg.exe` in `YourProject/Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/` for the editor, and copy
+it into each packaged build as `<PackagedGame>/<ProjectName>/Binaries/Win64/bh_ffmpeg.exe`, next to the packaged game. See [FFMPEG_SETUP.md](FFMPEG_SETUP.md).
 
 ## Video Encoder
 
-The plugin records by copying each frame off the GPU asynchronously, scaling it down on the GPU, and encoding it with the bundled FFmpeg (CPU). This is the only encoder in a standard build, and it works on every GPU and platform — there is nothing to configure.
+The plugin records by copying each frame off the GPU asynchronously, scaling it down on the GPU, and encoding it with the bundled FFmpeg (CPU). This is the only encoder in a standard build, and it works on every GPU — there is nothing to configure.
 
 Frame capture never blocks the render thread waiting for the GPU, so recording costs a few percent of framerate rather than stalling every captured frame.
 
@@ -49,7 +47,7 @@ Frame capture never blocks the render thread waiting for the GPU, so recording c
 
 | Setting | What it does | Requirements |
 | --- | --- | --- |
-| **FFmpeg** (default) | Encodes on the CPU with the bundled FFmpeg. | None — works on every GPU and platform. |
+| **FFmpeg** (default) | Encodes on the CPU with the bundled FFmpeg. | None — works on every GPU. |
 | **Hardware** | Encodes on the GPU (NVENC/AMF), keeping encoding off the CPU. | Windows, an NVIDIA or AMD GPU. |
 | **Auto** | Uses the hardware encoder when it is available, otherwise FFmpeg. | Same as Hardware; silently uses FFmpeg when hardware isn't available. |
 
@@ -90,7 +88,7 @@ Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report
 | Setting | What it does |
 | --- | --- |
 | **Theme** | One of six built-in colour themes (Dark by default). |
-| **Theme Asset** | Your studio's colours instead: create a *BH_ThemeAsset* data asset with an accent colour and a neutral tint, and the form derives a full, contrast-checked theme from them. |
+| **Theme Asset** | Your studio's colours instead: create a *BH_ThemeAsset* data asset with an accent colour, a neutral tint, a light or dark mode and a corner radius, and the form derives a full, contrast-checked theme from them. |
 | **Require Terms Acceptance** / **Terms Url** | Players must accept your terms of bug reporting before they can send; *Read terms* opens the URL. |
 | **Suggestion Min Length** | The shortest suggestion the form sends. Keep it at your BetaHub project's minimum description length (80 unless changed there), or BetaHub refuses the suggestion. |
 
@@ -108,8 +106,8 @@ On Steam Deck and in Big Picture, a controller player who starts typing gets Ste
 provided your game uses Steamworks; the plugin itself has no Steamworks dependency.
 
 The form takes keyboard and controller input only when it captures the mouse
-(`SpawnBugReportWidget(true)`, which the shortcut key uses). Opened with `false`, it leaves your game's
-controls alone, as the previous form did.
+(`OpenReportForm(true)`, the default and what the shortcut key does). Opened with `false`, it leaves your
+game's controls alone, as the previous form did.
 
 The previous form is still included. To keep using it, pick *BugReportForm* for *Report Form Widget
 Class*, or set it in `DefaultGame.ini`:
@@ -120,8 +118,8 @@ ReportFormWidgetClass=/BetaHubBugReporter/BugReportForm.BugReportForm_C
 ```
 
 C++ code that reaches into the previous form's widgets (`BugDescriptionEdit`, `SubmitButton` and the
-rest) through the pointer `SpawnBugReportWidget` returns finds them null on the new form: keep the
-previous form, or check them before use.
+rest) through the pointer `OpenReportForm` or `SpawnBugReportWidget` returns finds them null on the new
+form: keep the previous form, or check them before use.
 
 ## Submission mode
 
@@ -145,10 +143,26 @@ MediaUploadMode=WaitForUpload
 
 ## Using the plugin from C++
 
-Add the plugin's module to your game module's `Build.cs`. Its headers include UMG's, so add UMG too:
+Add the plugin's module to your game module's `Build.cs`, with the engine modules its headers include.
+The plugin builds for Win64 only, so a game that also builds for other platforms adds it for Win64 and
+keeps its BetaHub code behind the same condition:
 
 ```csharp
-PrivateDependencyModuleNames.AddRange(new string[] { "BetaHubBugReporter", "UMG" });
+if (Target.Platform == UnrealTargetPlatform.Win64)
+{
+    PrivateDependencyModuleNames.AddRange(new string[] { "BetaHubBugReporter", "UMG", "HTTP", "Json" });
+    PublicDefinitions.Add("WITH_BETAHUB=1");
+}
+else
+{
+    PublicDefinitions.Add("WITH_BETAHUB=0");
+}
+```
+
+```cpp
+#if WITH_BETAHUB
+#include "BH_GameInstanceSubsystem.h"
+#endif
 ```
 
 ## Opening the form from your game
@@ -170,12 +184,16 @@ void UMyPauseMenu::OnReportBugClicked()
 }
 ```
 
-It works with the shortcut turned off. The form opens above your menus; *Report Form Z Order* in the
-plugin settings (10000 by default) sets its viewport layer.
+It works with the shortcut turned off. The form opens above your menus; *Report Form ZOrder* in the
+plugin settings (10000 by default) sets its viewport layer. Opened with `true`, when it closes it puts the
+game back in Game Only or Game and UI input (*Restore Input Mode*), so a menu that uses UI-only input sets
+its input mode again after the form closes (for example once *Is Report Form Open* on *Get Active Manager*
+returns false).
 
 The plugin starts its recording service when the game starts. To start it yourself instead (for example
 only in test builds), turn off *Spawn Background Service On Startup* and start a manager in your game
-instance; the shortcut and *Open Report Form* then use it:
+instance; the shortcut and *Open Report Form* then use it. Start one per game instance: a second one
+still records, but only logs a warning and stays inactive.
 
 ```cpp
 #include "BH_Manager.h"
@@ -187,17 +205,28 @@ TObjectPtr<UBH_Manager> BetaHubManager;
 // UMyGameInstance.cpp
 void UMyGameInstance::Init()
 {
-    Super::Init();
-    BetaHubManager = NewObject<UBH_Manager>(this);
-    BetaHubManager->StartService(this);
+    Super::Init(); // the BetaHub subsystem exists only after this
+    if (!IsDedicatedServerInstance())
+    {
+        BetaHubManager = NewObject<UBH_Manager>(this);
+        BetaHubManager->StartService(this);
+    }
 }
 
 void UMyGameInstance::Shutdown()
 {
-    BetaHubManager->StopService();
+    if (BetaHubManager)
+    {
+        BetaHubManager->StopService();
+    }
     Super::Shutdown();
 }
 ```
+
+A game that also builds for other platforms cannot put the `UPROPERTY` inside `#if WITH_BETAHUB` (Unreal's
+header tool skips the block and the property loses its reflection, so the manager gets garbage-collected).
+Declare it as `UPROPERTY() TObjectPtr<UObject> BetaHubManager;` instead, and keep the include and the calls in
+the `.cpp` under `#if WITH_BETAHUB`, using `Cast<UBH_Manager>(BetaHubManager)`.
 
 ## Custom Fields
 
@@ -208,48 +237,64 @@ whenever it changes:
 ```cpp
 #include "BH_GameInstanceSubsystem.h"
 
-UBH_GameInstanceSubsystem* BetaHub = UBH_GameInstanceSubsystem::Get(this);
-BetaHub->SetCustomField(TEXT("game_mode"), TEXT("ranked"));                     // text or single-select
-BetaHub->SetCustomField(TEXT("hardcore"), TEXT("1"));                          // boolean: "1" or "0"
-BetaHub->SetCustomFieldValues(TEXT("tags"), {TEXT("ui"), TEXT("inventory")});  // multi-select
+if (UBH_GameInstanceSubsystem* BetaHub = UBH_GameInstanceSubsystem::Get(this))
+{
+    BetaHub->SetCustomField(TEXT("game_mode"), TEXT("ranked"));                     // text or single-select
+    BetaHub->SetCustomField(TEXT("hardcore"), TEXT("1"));                          // boolean: "1" or "0"
+    BetaHub->SetCustomFieldValues(TEXT("tags"), {TEXT("ui"), TEXT("inventory")});  // multi-select
 
-// Asked for its value each time a report is sent; skipped once this object is gone.
-BetaHub->RegisterCustomFieldProvider(TEXT("player_level"),
-    FBH_CustomFieldProvider::CreateWeakLambda(this, [this]()
-    {
-        return FBH_CustomFieldValue::FromString(FString::FromInt(PlayerLevel));
-    }));
+    // Asked for its value each time a bug report is sent; skipped once this object is gone.
+    BetaHub->RegisterCustomFieldProvider(TEXT("player_level"),
+        FBH_CustomFieldProvider::CreateWeakLambda(this, [this]()
+        {
+            return FBH_CustomFieldValue::FromString(FString::FromInt(PlayerLevel));
+        }));
+}
 ```
 
-Blueprint has *Set Custom Field*, *Set Custom Field Values*, *Remove Custom Field* and *Register Custom
-Field Provider* (an event that returns the value). Custom fields go with bug reports, not with
-suggestions. Field keys are snake_case identifiers.
+A provider wins over a value set under the same name; a provider that returns an empty value leaves the
+field out.
 
-In C++, `OnBuildCustomFields` gets the last word on every report's fields, after the set values and the
-providers. It sees what the report is about:
+Blueprint has *Set Custom Field*, *Set Custom Field Values*, *Remove Custom Field*, and *Register Custom
+Field Provider* / *Unregister Custom Field Provider*; bind a provider with a *Create Event* node to a
+function that returns the value as a String. Custom fields go with bug reports, not with suggestions.
+Field keys are snake_case identifiers.
+
+In C++, `OnBuildCustomFields` gets the last word on every bug report's fields, after the set values and
+the providers; a field left empty is then dropped. It sees the report's description:
 
 ```cpp
-BetaHub->OnBuildCustomFields.AddWeakLambda(this,
-    [this](const FBH_CustomFieldContext& Report, FBH_CustomFieldMap& Fields)
-    {
-        Fields.Add(TEXT("map"), FBH_CustomFieldValue::FromString(GetWorld()->GetMapName()));
-        // Network numbers only where a player reports lag.
-        if (Report.Description.Contains(TEXT("lag")))
+if (UBH_GameInstanceSubsystem* BetaHub = UBH_GameInstanceSubsystem::Get(this))
+{
+    BetaHub->OnBuildCustomFields.AddWeakLambda(this,
+        [this](const FBH_CustomFieldContext& Report, FBH_CustomFieldMap& Fields)
         {
-            Fields.Add(TEXT("ping_ms"), FBH_CustomFieldValue::FromString(FString::FromInt(GetPingMs())));
-        }
-    });
+            Fields.Add(TEXT("map"), FBH_CustomFieldValue::FromString(GetWorld()->GetMapName()));
+            // Network numbers only where a player reports lag.
+            if (Report.Description.Contains(TEXT("lag")))
+            {
+                Fields.Add(TEXT("ping_ms"), FBH_CustomFieldValue::FromString(FString::FromInt(GetPingMs())));
+            }
+        });
+}
 ```
 
 **Project setup:** plain text fields auto-create on first submission, so no setup is needed for them. **Single-select, multi-select, and boolean fields must be pre-created** in your BetaHub project settings — and for select fields, every submitted value must match a predefined option, otherwise the whole report is rejected. See the [custom fields documentation](https://betahub.io/docs/integrations/game-engines/#custom-fields) for details.
 
-Code that sends reports itself with `UBH_BugReport::SubmitReportWithMedia` passes its fields to it:
+Code that sends reports itself with `UBH_BugReport::SubmitReportWithMedia` passes its fields to it. The
+subsystem's fields are not added on this path; `UBH_GameInstanceSubsystem::CustomFieldsFor` returns them,
+to merge in:
 
 ```cpp
-TMap<FString, FBH_CustomFieldValue> CustomFields;
-CustomFields.Add("player_level", FBH_CustomFieldValue::FromString(FString::FromInt(PlayerLevel)));
-CustomFields.Add("tags", FBH_CustomFieldValue::FromArray({ "Bug", "UI" })); // multi-select
+#include "BH_BugReport.h"
 
+TMap<FString, FBH_CustomFieldValue> CustomFields;
+CustomFields.Add(TEXT("player_level"), FBH_CustomFieldValue::FromString(FString::FromInt(PlayerLevel)));
+CustomFields.Add(TEXT("tags"), FBH_CustomFieldValue::FromArray({TEXT("Bug"), TEXT("UI")})); // multi-select
+
+UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
+UBH_PluginSettings* Settings = GetMutableDefault<UBH_PluginSettings>();
+TArray<FBH_MediaFile> Videos, Screenshots, Logs;
 BugReport->SubmitReportWithMedia(
     Settings, nullptr,
     TEXT("Description"), TEXT("Steps to reproduce"),

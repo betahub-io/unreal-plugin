@@ -1,31 +1,20 @@
 # FFmpeg Setup for Video Recording
 
-The BetaHub Bug Reporter plugin uses FFmpeg to record gameplay video for bug reports. FFmpeg is **not bundled** with the plugin and must be installed separately.
+The BetaHub Bug Reporter plugin uses FFmpeg to record gameplay video for bug reports. The plugin is built
+for Windows (Win64).
+
+- **GitHub release:** FFmpeg is included at `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe`,
+  and packaging your game copies it next to the game as `bh_ffmpeg.exe`. Nothing to install.
+- **Fab:** the Fab build does not include FFmpeg, so install it yourself as below.
 
 Without FFmpeg, the plugin still works for submitting bug reports with screenshots and logs, but video recording will be disabled.
 
 ## Installation
 
-### Windows
-
 1. Download FFmpeg from the [official website](https://ffmpeg.org/download.html) or use a pre-built binary from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
-2. Place the `ffmpeg.exe` file in one of the following locations:
+2. Place the `ffmpeg.exe` file in:
    - **For editor use:** `<YourProject>/Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe`
-   - **For packaged builds:** `<YourProject>/Binaries/Win64/bh_ffmpeg.exe`
-
-### macOS
-
-1. Install FFmpeg via [Homebrew](https://brew.sh/): `brew install ffmpeg`
-2. Alternatively, place the `ffmpeg` binary in one of the following locations:
-   - **For editor use:** `<YourProject>/Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Mac/ffmpeg`
-   - **For packaged builds:** `<YourProject>/Binaries/Mac/bh_ffmpeg`
-
-### Linux
-
-1. Install FFmpeg via your package manager (e.g., `sudo apt install ffmpeg`).
-2. Alternatively, place the `ffmpeg` binary in one of the following locations:
-   - **For editor use:** `<YourProject>/Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Linux/ffmpeg`
-   - **For packaged builds:** `<YourProject>/Binaries/Linux/bh_ffmpeg`
+   - **For packaged builds:** copy it into each packaged build as `<PackagedGame>/<ProjectName>/Binaries/Win64/bh_ffmpeg.exe`, next to the packaged game (the GitHub release does this for you when you package)
 
 ## Verifying Installation
 
