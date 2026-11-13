@@ -59,9 +59,15 @@ The setting is hidden in standard builds because every option there would resolv
 
 ## Configuration
 
-All you need to do is to go to your *Player Settings* and in the *BetaHub Bug Reported* section under the *Plugins* category, set your Project ID. You can find your Project ID in your project *General Settings* page.
+Under *Project Settings → Plugins → BetaHub Bug Reporter*, set your Project ID (on your BetaHub project's
+*General Settings* page) and Project Token (*Integrations → Auth Tokens*, starts with `tkn-`). There you can
+also change the shortcut key that opens the report form. The settings land in `Config/DefaultGame.ini`:
 
-There, you can also configure your shortcut key to open the bug reporter window.
+```ini
+[/Script/BetaHubBugReporter.BH_PluginSettings]
+ProjectId=pr-0000000000
+ProjectToken=tkn-your-token
+```
 
 For full docs and guides, please visit the [BetaHub Documentation](https://betahub.io/docs/permalinks/unreal-plugin).
 
@@ -87,6 +93,16 @@ Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report
 | **Theme Asset** | Your studio's colours instead: create a *BH_ThemeAsset* data asset with an accent colour and a neutral tint, and the form derives a full, contrast-checked theme from them. |
 | **Require Terms Acceptance** / **Terms Url** | Players must accept your terms of bug reporting before they can send; *Read terms* opens the URL. |
 | **Suggestion Min Length** | The shortest suggestion the form sends. Keep it at your BetaHub project's minimum description length (80 unless changed there), or BetaHub refuses the suggestion. |
+
+The same in `DefaultGame.ini`; the built-in themes are `Dark`, `Light`, `Neutral`, `Ocean`, `Forest` and `Violet`:
+
+```ini
+[/Script/BetaHubBugReporter.BH_PluginSettings]
+Theme=Ocean
+bRequireTermsAcceptance=True
+TermsUrl=https://example.com/bug-reporting-terms
+SuggestionMinLength=80
+```
 
 On Steam Deck and in Big Picture, a controller player who starts typing gets Steam's floating keyboard,
 provided your game uses Steamworks; the plugin itself has no Steamworks dependency.
@@ -120,7 +136,20 @@ the report form confirms a submission and lets the player return to the game:
 Background mode is safe against a lost connection: if the client's own publish call never lands (the game
 is closed or crashes right after submitting), BetaHub auto-publishes the draft shortly afterwards, so a
 report is never left stranded. **Updating from 1.6.x switches you to background mode automatically** — set
-*Media Upload Mode* to *Wait for upload* if you want the old blocking behavior back.
+*Media Upload Mode* to *Wait for upload* if you want the old blocking behavior back:
+
+```ini
+[/Script/BetaHubBugReporter.BH_PluginSettings]
+MediaUploadMode=WaitForUpload
+```
+
+## Using the plugin from C++
+
+Add the plugin's module to your game module's `Build.cs`. Its headers include UMG's, so add UMG too:
+
+```csharp
+PrivateDependencyModuleNames.AddRange(new string[] { "BetaHubBugReporter", "UMG" });
+```
 
 ## Opening the form from your game
 
@@ -131,11 +160,44 @@ on the *BH Game Instance Subsystem*: in Blueprint through *Get BH Game Instance 
 ```cpp
 #include "BH_GameInstanceSubsystem.h"
 
-UBH_GameInstanceSubsystem::Get(this)->OpenReportForm();
+// A "Report a bug" button in your pause menu
+void UMyPauseMenu::OnReportBugClicked()
+{
+    if (UBH_GameInstanceSubsystem* BetaHub = UBH_GameInstanceSubsystem::Get(this))
+    {
+        BetaHub->OpenReportForm();
+    }
+}
 ```
 
 It works with the shortcut turned off. The form opens above your menus; *Report Form Z Order* in the
 plugin settings (10000 by default) sets its viewport layer.
+
+The plugin starts its recording service when the game starts. To start it yourself instead (for example
+only in test builds), turn off *Spawn Background Service On Startup* and start a manager in your game
+instance; the shortcut and *Open Report Form* then use it:
+
+```cpp
+#include "BH_Manager.h"
+
+// UMyGameInstance.h
+UPROPERTY()
+TObjectPtr<UBH_Manager> BetaHubManager;
+
+// UMyGameInstance.cpp
+void UMyGameInstance::Init()
+{
+    Super::Init();
+    BetaHubManager = NewObject<UBH_Manager>(this);
+    BetaHubManager->StartService(this);
+}
+
+void UMyGameInstance::Shutdown()
+{
+    BetaHubManager->StopService();
+    Super::Shutdown();
+}
+```
 
 ## Custom Fields
 
@@ -160,9 +222,24 @@ BetaHub->RegisterCustomFieldProvider(TEXT("player_level"),
 ```
 
 Blueprint has *Set Custom Field*, *Set Custom Field Values*, *Remove Custom Field* and *Register Custom
-Field Provider* (an event that returns the value). In C++, `OnBuildCustomFields` gets the last word on
-every report's fields. Custom fields go with bug reports, not with suggestions. Field keys are snake_case
-identifiers.
+Field Provider* (an event that returns the value). Custom fields go with bug reports, not with
+suggestions. Field keys are snake_case identifiers.
+
+In C++, `OnBuildCustomFields` gets the last word on every report's fields, after the set values and the
+providers. It sees what the report is about:
+
+```cpp
+BetaHub->OnBuildCustomFields.AddWeakLambda(this,
+    [this](const FBH_CustomFieldContext& Report, FBH_CustomFieldMap& Fields)
+    {
+        Fields.Add(TEXT("map"), FBH_CustomFieldValue::FromString(GetWorld()->GetMapName()));
+        // Network numbers only where a player reports lag.
+        if (Report.Description.Contains(TEXT("lag")))
+        {
+            Fields.Add(TEXT("ping_ms"), FBH_CustomFieldValue::FromString(FString::FromInt(GetPingMs())));
+        }
+    });
+```
 
 **Project setup:** plain text fields auto-create on first submission, so no setup is needed for them. **Single-select, multi-select, and boolean fields must be pre-created** in your BetaHub project settings — and for select fields, every submitted value must match a predefined option, otherwise the whole report is rejected. See the [custom fields documentation](https://betahub.io/docs/integrations/game-engines/#custom-fields) for details.
 
