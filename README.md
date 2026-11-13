@@ -122,21 +122,56 @@ is closed or crashes right after submitting), BetaHub auto-publishes the draft s
 report is never left stranded. **Updating from 1.6.x switches you to background mode automatically** — set
 *Media Upload Mode* to *Wait for upload* if you want the old blocking behavior back.
 
-## Custom Fields (C++)
+## Opening the form from your game
 
-You can attach your own game-specific data (player level, current scene, build number, etc.) to a bug report. Custom fields are **C++ only** — they are passed per submission to `SubmitReportWithMedia` and are not exposed in the bundled report widget or via Blueprint.
+Players open the form with the shortcut key (F12 by default) during play, in your menus and while the
+game is paused. To open it from your own button, a pause menu or a store screen, call *Open Report Form*
+on the *BH Game Instance Subsystem*: in Blueprint through *Get BH Game Instance Subsystem*, in C++
 
 ```cpp
-#include "BH_BugReport.h"
+#include "BH_GameInstanceSubsystem.h"
 
-UBH_PluginSettings* Settings = GetMutableDefault<UBH_PluginSettings>();
-UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
+UBH_GameInstanceSubsystem::Get(this)->OpenReportForm();
+```
 
+It works with the shortcut turned off. The form opens above your menus; *Report Form Z Order* in the
+plugin settings (10000 by default) sets its viewport layer.
+
+## Custom Fields
+
+Attach your own game data (player level, current scene, build number) to every bug report sent from
+the report form. Set it on the *BH Game Instance Subsystem*, from Blueprint or C++, and change it
+whenever it changes:
+
+```cpp
+#include "BH_GameInstanceSubsystem.h"
+
+UBH_GameInstanceSubsystem* BetaHub = UBH_GameInstanceSubsystem::Get(this);
+BetaHub->SetCustomField(TEXT("game_mode"), TEXT("ranked"));                     // text or single-select
+BetaHub->SetCustomField(TEXT("hardcore"), TEXT("1"));                          // boolean: "1" or "0"
+BetaHub->SetCustomFieldValues(TEXT("tags"), {TEXT("ui"), TEXT("inventory")});  // multi-select
+
+// Asked for its value each time a report is sent; skipped once this object is gone.
+BetaHub->RegisterCustomFieldProvider(TEXT("player_level"),
+    FBH_CustomFieldProvider::CreateWeakLambda(this, [this]()
+    {
+        return FBH_CustomFieldValue::FromString(FString::FromInt(PlayerLevel));
+    }));
+```
+
+Blueprint has *Set Custom Field*, *Set Custom Field Values*, *Remove Custom Field* and *Register Custom
+Field Provider* (an event that returns the value). In C++, `OnBuildCustomFields` gets the last word on
+every report's fields. Custom fields go with bug reports, not with suggestions. Field keys are snake_case
+identifiers.
+
+**Project setup:** plain text fields auto-create on first submission, so no setup is needed for them. **Single-select, multi-select, and boolean fields must be pre-created** in your BetaHub project settings — and for select fields, every submitted value must match a predefined option, otherwise the whole report is rejected. See the [custom fields documentation](https://betahub.io/docs/integrations/game-engines/#custom-fields) for details.
+
+Code that sends reports itself with `UBH_BugReport::SubmitReportWithMedia` passes its fields to it:
+
+```cpp
 TMap<FString, FBH_CustomFieldValue> CustomFields;
 CustomFields.Add("player_level", FBH_CustomFieldValue::FromString(FString::FromInt(PlayerLevel)));
 CustomFields.Add("tags", FBH_CustomFieldValue::FromArray({ "Bug", "UI" })); // multi-select
-
-TArray<FBH_MediaFile> Videos, Screenshots, Logs;
 
 BugReport->SubmitReportWithMedia(
     Settings, nullptr,
@@ -145,10 +180,6 @@ BugReport->SubmitReportWithMedia(
     []() {}, [](const FString& Error) {},
     TEXT(""), TEXT(""), CustomFields);
 ```
-
-Use `FromString()` for text/single-select/boolean fields and `FromArray()` for multi-select fields. Field keys are snake_case identifiers.
-
-**Project setup:** plain text fields auto-create on first submission, so no setup is needed for them. **Single-select, multi-select, and boolean fields must be pre-created** in your BetaHub project settings — and for select fields, every submitted value must match a predefined option, otherwise the whole report is rejected. See the [custom fields documentation](https://betahub.io/docs/integrations/game-engines/#custom-fields) for details.
 
 ## Getting Help
 

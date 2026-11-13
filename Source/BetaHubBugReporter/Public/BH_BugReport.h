@@ -7,49 +7,8 @@
 #include "BH_PluginSettings.h"
 #include "BH_GameRecorder.h"
 #include "BH_MediaTypes.h"
+#include "BH_CustomFields.h"
 #include "BH_BugReport.generated.h"
-
-/**
- * Represents a custom field value for bug report submission.
- * Supports both single string values and arrays (for multi-select fields).
- */
-USTRUCT(BlueprintType)
-struct BETAHUBBUGREPORTER_API FBH_CustomFieldValue
-{
-    GENERATED_BODY()
-
-    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
-    FString Value;
-
-    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
-    TArray<FString> ArrayValue;
-
-    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
-    bool bIsArray = false;
-
-    FBH_CustomFieldValue()
-        : bIsArray(false)
-    {
-    }
-
-    /** Create a single string value (for text, single select, boolean fields) */
-    static FBH_CustomFieldValue FromString(const FString& InValue)
-    {
-        FBH_CustomFieldValue Result;
-        Result.Value = InValue;
-        Result.bIsArray = false;
-        return Result;
-    }
-
-    /** Create an array value (for multi-select fields) */
-    static FBH_CustomFieldValue FromArray(const TArray<FString>& InValues)
-    {
-        FBH_CustomFieldValue Result;
-        Result.ArrayValue = InValues;
-        Result.bIsArray = true;
-        return Result;
-    }
-};
 
 /**
  * Handles the submission of bug reports to BetaHub
@@ -89,7 +48,8 @@ public:
      * - Log files support both file paths (FilePath) and string content (Content)
      * - Videos and Screenshots only support file paths
      * @param CustomFields          Optional map of custom field values, keyed by field identifier (snake_case).
-     *                              Use FBH_CustomFieldValue::FromString() for text, single select, and boolean fields.
+     *                              Use FBH_CustomFieldValue::FromString() for text and single select fields, and
+     *                              "1" or "0" for boolean fields.
      *                              Use FBH_CustomFieldValue::FromArray() for multi-select fields.
      *                              Example:
      *                                TMap<FString, FBH_CustomFieldValue> Fields;

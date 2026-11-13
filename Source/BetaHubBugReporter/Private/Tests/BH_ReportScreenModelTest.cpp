@@ -258,4 +258,14 @@ bool FBHTagsAndValuesTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHModelArrowTest, "BetaHub.ReportScreen.Model.ArrowLeavesField", BH_MODEL_TEST_FLAGS)
+bool FBHModelArrowTest::RunTest(const FString& Parameters)
+{
+    TestTrue(TEXT("at the edge, nothing selected: leaves"), ArrowLeavesField(/*Shift*/ false, /*Selected*/ false, /*AtEdge*/ true));
+    TestFalse(TEXT("inside the text: moves the caret"), ArrowLeavesField(false, false, false));
+    TestFalse(TEXT("Shift at the edge: extends the selection"), ArrowLeavesField(true, false, true));
+    TestFalse(TEXT("text selected at the edge: collapses the selection"), ArrowLeavesField(false, true, true));
+    return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

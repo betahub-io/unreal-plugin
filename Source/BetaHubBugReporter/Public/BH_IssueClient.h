@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Templates/Function.h"
 #include "BH_ReportAttachment.h"
+#include "BH_CustomFields.h"
 
 /** What the player wrote. */
 struct BETAHUBBUGREPORTER_API FBH_ReportContent
@@ -11,6 +12,8 @@ struct BETAHUBBUGREPORTER_API FBH_ReportContent
     FString Description;
     FString StepsToReproduce;
     FString ReleaseLabel;
+    /** Sent with a bug report; a suggestion takes none. */
+    TMap<FString, FBH_CustomFieldValue> CustomFields;
 };
 
 /** Outcome of creating the draft: an issue on BetaHub, or an error. */

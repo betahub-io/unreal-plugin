@@ -5,6 +5,7 @@
 #include "BH_ReportScreenWidget.h"
 #include "BH_ReportSubmission.h"
 #include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
 #include "Blueprint/UserWidget.h"
 #include "GameFramework/PlayerController.h"
@@ -20,6 +21,24 @@ UBH_BackgroundService::UBH_BackgroundService()
     Settings = GetMutableDefault<UBH_PluginSettings>();
 }
 
+void UBH_BackgroundService::StartService(UGameInstance* GI)
+{
+    GameInstance = GI;
+    StartService();
+}
+
+bool UBH_BackgroundService::IsReportFormOpen() const
+{
+    return OpenForm.IsValid() && OpenForm->IsInViewport();
+}
+
+UWorld* UBH_BackgroundService::GetServiceWorld() const
+{
+    // A manager a game created may have no world among its outers; its game instance has one.
+    const UGameInstance* GI = GameInstance.Get();
+    return GI && GI->GetWorld() ? GI->GetWorld() : GetWorld();
+}
+
 void UBH_BackgroundService::StartService()
 {
     GameRecorder = NewObject<UBH_GameRecorder>(this);
@@ -33,8 +52,7 @@ void UBH_BackgroundService::StartService()
     }
     else
     {
-        // get world
-        UWorld* World = GetWorld();
+        UWorld* World = GetServiceWorld();
 
         if (!World)
         {
@@ -51,7 +69,7 @@ void UBH_BackgroundService::RetryInitializeService()
 {
     UE_LOG(LogBetaHub, Log, TEXT("Retrying to initialize service."));
     
-    if (GetWorld()) 
+    if (UWorld* World = GetServiceWorld())
     {
         // Enhanced checks for viewport readiness in packaged builds
         if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport)
@@ -69,7 +87,7 @@ void UBH_BackgroundService::RetryInitializeService()
                         ViewportSize.X, ViewportSize.Y);
 
                     // Viewport is now fully available, clear the timer and initialize the service
-                    GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
+                    World->GetTimerManager().ClearTimer(TimerHandle);
                     InitializeService();
                     return;
                 }
@@ -146,20 +164,7 @@ void UBH_BackgroundService::CaptureScreenshot()
 
 UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse)
 {
-    if (!GEngine || !GEngine->GameViewport)
-    {
-        UE_LOG(LogBetaHub, Error, TEXT("GameViewport is null."));
-        return nullptr;
-    }
-
-    UWorld* World = GEngine->GameViewport->GetWorld();
-    if (!World)
-    {
-        UE_LOG(LogBetaHub, Error, TEXT("World is null."));
-        return nullptr;
-    }
-
-    if (!LocalPlayerController)
+    if (!LocalPlayerController || !LocalPlayerController->GetWorld())
     {
         UE_LOG(LogBetaHub, Error, TEXT("PlayerController is null."));
         return nullptr;
@@ -206,8 +211,8 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
 
     UE_LOG(LogBetaHub, Log, TEXT("ReportForm widget created successfully."));
 
-    // Set the widget to be centered in the viewport
-    ReportForm->AddToViewport();
+    // Over the game's menus too: a report opened from one must not open under it.
+    ReportForm->AddToViewport(Settings ? Settings->ReportFormZOrder : 0);
 
     return ReportForm;
 }

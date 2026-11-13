@@ -1,5 +1,6 @@
 // Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_ReportFormWidget.h"
+#include "BH_GameInstanceSubsystem.h"
 #include "BH_Log.h"
 #include "Components/Button.h"
 #include "Components/EditableTextBox.h"
@@ -237,6 +238,10 @@ void UBH_ReportFormWidget::SubmitReport()
             }
         };
 
+        // The game's own data for every bug report, set on its BH game instance subsystem.
+        const TMap<FString, FBH_CustomFieldValue> CustomFields =
+            UBH_GameInstanceSubsystem::CustomFieldsFor(this, FBH_CustomFieldContext{EBH_ReportType::Bug, Description});
+
         UBH_BugReport* BugReport = NewObject<UBH_BugReport>();
         BugReport->SubmitReportWithMedia(Settings, RecorderToPass, Description, StepsToReproduce,
             Videos, Screenshots, Logs,
@@ -281,7 +286,7 @@ void UBH_ReportFormWidget::SubmitReport()
             },
             /*ReleaseLabel*/ TEXT(""),
             /*ReleaseId*/ TEXT(""),
-            /*CustomFields*/ TMap<FString, FBH_CustomFieldValue>(),
+            CustomFields,
             // OnDraftCreated: only in background mode. Confirm + close as soon as the draft exists on BetaHub,
             // while the media upload and publish finish detached in the chain.
             bBackground ? TFunction<void()>(ConfirmAndClose) : TFunction<void()>(),
@@ -446,7 +451,8 @@ bool UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
                 PopupWidget->SetLeaveInputToForm();
             }
 
-            PopupWidget->AddToViewport();
+            // Over the form, which sits high so it can open over the game's menus.
+            PopupWidget->AddToViewport(Settings->ReportFormZOrder + 1);
             return true;
         }
     }

@@ -9,6 +9,8 @@ namespace
 {
     /** BetaHub's default minimum description length for feature requests. */
     constexpr int32 DefaultSuggestionMinLength = 80;
+    /** Over the menus of a typical UMG or CommonUI game. */
+    constexpr int32 DefaultReportFormZOrder = 10000;
 }
 
 UBH_PluginSettings::UBH_PluginSettings()
@@ -48,6 +50,7 @@ UBH_PluginSettings::UBH_PluginSettings()
     Theme = EBH_BuiltInTheme::Dark;
     bRequireTermsAcceptance = false;
     SuggestionMinLength = DefaultSuggestionMinLength;
+    ReportFormZOrder = DefaultReportFormZOrder;
 
     // The report screen is the default; the classic form stays selectable. Both are found here, so
     // both are cooked into a game whichever it uses, and the classic form is the fallback should

@@ -125,6 +125,10 @@ public:
         meta=(ToolTip="The path to the widget that will be used to display the popup messages."))
     TSubclassOf<UBH_PopupWidget> PopupWidgetClass;
 
+    UPROPERTY(EditAnywhere, Config, Category="Settings",
+        meta=(ToolTip="Viewport layer of the report form. High, so a report opened from a menu shows over it; the form's popups and upload toast go one layer above."))
+    int32 ReportFormZOrder;
+
     UPROPERTY(EditAnywhere, Config, Category="Report Widget",
         meta=(ToolTip="Colours of the report widget. Ignored when a Theme Asset is set."))
     EBH_BuiltInTheme Theme;

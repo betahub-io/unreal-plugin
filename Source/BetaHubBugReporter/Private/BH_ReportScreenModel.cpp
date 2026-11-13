@@ -216,6 +216,11 @@ TArray<EBH_Field> BH_ReportScreenModel::FieldsFor(EBH_ReportType Type, bool bTer
     return Fields;
 }
 
+bool BH_ReportScreenModel::ArrowLeavesField(bool bShiftDown, bool bTextSelected, bool bCaretAtEdge)
+{
+    return !bShiftDown && !bTextSelected && bCaretAtEdge;
+}
+
 bool BH_ReportScreenModel::CanSend(const FBH_ScreenState& S)
 {
     if (!S.bConfigured || IsBlank(S.Description) || S.Description.Len() > DescriptionLimit)

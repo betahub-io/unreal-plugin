@@ -1,16 +1,38 @@
 // Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_Manager.h"
+#include "BH_GameInstanceSubsystem.h"
 #include "BH_Log.h"
+#include "BH_ShortcutProcessor.h"
 #include "HttpModule.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
+#include "Engine/GameViewportClient.h"
+#include "Engine/World.h"
+#include "Framework/Application/SlateApplication.h"
+#include "GameFramework/PlayerController.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
-#include "Components/InputComponent.h"
 
 UBH_Manager::UBH_Manager()
 {
     Settings = GetMutableDefault<UBH_PluginSettings>();
+}
+
+void UBH_Manager::BeginDestroy()
+{
+    // A manager a game created and never stopped must not leave its shortcut behind.
+    UnregisterShortcut();
+    Super::BeginDestroy();
+}
+
+bool UBH_Manager::IsReportFormOpen() const
+{
+    return BackgroundService && BackgroundService->IsReportFormOpen();
+}
+
+UGameInstance* UBH_Manager::GetServiceGameInstance() const
+{
+    return GameInstance.Get();
 }
 
 void UBH_Manager::StartService(UGameInstance* GI)
@@ -24,40 +46,70 @@ void UBH_Manager::StartService(UGameInstance* GI)
     if (GI == nullptr)
     {
         // try to get the game instance from the world
-        GI = GetWorld()->GetGameInstance();
+        const UWorld* World = GetWorld();
+        GI = World ? World->GetGameInstance() : nullptr;
 
         if (GI == nullptr)
         {
-            UE_LOG(LogBetaHub, Error, TEXT("Game instance not found."));
+            UE_LOG(LogBetaHub, Error, TEXT("Game instance not found. Pass one to StartService."));
             return;
         }
     }
-
-    GI->OnLocalPlayerAddedEvent.AddUObject(this, &UBH_Manager::OnLocalPlayerAdded);
-
-    // Handle local players that already exist (e.g. when StartService is called from Blueprint after game start)
-    for (ULocalPlayer* LP : GI->GetLocalPlayers())
-    {
-        OnLocalPlayerAdded(LP);
-    }
+    GameInstance = GI;
 
     BackgroundService = NewObject<UBH_BackgroundService>(this, UBH_BackgroundService::StaticClass(), TEXT("BH_Manager_BH_BackgroundService0"), RF_Transient);
 
-    BackgroundService->StartService();
+    BackgroundService->StartService(GI);
+
+    // The subsystem's own manager is created inside the subsystem's Initialize, when the game
+    // instance may not list it yet: find it through the outer first.
+    UBH_GameInstanceSubsystem* Subsystem = GetTypedOuter<UBH_GameInstanceSubsystem>();
+    if (!Subsystem)
+    {
+        Subsystem = GI->GetSubsystem<UBH_GameInstanceSubsystem>();
+    }
+    if (Subsystem)
+    {
+        Subsystem->RegisterService(this);
+    }
+    else
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("BetaHub service started before its game instance was initialized: "
+                                          "OpenReportForm and the shortcut key will not find it."));
+    }
+
+    // Slate is not there on a dedicated server or in a commandlet.
+    if (FSlateApplication::IsInitialized())
+    {
+        ShortcutProcessor = MakeShared<FBH_ShortcutProcessor>(this);
+        FSlateApplication::Get().RegisterInputPreProcessor(ShortcutProcessor);
+    }
 }
 
 void UBH_Manager::StopService()
 {
+    UnregisterShortcut();
     if (BackgroundService)
     {
-        if (CurrentPlayerController.IsValid())
+        if (UGameInstance* GI = GameInstance.Get())
         {
-            CurrentPlayerController->PopInputComponent(InputComponent.Get());
+            if (UBH_GameInstanceSubsystem* Subsystem = GI->GetSubsystem<UBH_GameInstanceSubsystem>())
+            {
+                Subsystem->UnregisterService(this);
+            }
         }
-
         BackgroundService->StopService();
         BackgroundService = nullptr;
     }
+}
+
+void UBH_Manager::UnregisterShortcut()
+{
+    if (ShortcutProcessor.IsValid() && FSlateApplication::IsInitialized())
+    {
+        FSlateApplication::Get().UnregisterInputPreProcessor(ShortcutProcessor);
+    }
+    ShortcutProcessor.Reset();
 }
 
 void UBH_Manager::OnBackgroundServiceRequestWidget()
@@ -84,18 +136,13 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
 
     if (Settings->ReportFormWidgetClass)
     {
-        APlayerController* PC = CurrentPlayerController.Get();
-        if (!PC)
+        // This game instance's player, so each PIE client opens the form in its own window.
+        UGameInstance* GI = GameInstance.Get();
+        APlayerController* PC = GI ? GI->GetFirstLocalPlayerController() : nullptr;
+        if (!PC && GI && GI->GetWorld())
         {
-            // Fallback: get directly from the world if event chain didn't fire
-            if (GEngine && GEngine->GameViewport)
-            {
-                UWorld* World = GEngine->GameViewport->GetWorld();
-                if (World)
-                {
-                    PC = World->GetFirstPlayerController();
-                }
-            }
+            // Fallback: the game instance has no local player yet, but its world has a controller.
+            PC = GI->GetWorld()->GetFirstPlayerController();
         }
 
         return BackgroundService->SpawnBugReportWidget(PC, bTryCaptureMouse);
@@ -104,44 +151,6 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
     {
         UE_LOG(LogBetaHub, Error, TEXT("Cannot spawn bug report widget. No widget class specified or found."));
         return nullptr;
-    }
-}
-
-void UBH_Manager::OnLocalPlayerAdded(ULocalPlayer* Player)
-{
-    Player->OnPlayerControllerChanged().AddUObject(this, &UBH_Manager::OnPlayerControllerChanged);
-
-    // Handle already-existing player controller
-    if (Player->PlayerController)
-    {
-        OnPlayerControllerChanged(Player->PlayerController);
-    }
-}
-
-void UBH_Manager::OnPlayerControllerChanged(APlayerController* PC)
-{
-    // Skip if we already have this PC (avoids duplicate input components)
-    if (PC && CurrentPlayerController.Get() == PC)
-    {
-        return;
-    }
-
-    // Clean up old input component from previous PC
-    if (CurrentPlayerController.IsValid() && InputComponent.IsValid())
-    {
-        CurrentPlayerController->PopInputComponent(InputComponent.Get());
-    }
-
-    CurrentPlayerController = PC;
-
-    if (PC)
-    {
-        UInputComponent* NewInputComponent = NewObject<UInputComponent>(PC, UInputComponent::StaticClass(), TEXT("BH_Manager_InputComponent0"), RF_Transient);
-        NewInputComponent->RegisterComponent();
-        NewInputComponent->BindKey(Settings->ShortcutKey, IE_Pressed, this, &UBH_Manager::OnBackgroundServiceRequestWidget);
-        PC->PushInputComponent(NewInputComponent);
-
-        InputComponent = NewInputComponent;
     }
 }
 

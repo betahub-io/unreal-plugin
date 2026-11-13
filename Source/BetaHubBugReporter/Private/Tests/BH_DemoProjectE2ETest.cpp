@@ -93,6 +93,8 @@ bool FBHE2EBugReportTest::RunTest(const FString& Parameters)
     FBH_ReportContent Content;
     Content.Description = TEXT("[Unreal E2E] New report widget pipeline: draft, uploads, reporter email, publish.");
     Content.StepsToReproduce = TEXT("1. Run BetaHub.E2E.BugReportToDemoProject with -BetaHubE2E");
+    // A fixed key: BetaHub creates a text field the first time it is sent and keeps it.
+    Content.CustomFields.Add(TEXT("bh_e2e_text"), FBH_CustomFieldValue::FromString(TEXT("sent by the report client")));
 
     FBH_ReportAttachment Log;
     Log.Id = BH_AttachmentIds::GameLog;

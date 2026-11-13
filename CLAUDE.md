@@ -82,7 +82,8 @@ compile into Development builds — editor *and* game, which `RunUAT BuildPlugin
 what you use — and are compiled out of Shipping.
 
 Suites: `BetaHub.ReportScreen.*` (the form's model, and the generated widget driven by key and pad events
-through `TakeWidget()->OnKeyDown`), `BetaHub.Input.*`, `BetaHub.ReportSubmit*`, `BetaHub.Theme.*`,
+through `TakeWidget()->OnKeyDown`), `BetaHub.Extension.*` (custom fields, opening the form, the service a
+game starts itself; with a real `UGameInstance` from `InitializeStandalone`), `BetaHub.Input.*`, `BetaHub.ReportSubmit*`, `BetaHub.Theme.*`,
 `BetaHub.Styler.*`, `BetaHub.Thumbnails.*`, and `BetaHub.VideoEncoder.*`. Opt-in, both off by default:
 `-BetaHubE2E` sends real reports to the BetaHub demo project (`BetaHub.E2E.*`, one of them through the
 widget); `-BetaHubRenders` with a real RHI (no `-nullrhi`) writes the form's states to

@@ -85,6 +85,8 @@ namespace BH_ScreenTest
         /** Text in the description before the form opens, as a game could prefill it. */
         FString Description;
         FString Log = TEXT("LogTemp: Display: started\nLogTemp: Warning: slow frame\nLogTemp: Error: sword lost\n");
+        /** The world to open the form in; any world when null. A game instance's world gives the form its subsystem. */
+        UWorld* World = nullptr;
     };
 
     /** One report screen and the means to play it. */
@@ -95,7 +97,7 @@ namespace BH_ScreenTest
 
         bool Open(FAutomationTestBase& Test, const FOpenOptions& Options = FOpenOptions())
         {
-            UWorld* World = AnyWorld();
+            UWorld* World = Options.World ? Options.World : AnyWorld();
             UClass* Class = LoadClass<UBH_ReportScreenWidget>(nullptr, ScreenClassPath);
             if (!Test.TestNotNull(TEXT("world"), World) || !Test.TestNotNull(TEXT("BH_ReportScreen asset"), Class))
             {
@@ -151,6 +153,19 @@ namespace BH_ScreenTest
         {
             const UHorizontalBox* Side = Find<UHorizontalBox>(bRight ? TEXT("PromptsRight") : TEXT("PromptsLeft"));
             return Side ? Cast<UBH_PromptItemWidget>(Side->GetChildAt(Index)) : nullptr;
+        }
+
+        /** A left click on a prompt, as the player's mouse would send it. */
+        void ClickPrompt(bool bRight, int32 Index)
+        {
+            UBH_PromptItemWidget* Item = Prompt(bRight, Index);
+            if (!Item)
+            {
+                return;
+            }
+            const FPointerEvent Click(0, FVector2D::ZeroVector, FVector2D::ZeroVector, TSet<FKey>{EKeys::LeftMouseButton},
+                                      EKeys::LeftMouseButton, 0.0f, FModifierKeysState());
+            Item->TakeWidget()->OnMouseButtonDown(FGeometry::MakeRoot(ScreenSize, FSlateLayoutTransform()), Click);
         }
 
         /** A prompt's opacity: below 1 is disabled; -1 when there is no such prompt. */

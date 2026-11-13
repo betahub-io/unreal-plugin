@@ -215,6 +215,9 @@ namespace BH_ReportScreenModel
     TArray<EBH_Field> FieldsFor(EBH_ReportType Type, bool bTermsRequired);
 
     bool CanSend(const FBH_ScreenState& S);
+
+    /** Up at the start of a text or down at its end leaves the field, unless Shift extends a selection or text is selected. */
+    bool ArrowLeavesField(bool bShiftDown, bool bTextSelected, bool bCaretAtEdge);
     /** "REPORT A BUG" or "SUGGEST AN IDEA": the compose title and the report tab. */
     FText ReportTitle(EBH_ReportType Type);
     FBH_Header Header(const FBH_ScreenState& S);

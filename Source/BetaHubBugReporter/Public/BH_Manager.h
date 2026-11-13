@@ -12,6 +12,9 @@
 
 #include "BH_Manager.generated.h"
 
+class IInputProcessor;
+class UGameInstance;
+
 USTRUCT(BlueprintType)
 struct FReleaseInfo
 {
@@ -48,21 +51,34 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UBH_PluginSettings> Settings = nullptr;
 
-    void OnLocalPlayerAdded(ULocalPlayer* Player);
-    void OnPlayerControllerChanged(APlayerController* PC);
-    
-    TWeakObjectPtr<UInputComponent> InputComponent;
-    
-    TWeakObjectPtr<APlayerController> CurrentPlayerController;
+    /** The game instance the service runs in. */
+    TWeakObjectPtr<UGameInstance> GameInstance;
+
+    /** Opens the form on the shortcut key, from menus and while paused too. */
+    TSharedPtr<IInputProcessor> ShortcutProcessor;
+
+    void UnregisterShortcut();
 
 public:
     UBH_Manager();
+
+    virtual void BeginDestroy() override;
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void StartService(UGameInstance* GI);
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void StopService();
+
+    UFUNCTION(BlueprintPure, Category="Bug Report")
+    bool IsServiceRunning() const { return BackgroundService != nullptr; }
+
+    /** Whether the report form this manager opened is on screen. */
+    UFUNCTION(BlueprintPure, Category="Bug Report")
+    bool IsReportFormOpen() const;
+
+    /** The game instance the service was started in; null before StartService. */
+    UGameInstance* GetServiceGameInstance() const;
 
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     UBH_ReportFormWidget* SpawnBugReportWidget(bool bTryCaptureMouse = true);

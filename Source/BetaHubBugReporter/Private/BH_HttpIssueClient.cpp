@@ -1,5 +1,6 @@
 // Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_HttpIssueClient.h"
+#include "BH_CustomFieldRules.h"
 #include "BH_HttpRequest.h"
 #include "BH_Log.h"
 #include "BH_PluginSettings.h"
@@ -157,6 +158,10 @@ void FBH_BugIssueClient::CreateDraft(const FBH_ReportContent& Content, const TAr
     if (!Content.ReleaseLabel.IsEmpty())
     {
         Request->AddField(TEXT("issue[release_label]"), Content.ReleaseLabel);
+    }
+    for (const TPair<FString, FString>& Field : BH_CustomFieldRules::FormFields(TEXT("issue"), Content.CustomFields))
+    {
+        Request->AddField(Field.Key, Field.Value);
     }
     Request->FinalizeFormData();
 

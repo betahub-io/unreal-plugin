@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "BH_ReportScreenTestUtil.h"
+#include "BH_ExtensionTestUtil.h"
 #include "BH_ReportSubmission.h"
 #include "Components/EditableText.h"
 #include "Misc/CommandLine.h"
@@ -45,8 +46,13 @@ bool FBHScreenE2ETest::RunTest(const FString& Parameters)
     }
     const bool bRenders = FParse::Param(FCommandLine::Get(), BH_ScreenE2E::RenderFlag);
 
+    // The form in a game instance's world, whose subsystem adds the game's custom field.
+    TSharedRef<BH_ExtensionTest::FGame> Game = MakeShared<BH_ExtensionTest::FGame>();
+    Game->Subsystem()->SetCustomField(TEXT("bh_e2e_text"), TEXT("sent through the report screen"));
+
     TSharedRef<BH_ScreenTest::FScreen> Screen = MakeShared<BH_ScreenTest::FScreen>();
     BH_ScreenTest::FOpenOptions Options;
+    Options.World = Game->World();
     Options.Description = TEXT("[Unreal E2E] Report screen: sent with the keyboard, email added on the sent screen.");
     Options.Configure = [](UBH_PluginSettings& Settings)
     {
@@ -75,7 +81,7 @@ bool FBHScreenE2ETest::RunTest(const FString& Parameters)
 
     const double Started = FPlatformTime::Seconds();
     TSharedRef<BH_ScreenE2E::EPhase> Phase = MakeShared<BH_ScreenE2E::EPhase>(BH_ScreenE2E::EPhase::WaitForSent);
-    ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Screen, KeepWidget, Submission, Started, Phase, bRenders]()
+    ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Game, Screen, KeepWidget, Submission, Started, Phase, bRenders]()
     {
         UBH_ReportSubmission* S = Submission->Get();
         if (FPlatformTime::Seconds() - Started > BH_ScreenE2E::TimeoutSeconds)

@@ -1,5 +1,6 @@
 // Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_ReportScreenWidget.h"
+#include "BH_GameInstanceSubsystem.h"
 #include "BH_FFmpeg.h"
 #include "BH_GameRecorder.h"
 #include "BH_HttpIssueClient.h"
@@ -61,8 +62,6 @@ namespace
     constexpr int32 FullScreenLogLines = 200;
     /** Scroll offsets this close to an end count as at it. */
     constexpr float ScrollEdgeTolerance = 0.5f;
-    /** Above the game's own HUD. */
-    constexpr int32 ToastZOrder = 100;
     /** Frame cells: 12px from the pane, 4px between columns, 8px between rows (Unity's percentages at 1080p). */
     const FMargin FrameSlotPadding(2.0f, 4.0f);
     const FText Separator = FText::AsCultureInvariant(TEXT(" \u00B7 "));
@@ -572,8 +571,10 @@ FReply UBH_ReportScreenWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometr
         Act(InKeyEvent.IsShiftDown() ? EBH_Action::Prev : EBH_Action::Next);
         return FReply::Handled();
     }
-    // Up from the first character or down from the last leaves the field, as Tab does.
-    if (!S.bTypingEmail && ((Key == EKeys::Up && CaretAtEdge(true)) || (Key == EKeys::Down && CaretAtEdge(false))))
+    // Up from the first character or down from the last leaves the field, as Tab does; with
+    // Shift, or with text selected, the arrows select as in any text field.
+    if (!S.bTypingEmail && (Key == EKeys::Up || Key == EKeys::Down)
+        && BH_ReportScreenModel::ArrowLeavesField(InKeyEvent.IsShiftDown(), TextSelected(), CaretAtEdge(Key == EKeys::Up)))
     {
         Act(Key == EKeys::Up ? EBH_Action::Prev : EBH_Action::Next);
         return FReply::Handled();
@@ -980,6 +981,14 @@ void UBH_ReportScreenWidget::StepFocus(int32 Delta)
     Render();
 }
 
+bool UBH_ReportScreenWidget::TextSelected() const
+{
+    const UMultiLineEditableText* Input = Cast<UMultiLineEditableText>(InputFor(S.TypingField));
+    const TSharedPtr<SWidget> Slate = Input ? Input->GetCachedWidget() : nullptr;
+    return Slate.IsValid() && Slate->GetType() == FName(TEXT("SMultiLineEditableText"))
+        && StaticCastSharedPtr<SMultiLineEditableText>(Slate)->AnyTextSelected();
+}
+
 bool UBH_ReportScreenWidget::CaretAtEdge(bool bStart) const
 {
     const UMultiLineEditableText* Input = Cast<UMultiLineEditableText>(InputFor(S.TypingField));
@@ -1252,7 +1261,8 @@ void UBH_ReportScreenWidget::Close()
             if (Toast)
             {
                 Toast->Observe(Submission, Theme);
-                Toast->AddToViewport(ToastZOrder);
+                // Over a menu the form was opened from, as the form was.
+                Toast->AddToViewport(Settings ? Settings->ReportFormZOrder + 1 : 0);
             }
         }
         Detach();
@@ -1281,6 +1291,8 @@ void UBH_ReportScreenWidget::SubmitReport()
     Content.Description = S.Description.TrimStartAndEnd();
     Content.StepsToReproduce = S.Type == EBH_ReportType::Bug ? S.Steps.TrimStartAndEnd() : FString();
     Content.ReleaseLabel = Settings->ReleaseLabel;
+    // The game's own data, set on its BH game instance subsystem; none with a suggestion.
+    Content.CustomFields = UBH_GameInstanceSubsystem::CustomFieldsFor(this, FBH_CustomFieldContext{S.Type, Content.Description});
 
     TArray<FBH_ReportAttachment> Included;
     for (int32 i = 0; i < VisibleCount(); ++i)

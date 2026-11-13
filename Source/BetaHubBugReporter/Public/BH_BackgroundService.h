@@ -9,6 +9,7 @@
 #include "BH_BackgroundService.generated.h"
 
 class UBH_ReportSubmission;
+class UGameInstance;
 
 UCLASS(Blueprintable)
 class BETAHUBBUGREPORTER_API UBH_BackgroundService : public UObject
@@ -35,8 +36,12 @@ private:
 
     FString ScreenshotPath;
 
+    /** The game instance the service runs in, whose world drives its timers. */
+    TWeakObjectPtr<UGameInstance> GameInstance;
+
     void RetryInitializeService();
     void InitializeService();
+    UWorld* GetServiceWorld() const;
 
 public:
     UBH_BackgroundService();
@@ -44,12 +49,18 @@ public:
     UFUNCTION(BlueprintCallable, Category="BugReport")
     UBH_ReportFormWidget* SpawnBugReportWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);
 
+    /** Start recording in GI's world. */
+    void StartService(UGameInstance* GI);
+    /** Start recording in the world this service's outers belong to. */
     void StartService();
     void StopService();
 
     void CaptureScreenshot();
 
     UBH_GameRecorder* GetGameRecorder();
+
+    /** Whether the form this service opened is on screen. */
+    bool IsReportFormOpen() const;
 
     /** Keep a report alive until it is published or has failed, whatever happens to its form. */
     void KeepSubmission(UBH_ReportSubmission* Submission);

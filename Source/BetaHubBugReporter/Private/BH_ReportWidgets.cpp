@@ -150,7 +150,8 @@ void UBH_PromptItemWidget::Show(const FBH_Prompt& InPrompt, EBH_GlyphSet Set, TS
 {
     Action = InPrompt.Action;
     bBusy = InPrompt.bBusy;
-    bClickable = !InPrompt.bDisabled && !InPrompt.bBusy;
+    // Move only names the arrow keys: clicking it would do nothing, so it does not look clickable.
+    bClickable = !InPrompt.bDisabled && !InPrompt.bBusy && InPrompt.Action != EBH_Action::Move;
     Label->SetText(InPrompt.Label);
     SetClass(Label, TEXT("prompt-label--primary"), InPrompt.bPrimary);
     SetRenderOpacity(InPrompt.bDisabled ? DisabledPromptOpacity : 1.0f);

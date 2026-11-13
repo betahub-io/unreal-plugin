@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Open the report form from your own UI:** *Open Report Form* on the *BH Game Instance Subsystem* (Blueprint, or `UBH_GameInstanceSubsystem::Get(this)->OpenReportForm()` in C++), from a menu, a store or a pause screen, with or without the shortcut key.
+- **Custom fields on every report from the form,** from Blueprint or C++: `SetCustomField`, `SetCustomFieldValues`, `RemoveCustomField`, and providers asked for their value when a report is sent (`RegisterCustomFieldProvider`), as in the Unity plugin; `OnBuildCustomFields` in C++ has the last word. They go with bug reports, not with suggestions.
+- *Report Form Z Order* setting: the form's viewport layer.
+
+### Changed
+
+- **The shortcut key also works in menus with UI-only input and while the game is paused** (it used to be bound on the player controller, which those block). It still opens only in the game that has the keyboard focus, and is still taken from your game when it opens the form.
+- **The form opens above your game's widgets** (layer 10000 by default, instead of 0), so it shows over the menu it was opened from; its popups and the upload toast go one layer above it.
+- A service a game started itself on its own manager now finds its game instance's world, so it records (with a manager created outside a world it never started recording).
+- Shift with the up or down arrow in a text field selects text, instead of leaving the field at its first or last line; the *Move* prompt no longer looks clickable.
+
 ## 2.0.0 - 2026-11-13
 
 ### Changed

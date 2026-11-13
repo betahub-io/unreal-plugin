@@ -247,6 +247,8 @@ private:
     void StepFocus(int32 Delta);
     /** The caret of the field being typed in sits before its first character, or after its last. */
     bool CaretAtEdge(bool bStart) const;
+    /** Whether the text field being typed in has a selection. */
+    bool TextSelected() const;
 
     // Input fields
     UFUNCTION() void OnDescriptionChanged(const FText& Text);

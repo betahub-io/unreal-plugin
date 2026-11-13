@@ -257,4 +257,26 @@ bool FBHClassicFormTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenMovePromptTest, "BetaHub.ReportScreen.Widget.MovePromptNotClickable", BH_SCREEN_TEST_FLAGS)
+bool FBHScreenMovePromptTest::RunTest(const FString& Parameters)
+{
+    FScreen Screen;
+    if (!Screen.Open(*this))
+    {
+        return false;
+    }
+    TestEqual(TEXT("compose prompts"), Screen.Prompts(false), TArray<FString>{TEXT("Close"), TEXT("Move"), TEXT("Write"), TEXT("Attachments")});
+    TArray<EBH_Action> Clicked;
+    for (const int32 Index : {0, 1})
+    {
+        Screen.Prompt(false, Index)->OnClicked = [&Clicked](EBH_Action Action) { Clicked.Add(Action); };
+    }
+    Screen.ClickPrompt(false, 1);
+    TestEqual(TEXT("Move only names the arrow keys: a click does nothing"), Clicked.Num(), 0);
+    Screen.ClickPrompt(false, 0);
+    TestTrue(TEXT("other prompts still click"), Clicked.Num() == 1 && Clicked[0] == EBH_Action::Back);
+    Screen.Close();
+    return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS
