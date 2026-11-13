@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.1 - 2026-11-13
+
+### Fixed
+
+- C++ modules that include the plugin's public headers (`BH_Manager.h`, `BH_ReportFormWidget.h`, `BH_BugReport.h`, `BH_PluginSettings.h`, `BH_BackgroundService.h`) now compile. Those headers included ones from the plugin's `Private/` folder, which a consuming module cannot see, so its build failed with C1083. Blueprint-only projects were not affected.
+
 ## 1.7.0 - 2026-09-14
 
 ### Changed
