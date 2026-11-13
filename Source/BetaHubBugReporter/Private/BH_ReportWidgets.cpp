@@ -429,7 +429,10 @@ int32 UBH_UploadToastWidget::NativePaint(const FPaintArgs& Args, const FGeometry
                                          bool bParentEnabled) const
 {
     int32 Layer = Super::NativePaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
-    if (Ring)
+    // The ring is painted here, outside the widget tree, so it does not hide with Root on its own:
+    // over a report screen it would stay where Ring last was, on top of the form.
+    const UWidget* Root = GetRootWidget();
+    if (Ring && Root && Root->IsVisible())
     {
         Layer = BH_WidgetPaint::DrawArc(Ring->GetCachedGeometry(), OutDrawElements, Layer + 1, Sweep, SpinDegrees, ArcColor,
                                        FLinearColor(Colors.Line));

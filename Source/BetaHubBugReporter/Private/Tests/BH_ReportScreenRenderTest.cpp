@@ -127,20 +127,36 @@ bool FBHScreenRendersTest::RunTest(const FString& Parameters)
         Screen.Close();
     }
     {
-        // The toast over the running game: uploading, then failed.
-        FScreen Screen;
-        if (!Screen.Open(*this, Options()))
+        // The toast over the running game: uploading, then failed. No report screen is open, or the
+        // toast hides and the render shows nothing.
+        TestEqual(TEXT("no report screen open"), BH_ReportScreens::OpenCount(), 0);
+        const TSubclassOf<UBH_UploadToastWidget> ToastClass = GetDefault<UBH_ReportScreenWidget>()->UploadToastClass;
+        if (!TestNotNull(TEXT("toast class"), ToastClass.Get()))
         {
             return false;
         }
         UBH_ReportSubmission* Submission = NewObject<UBH_ReportSubmission>(GetTransientPackage());
-        UBH_UploadToastWidget* Toast = CreateWidget<UBH_UploadToastWidget>(BH_ScreenTest::AnyWorld(), Screen.Widget->UploadToastClass);
+        UBH_UploadToastWidget* Toast = CreateWidget<UBH_UploadToastWidget>(BH_ScreenTest::AnyWorld(), ToastClass);
         Toast->Observe(Submission, BH_ThemeRecipe::BuiltIn(EBH_BuiltInTheme::Dark));
-        BH_ScreenTest::RenderSlate(Toast->TakeWidget(), 1920, 1080, TEXT("toast-uploading"));
+        const TSharedRef<SWidget> ToastSlate = Toast->TakeWidget();
+        TestFalse(TEXT("the toast shows over the game"), BH_ScreenTest::IsBlank(BH_ScreenTest::RenderSlate(ToastSlate, 1920, 1080, TEXT("toast-uploading"))));
+
+        // The player opens a new report while this one uploads. Nothing of the toast may show over
+        // the form: its ring, painted by the toast itself, once stayed on top.
+        {
+            FScreen Screen;
+            if (!Screen.Open(*this, Options()))
+            {
+                return false;
+            }
+            TestTrue(TEXT("the toast hides over a report screen, ring included"),
+                     BH_ScreenTest::IsBlank(BH_ScreenTest::RenderSlate(ToastSlate, 1920, 1080, TEXT("toast-under-screen"))));
+            Screen.Close();
+        }
+
         AddExpectedError(TEXT("Bug report submission failed"), EAutomationExpectedErrorFlags::Contains, 1);
         Submission->Fail(TEXT("Could not reach BetaHub. Check your connection."));
-        BH_ScreenTest::RenderSlate(Toast->TakeWidget(), 1920, 1080, TEXT("toast-failed"));
-        Screen.Close();
+        BH_ScreenTest::RenderSlate(ToastSlate, 1920, 1080, TEXT("toast-failed"));
     }
     AddInfo(FString::Printf(TEXT("Renders in %s"), *FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_ScreenRenders")))));
     return true;

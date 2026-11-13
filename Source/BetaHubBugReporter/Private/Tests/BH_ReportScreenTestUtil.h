@@ -19,6 +19,8 @@
 #include "Kismet/KismetRenderingLibrary.h"
 #include "RenderingThread.h"
 #include "Slate/WidgetRenderer.h"
+#include "TextureResource.h"
+#include "UnrealClient.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 #include "Misc/AutomationTest.h"
@@ -185,8 +187,9 @@ namespace BH_ScreenTest
     /** UE's default DPI curve scales by the shortest side, 1.0 at 1080. */
     inline constexpr float ReferenceHeight = 1080.0f;
 
-    /** Draw a widget as the player sees it and write Saved/BH_ScreenRenders/<Name>.png. Needs a real RHI. */
-    inline void RenderSlate(const TSharedRef<SWidget>& Slate, int32 Width, int32 Height, const FString& Name)
+    /** Draw a widget as the player sees it and write Saved/BH_ScreenRenders/<Name>.png. Needs a real RHI.
+        Returns the drawn pixels. */
+    inline TArray<FColor> RenderSlate(const TSharedRef<SWidget>& Slate, int32 Width, int32 Height, const FString& Name)
     {
         UWorld* World = AnyWorld();
         UTextureRenderTarget2D* Target = UKismetRenderingLibrary::CreateRenderTarget2D(World, Width, Height, RTF_RGBA8);
@@ -197,9 +200,18 @@ namespace BH_ScreenTest
             Renderer.DrawWidget(Target, Slate, Scale, FVector2D(Width, Height), FrameSeconds);
         }
         FlushRenderingCommands();
+        TArray<FColor> Pixels;
+        Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels);
         const FString Directory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_ScreenRenders"));
         IFileManager::Get().MakeDirectory(*Directory, true);
         UKismetRenderingLibrary::ExportRenderTarget(World, Target, Directory, Name + TEXT(".png"));
+        return Pixels;
+    }
+
+    /** Nothing drawn: every pixel is the clear colour. */
+    inline bool IsBlank(const TArray<FColor>& Pixels)
+    {
+        return Pixels.Num() > 0 && !Pixels.ContainsByPredicate([&Pixels](const FColor& C) { return C != Pixels[0]; });
     }
 
     inline void Render(FScreen& Screen, int32 Width, int32 Height, const FString& Name)

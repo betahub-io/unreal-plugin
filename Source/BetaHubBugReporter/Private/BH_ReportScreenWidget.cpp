@@ -705,7 +705,8 @@ void UBH_ReportScreenWidget::ActOnScreen(EBH_Action Action)
     switch (S.Screen)
     {
         case EBH_Screen::Preview:
-            if (Action == EBH_Action::Back)
+            // The key that opened the preview (P, X, Square) closes it as well as Back does.
+            if (Action == EBH_Action::Back || Action == EBH_Action::Alt)
             {
                 LocalScreen = EBH_Screen::Compose;
                 S.Focus.FocusAttachment(PreviewIndex);

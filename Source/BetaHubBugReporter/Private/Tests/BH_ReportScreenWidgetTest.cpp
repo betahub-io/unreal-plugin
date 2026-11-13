@@ -66,6 +66,13 @@ bool FBHScreenComposeTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("preview closed"), Screen.Shown(TEXT("Preview")));
     TestEqual(TEXT("focus returns to the previewed row"), Screen.Text(TEXT("CaptionLeft")), FString(TEXT("GAME LOG \u00B7 ")) + Screen.RowText(1, TEXT("Meta")).ToUpper());
 
+    // The key that opens the preview closes it too.
+    Screen.Press(EKeys::P);
+    TestTrue(TEXT("P opens the preview"), Screen.Shown(TEXT("Preview")));
+    Screen.Press(EKeys::P);
+    TestFalse(TEXT("P closes the preview"), Screen.Shown(TEXT("Preview")));
+    TestEqual(TEXT("P leaves focus on the previewed row"), Screen.Text(TEXT("CaptionLeft")), FString(TEXT("GAME LOG \u00B7 ")) + Screen.RowText(1, TEXT("Meta")).ToUpper());
+
     // Up through the grid and the fields to the type row; make it a suggestion.
     for (int32 i = 0; i < 4; ++i)
     {
