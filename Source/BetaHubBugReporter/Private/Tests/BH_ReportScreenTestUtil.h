@@ -14,16 +14,22 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Engine/Engine.h"
+#include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "HAL/FileManager.h"
+#include "ImageUtils.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "RenderingThread.h"
 #include "Slate/WidgetRenderer.h"
 #include "TextureResource.h"
 #include "UnrealClient.h"
+#include "UObject/StrongObjectPtr.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/SOverlay.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 #include "Misc/AutomationTest.h"
+#include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
@@ -49,14 +55,23 @@ namespace BH_ScreenTest
         return nullptr;
     }
 
+    /** -BetaHubRenderShot=<jpg> stands in a real game frame for the screenshot (renders for docs). */
+    inline const TCHAR* RenderShotParam = TEXT("BetaHubRenderShot=");
+
     inline FString WriteScreenshot()
     {
+        const FString Path = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_ScreenTest_Screenshot.jpg"));
+        FString GameFrame;
+        if (FParse::Value(FCommandLine::Get(), RenderShotParam, GameFrame) && FPaths::FileExists(GameFrame))
+        {
+            IFileManager::Get().Copy(*Path, *GameFrame);
+            return Path;
+        }
         TArray<FColor> Pixels;
         Pixels.Init(FColor(40, 36, 32), ShotSize * ShotSize);
         IImageWrapperModule& Module = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
         TSharedPtr<IImageWrapper> Jpeg = Module.CreateImageWrapper(EImageFormat::JPEG);
         Jpeg->SetRaw(Pixels.GetData(), Pixels.Num() * sizeof(FColor), ShotSize, ShotSize, ERGBFormat::BGRA, 8);
-        const FString Path = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("BH_ScreenTest_Screenshot.jpg"));
         FFileHelper::SaveArrayToFile(Jpeg->GetCompressed(JpegQuality), *Path);
         return Path;
     }
@@ -214,9 +229,26 @@ namespace BH_ScreenTest
         return Pixels.Num() > 0 && !Pixels.ContainsByPredicate([&Pixels](const FColor& C) { return C != Pixels[0]; });
     }
 
+    /** The form as the player sees it: over the game frame given with -BetaHubRenderShot, if any. */
     inline void Render(FScreen& Screen, int32 Width, int32 Height, const FString& Name)
     {
-        RenderSlate(Screen.Slate.ToSharedRef(), Width, Height, Name);
+        FString GameFrame;
+        UTexture2D* Game = FParse::Value(FCommandLine::Get(), RenderShotParam, GameFrame)
+            ? FImageUtils::ImportFileAsTexture2D(GameFrame) : nullptr;
+        if (!Game)
+        {
+            RenderSlate(Screen.Slate.ToSharedRef(), Width, Height, Name);
+            return;
+        }
+        TStrongObjectPtr<UTexture2D> KeepGame(Game);
+        FSlateBrush GameBrush;
+        GameBrush.SetResourceObject(Game);
+        GameBrush.DrawAs = ESlateBrushDrawType::Image;
+        GameBrush.ImageSize = FVector2D(Game->GetSizeX(), Game->GetSizeY());
+        RenderSlate(SNew(SOverlay)
+            + SOverlay::Slot()[SNew(SImage).Image(&GameBrush)]
+            + SOverlay::Slot()[Screen.Slate.ToSharedRef()],
+            Width, Height, Name);
     }
 }
 

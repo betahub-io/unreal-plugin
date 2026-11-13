@@ -86,7 +86,8 @@ through `TakeWidget()->OnKeyDown`), `BetaHub.Input.*`, `BetaHub.ReportSubmit*`, 
 `BetaHub.Styler.*`, `BetaHub.Thumbnails.*`, and `BetaHub.VideoEncoder.*`. Opt-in, both off by default:
 `-BetaHubE2E` sends real reports to the BetaHub demo project (`BetaHub.E2E.*`, one of them through the
 widget); `-BetaHubRenders` with a real RHI (no `-nullrhi`) writes the form's states to
-`Saved/BH_ScreenRenders/` for comparing with the Unity widget's renders.
+`Saved/BH_ScreenRenders/` for comparing with the Unity widget's renders. Add `-BetaHubRenderShot=<jpg>` to
+draw the form over that game frame, which also becomes the report's screenshot (images for docs).
 
 `BetaHub.VideoEncoder.*`, in `BH_VideoEncoderTest.cpp`:
 - `HappyPath` — drives `BH_VideoEncoder` with a synthetic `FBH_FrameSource` through the real bundled
