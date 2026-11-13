@@ -1,5 +1,11 @@
 # BetaHub Unreal Plugin
 
+![The report form over a running game](docs/images/report-form.webp)
+
+> **Version 2.0 brings a new report form.** If it gives you trouble, you can switch back to the previous
+> form in the project settings (see [The report form](#the-report-form)), or stay on
+> [v1.7.1](https://github.com/betahub-io/unreal-plugin/releases/tag/v1.7.1), the last 1.x release.
+
 ## How it works
 
 The plugin will start a *Background Service* that will record gameplay session as a video, including all the Unreal Engine logs. Then, it listens for the shortcut key (F12 by default) to open the bug reporter window. The user can then type in the bug description and submit it to the BetaHub platform.
@@ -70,6 +76,8 @@ sending add an email to hear when the bug is fixed or copy a link to the report.
 attachments are two tabs, switched with 1 and 2 on a keyboard or the shoulder buttons on a controller;
 the arrow keys or the d-pad move between items, Tab and Shift+Tab go through them in order, and the
 first prompt in the bar always goes back.
+
+![The report form in the Light theme, with terms to accept](docs/images/report-form-light.webp)
 
 Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report Widget*:
 

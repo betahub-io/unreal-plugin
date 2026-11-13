@@ -7,4 +7,5 @@
 # matches a directory does NOT apply to the paths inside it.
 /tools/**       export-ignore
 /widgets/**     export-ignore
+/docs/**        export-ignore
 /.gitattributes export-ignore
