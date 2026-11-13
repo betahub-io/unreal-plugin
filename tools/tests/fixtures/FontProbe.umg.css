@@ -1,0 +1,16 @@
+/* Plugin fonts at the direction-B sizes. UMG sizes are points: px * 0.75. */
+:root {
+  --barlow: ref(/Script/Engine.Font'/BetaHubBugReporter/Fonts/Barlow.Barlow');
+  --semi: ref(/Script/Engine.Font'/BetaHubBugReporter/Fonts/BarlowSemiCondensed.BarlowSemiCondensed');
+  --mono: ref(/Script/Engine.Font'/BetaHubBugReporter/Fonts/JetBrainsMono.JetBrainsMono');
+}
+
+TextBlock { ColorAndOpacity: #E6E8EE; slot.Padding.Bottom: 6; }
+
+.semi-bold-48     { Font.FontObject: var(--semi);   Font.TypefaceFontName: Bold;     Font.Size: 36; }
+.semi-bold-24     { Font.FontObject: var(--semi);   Font.TypefaceFontName: Bold;     Font.Size: 18; }
+.semi-semibold-26 { Font.FontObject: var(--semi);   Font.TypefaceFontName: SemiBold; Font.Size: 19.5; }
+.regular-30       { Font.FontObject: var(--barlow); Font.TypefaceFontName: Regular;  Font.Size: 22.5; }
+.medium-24        { Font.FontObject: var(--barlow); Font.TypefaceFontName: Medium;   Font.Size: 18; }
+.bold-19          { Font.FontObject: var(--barlow); Font.TypefaceFontName: Bold;     Font.Size: 14.25; }
+.mono-22          { Font.FontObject: var(--mono);   Font.TypefaceFontName: Regular;  Font.Size: 16.5; }

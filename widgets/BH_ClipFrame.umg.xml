@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One thumbnail of the recording pane, with the time it was captured. The newest
+     frame shows the accent ring at full opacity; UBH_ClipFrameWidget crops or fits
+     the image to the cell. -->
+<Widget asset="BH_ClipFrame" parent="BH_ClipFrameWidget" styles="BH_Widgets.umg.css">
+  <Overlay name="Frame" RenderOpacity="0.85" Clipping="ClipToBounds">
+    <Border name="Ground" class="frame-ground" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"/>
+    <SizeBox name="ImageSize" slot.HorizontalAlignment="Center" slot.VerticalAlignment="Center">
+      <Image name="Image" ColorAndOpacity="#2A2420"/>
+    </SizeBox>
+    <Border name="Ring" class="frame-ring" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"/>
+    <Border name="Chip" class="frame-chip">
+      <TextBlock name="Time" class="frame-time">13:27:09</TextBlock>
+    </Border>
+  </Overlay>
+</Widget>

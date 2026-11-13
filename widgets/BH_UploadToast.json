@@ -1,0 +1,270 @@
+{
+  "$schema": "betahub-umg-widget/1",
+  "asset": "BH_UploadToast",
+  "parentClass": "BH_UploadToastWidget",
+  "root": {
+    "name": "Root",
+    "class": "Overlay",
+    "properties": {
+      "Visibility": "HitTestInvisible"
+    },
+    "children": [
+      {
+        "name": "ToastSize",
+        "class": "SizeBox",
+        "properties": {
+          "MinDesiredHeight": 64.0,
+          "bOverride_MinDesiredHeight": true
+        },
+        "children": [
+          {
+            "name": "Toast",
+            "class": "Border",
+            "properties": {
+              "Background": {
+                "DrawAs": "RoundedBox",
+                "TintColor": {
+                  "SpecifiedColor": {
+                    "R": 0.01096,
+                    "G": 0.012983,
+                    "B": 0.020289,
+                    "A": 1.0
+                  },
+                  "ColorUseRule": "UseColor_Specified"
+                },
+                "OutlineSettings": {
+                  "CornerRadii": {
+                    "X": 10.0,
+                    "Y": 10.0,
+                    "Z": 10.0,
+                    "W": 10.0
+                  },
+                  "RoundingType": "FixedRadius",
+                  "Width": 3.0,
+                  "Color": {
+                    "SpecifiedColor": {
+                      "R": 0.05448,
+                      "G": 0.06301,
+                      "B": 0.095307,
+                      "A": 1.0
+                    },
+                    "ColorUseRule": "UseColor_Specified"
+                  }
+                }
+              },
+              "Padding": {
+                "Left": 0.0,
+                "Top": 0.0,
+                "Right": 0.0,
+                "Bottom": 0.0
+              }
+            },
+            "children": [
+              {
+                "name": "Line",
+                "class": "HorizontalBox",
+                "properties": {},
+                "children": [
+                  {
+                    "name": "StripSize",
+                    "class": "SizeBox",
+                    "properties": {
+                      "WidthOverride": 7.0,
+                      "bOverride_WidthOverride": true
+                    },
+                    "children": [
+                      {
+                        "name": "Strip",
+                        "class": "Border",
+                        "properties": {
+                          "Background": {
+                            "DrawAs": "RoundedBox",
+                            "TintColor": {
+                              "SpecifiedColor": {
+                                "R": 1.0,
+                                "G": 0.194618,
+                                "B": 0.099899,
+                                "A": 1.0
+                              },
+                              "ColorUseRule": "UseColor_Specified"
+                            },
+                            "OutlineSettings": {
+                              "CornerRadii": {
+                                "X": 10.0,
+                                "Y": 0.0,
+                                "Z": 0.0,
+                                "W": 10.0
+                              },
+                              "RoundingType": "FixedRadius"
+                            }
+                          },
+                          "Padding": {
+                            "Left": 0.0,
+                            "Top": 0.0,
+                            "Right": 0.0,
+                            "Bottom": 0.0
+                          }
+                        },
+                        "slot": {
+                          "class": "SizeBoxSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "HorizontalBoxSlot",
+                      "properties": {}
+                    }
+                  },
+                  {
+                    "name": "Ring",
+                    "class": "SizeBox",
+                    "properties": {
+                      "WidthOverride": 46.0,
+                      "bOverride_WidthOverride": true,
+                      "HeightOverride": 46.0,
+                      "bOverride_HeightOverride": true
+                    },
+                    "slot": {
+                      "class": "HorizontalBoxSlot",
+                      "properties": {
+                        "VerticalAlignment": "VAlign_Center",
+                        "Padding": {
+                          "Left": 27.0,
+                          "Top": 22.0,
+                          "Right": 19.0,
+                          "Bottom": 22.0
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "name": "Texts",
+                    "class": "VerticalBox",
+                    "properties": {},
+                    "children": [
+                      {
+                        "name": "Title",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Font": {
+                            "FontObject": {
+                              "__ref__": "/BetaHubBugReporter/Fonts/BarlowSemiCondensed.BarlowSemiCondensed",
+                              "__class__": "/Script/Engine.Font"
+                            },
+                            "TypefaceFontName": "Bold",
+                            "Size": 21.0,
+                            "LetterSpacing": 8
+                          },
+                          "ColorAndOpacity": {
+                            "SpecifiedColor": {
+                              "R": 0.783538,
+                              "G": 0.791298,
+                              "B": 0.83077,
+                              "A": 1.0
+                            },
+                            "ColorUseRule": "UseColor_Specified"
+                          },
+                          "ShadowOffset": {
+                            "X": 0.0,
+                            "Y": 0.0
+                          },
+                          "Text": {
+                            "__text__": "UPLOADING YOUR REPORT"
+                          }
+                        },
+                        "slot": {
+                          "class": "VerticalBoxSlot",
+                          "properties": {}
+                        }
+                      },
+                      {
+                        "name": "Subtitle",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Font": {
+                            "FontObject": {
+                              "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                              "__class__": "/Script/Engine.Font"
+                            },
+                            "TypefaceFontName": "Regular",
+                            "Size": 18.0
+                          },
+                          "ColorAndOpacity": {
+                            "SpecifiedColor": {
+                              "R": 0.3564,
+                              "G": 0.376262,
+                              "B": 0.42869,
+                              "A": 1.0
+                            },
+                            "ColorUseRule": "UseColor_Specified"
+                          },
+                          "ShadowOffset": {
+                            "X": 0.0,
+                            "Y": 0.0
+                          },
+                          "Text": {
+                            "__text__": "45% · the game continues"
+                          }
+                        },
+                        "slot": {
+                          "class": "VerticalBoxSlot",
+                          "properties": {}
+                        }
+                      }
+                    ],
+                    "slot": {
+                      "class": "HorizontalBoxSlot",
+                      "properties": {
+                        "VerticalAlignment": "VAlign_Center",
+                        "Padding": {
+                          "Left": 0.0,
+                          "Top": 22.0,
+                          "Right": 30.0,
+                          "Bottom": 22.0
+                        }
+                      }
+                    }
+                  }
+                ],
+                "slot": {
+                  "class": "BorderSlot",
+                  "properties": {
+                    "Padding": {
+                      "Left": 0.0,
+                      "Top": 0.0,
+                      "Right": 0.0,
+                      "Bottom": 0.0
+                    }
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "SizeBoxSlot",
+              "properties": {}
+            }
+          }
+        ],
+        "slot": {
+          "class": "OverlaySlot",
+          "properties": {
+            "HorizontalAlignment": "HAlign_Right",
+            "VerticalAlignment": "VAlign_Bottom",
+            "Padding": {
+              "Left": 0.0,
+              "Top": 0.0,
+              "Right": 96.0,
+              "Bottom": 158.0
+            }
+          }
+        }
+      }
+    ]
+  },
+  "_stats": {
+    "widgetsReachable": 10,
+    "widgetsInTree": 10,
+    "slots": 9
+  }
+}

@@ -1,6 +1,7 @@
 // Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_S3Uploader.h"
 #include "BH_Log.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Dom/JsonObject.h"
@@ -251,6 +252,26 @@ void BH_S3Uploader::UploadToS3(
 
     // Set file data as content
     Request->SetContent(FileData);
+
+    if (OnUploadProgress)
+    {
+        const double TotalBytes = FMath::Max<double>(FileData.Num(), 1.0);
+        TFunction<void(float)> Progress = OnUploadProgress;
+        // The 32-bit progress delegate gave way to a 64-bit one in UE 5.4.
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 4)
+        Request->OnRequestProgress64().BindLambda(
+            [Progress, TotalBytes](FHttpRequestPtr, uint64 BytesSent, uint64)
+            {
+                Progress(static_cast<float>(FMath::Clamp(BytesSent / TotalBytes, 0.0, 1.0)));
+            });
+#else
+        Request->OnRequestProgress().BindLambda(
+            [Progress, TotalBytes](FHttpRequestPtr, int32 BytesSent, int32)
+            {
+                Progress(static_cast<float>(FMath::Clamp(BytesSent / TotalBytes, 0.0, 1.0)));
+            });
+#endif
+    }
 
     Request->OnProcessRequestComplete().BindLambda(
         [OnComplete](FHttpRequestPtr HttpRequest, FHttpResponsePtr HttpResponse, bool bWasSuccessful)

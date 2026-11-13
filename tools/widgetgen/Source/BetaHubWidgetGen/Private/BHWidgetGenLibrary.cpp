@@ -107,6 +107,56 @@ FString UBHWidgetGenLibrary::ExportPropertyText(UObject* Target, const FString& 
 	return Out;
 }
 
+namespace
+{
+	/** Describe Struct's properties, queueing any struct type they use. */
+	TSharedRef<FJsonObject> DescribeFields(const UStruct* Struct, TArray<const UScriptStruct*>& Pending)
+	{
+		TSharedRef<FJsonObject> Fields = MakeShared<FJsonObject>();
+		for (TFieldIterator<FProperty> It(Struct, EFieldIteratorFlags::IncludeSuper); It; ++It)
+		{
+			const FProperty* Prop = *It;
+			TSharedRef<FJsonObject> Info = MakeShared<FJsonObject>();
+			Info->SetStringField(TEXT("type"), Prop->GetClass()->GetName());
+			if (const FStructProperty* StructProp = CastField<FStructProperty>(Prop))
+			{
+				Info->SetStringField(TEXT("struct"), StructProp->Struct->GetName());
+				Pending.AddUnique(StructProp->Struct);
+			}
+			Fields->SetObjectField(Prop->GetName(), Info);
+		}
+		return Fields;
+	}
+}
+
+FString UBHWidgetGenLibrary::DescribePropertiesJson(const TArray<UClass*>& Classes)
+{
+	TSharedRef<FJsonObject> ClassesJson = MakeShared<FJsonObject>();
+	TArray<const UScriptStruct*> Pending;
+	for (const UClass* Class : Classes)
+	{
+		if (Class != nullptr)
+		{
+			ClassesJson->SetObjectField(Class->GetName(), DescribeFields(Class, Pending));
+		}
+	}
+
+	// Pending grows while it is walked: describing a struct queues the structs it uses.
+	TSharedRef<FJsonObject> StructsJson = MakeShared<FJsonObject>();
+	for (int32 Index = 0; Index < Pending.Num(); ++Index)
+	{
+		StructsJson->SetObjectField(Pending[Index]->GetName(), DescribeFields(Pending[Index], Pending));
+	}
+
+	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetObjectField(TEXT("classes"), ClassesJson);
+	Root->SetObjectField(TEXT("structs"), StructsJson);
+	FString Out;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Out);
+	FJsonSerializer::Serialize(Root, Writer);
+	return Out;
+}
+
 void UBHWidgetGenLibrary::RenderWidgetToPng(TSubclassOf<UUserWidget> WidgetClass,
                                             int32 Width, int32 Height,
                                             const FString& OutDirectory,
@@ -221,6 +271,10 @@ void UBHWidgetGenLibrary::RenderWidgetToPng(TSubclassOf<UUserWidget> WidgetClass
 
 namespace
 {
+	/** Frames drawn before a render is captured, and the time each one advances. */
+	constexpr int32 RenderSettleFrames = 3;
+	constexpr float RenderFrameSeconds = 1.0f / 60.0f;
+
 	/** Resolve the font actually in effect, which is usually not in the asset:
 	    the .T3D export only carries non-default properties, so a widget left at
 	    UMG's default size stores nothing at all. Reflection is used so this
@@ -417,8 +471,13 @@ void UBHWidgetGenLibrary::RenderWidgetAndDumpGeometry(
 					World, Width, Height, RTF_RGBA8);
 			if (Target != nullptr)
 			{
-				Renderer->DrawWidget(Target, Slate, FVector2D(Width, Height),
-				                     /*DeltaTime*/ 0.0f);
+				// Draw several frames, not one: some layout settles only on the next
+				// frame (auto-wrapping text wraps at the width it was given last
+				// frame), and the player sees the settled result.
+				for (int32 Frame = 0; Frame < RenderSettleFrames; ++Frame)
+				{
+					Renderer->DrawWidget(Target, Slate, FVector2D(Width, Height), RenderFrameSeconds);
+				}
 			}
 
 			if (Target == nullptr)

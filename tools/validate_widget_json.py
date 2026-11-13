@@ -67,28 +67,43 @@ def load_schema():
         return json.load(fh)
 
 
+def class_body(text, class_name):
+    """The body of `class [X_API] U<class_name>` in a header, or None."""
+    m = re.search(r"\bclass\s+(?:\w+_API\s+)?U%s\b[^;{]*\{" % re.escape(class_name), text)
+    if not m:
+        return None
+    depth, start = 1, m.end()
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:i]
+    return None
+
+
 def find_bind_widgets(parent_class):
-    """Parse meta=(BindWidget) properties out of the parent C++ header."""
+    """Parse meta=(BindWidget) properties of the parent C++ class, wherever its header is."""
     if not parent_class:
         return None, None
-    header = None
     for base, _dirs, files in os.walk(os.path.join(REPO, "Source")):
-        if "%s.h" % parent_class in files:
-            header = os.path.join(base, "%s.h" % parent_class)
-            break
-    if header is None:
-        return None, None
-
-    with open(header, "r", encoding="utf-8", errors="replace") as fh:
-        text = fh.read()
-
-    binds = {}
-    for m in BIND_RE.finditer(text):
-        binds[m.group("name")] = {
-            "type": m.group("t1") or m.group("t2"),
-            "optional": bool(m.group("opt")),
-        }
-    return binds, os.path.relpath(header, REPO)
+        for name in sorted(files):
+            if not name.endswith(".h"):
+                continue
+            header = os.path.join(base, name)
+            with open(header, "r", encoding="utf-8", errors="replace") as fh:
+                body = class_body(fh.read(), parent_class)
+            if body is None:
+                continue
+            binds = {}
+            for m in BIND_RE.finditer(body):
+                binds[m.group("name")] = {
+                    "type": m.group("t1") or m.group("t2"),
+                    "optional": bool(m.group("opt")),
+                }
+            return binds, os.path.relpath(header, REPO)
+    return None, None
 
 
 def check_node(node, schema, rep, seen, path, is_root=False):

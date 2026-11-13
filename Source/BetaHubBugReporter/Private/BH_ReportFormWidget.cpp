@@ -138,6 +138,13 @@ void UBH_ReportFormWidget::SubmitReport()
         return;
     }
 
+    if (!BugDescriptionEdit || !StepsToReproduceEdit || !IncludeScreenshotCheckbox || !IncludeLogsCheckbox || !IncludeVideoCheckbox)
+    {
+        UE_LOG(LogBetaHub, Error, TEXT("%s lacks the classic report form's widgets; it cannot submit through UBH_ReportFormWidget."),
+            *GetClass()->GetName());
+        return;
+    }
+
     SetSubmittingState();
 
     if (!Settings || Settings->ProjectToken.IsEmpty())

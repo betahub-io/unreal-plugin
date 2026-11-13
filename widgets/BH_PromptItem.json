@@ -1,0 +1,146 @@
+{
+  "$schema": "betahub-umg-widget/1",
+  "asset": "BH_PromptItem",
+  "parentClass": "BH_PromptItemWidget",
+  "root": {
+    "name": "PromptSize",
+    "class": "SizeBox",
+    "properties": {
+      "MinDesiredHeight": 64.0,
+      "bOverride_MinDesiredHeight": true
+    },
+    "children": [
+      {
+        "name": "Prompt",
+        "class": "Border",
+        "properties": {
+          "Background": {
+            "DrawAs": "RoundedBox",
+            "TintColor": {
+              "SpecifiedColor": {
+                "R": 0.0,
+                "G": 0.0,
+                "B": 0.0,
+                "A": 0.0
+              },
+              "ColorUseRule": "UseColor_Specified"
+            },
+            "OutlineSettings": {
+              "CornerRadii": {
+                "X": 10.0,
+                "Y": 10.0,
+                "Z": 10.0,
+                "W": 10.0
+              },
+              "RoundingType": "FixedRadius"
+            }
+          },
+          "Padding": {
+            "Left": 14.0,
+            "Top": 0.0,
+            "Right": 14.0,
+            "Bottom": 0.0
+          },
+          "VerticalAlignment": "VAlign_Center"
+        },
+        "children": [
+          {
+            "name": "Line",
+            "class": "HorizontalBox",
+            "properties": {},
+            "children": [
+              {
+                "name": "Glyphs",
+                "class": "HorizontalBox",
+                "properties": {},
+                "slot": {
+                  "class": "HorizontalBoxSlot",
+                  "properties": {
+                    "VerticalAlignment": "VAlign_Center"
+                  }
+                }
+              },
+              {
+                "name": "Spinner",
+                "class": "SizeBox",
+                "properties": {
+                  "Visibility": "Collapsed",
+                  "WidthOverride": 31.0,
+                  "bOverride_WidthOverride": true,
+                  "HeightOverride": 31.0,
+                  "bOverride_HeightOverride": true
+                },
+                "slot": {
+                  "class": "HorizontalBoxSlot",
+                  "properties": {
+                    "VerticalAlignment": "VAlign_Center"
+                  }
+                }
+              },
+              {
+                "name": "Label",
+                "class": "TextBlock",
+                "properties": {
+                  "Font": {
+                    "FontObject": {
+                      "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                      "__class__": "/Script/Engine.Font"
+                    },
+                    "TypefaceFontName": "Regular",
+                    "Size": 19.5
+                  },
+                  "ColorAndOpacity": {
+                    "SpecifiedColor": {
+                      "R": 0.783538,
+                      "G": 0.791298,
+                      "B": 0.83077,
+                      "A": 1.0
+                    },
+                    "ColorUseRule": "UseColor_Specified"
+                  },
+                  "ShadowOffset": {
+                    "X": 0.0,
+                    "Y": 0.0
+                  },
+                  "Text": {
+                    "__text__": "Send report"
+                  }
+                },
+                "slot": {
+                  "class": "HorizontalBoxSlot",
+                  "properties": {
+                    "Padding": {
+                      "Left": 12.0
+                    },
+                    "VerticalAlignment": "VAlign_Center"
+                  }
+                }
+              }
+            ],
+            "slot": {
+              "class": "BorderSlot",
+              "properties": {
+                "Padding": {
+                  "Left": 14.0,
+                  "Top": 0.0,
+                  "Right": 14.0,
+                  "Bottom": 0.0
+                },
+                "VerticalAlignment": "VAlign_Center"
+              }
+            }
+          }
+        ],
+        "slot": {
+          "class": "SizeBoxSlot",
+          "properties": {}
+        }
+      }
+    ]
+  },
+  "_stats": {
+    "widgetsReachable": 6,
+    "widgetsInTree": 6,
+    "slots": 5
+  }
+}

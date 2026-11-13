@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Direction B compose screen, first pass: every widget class the new widget
+     needs, checked against Unreal. Generated on UE 5.3 from the
+     BugReportFormPopup seed (hence the root name and the Title / Description /
+     CloseButton bindings) and rendered at 1920x1080 and 1280x800. -->
+<Widget asset="LayoutProbe" parent="BH_PopupWidget" styles="LayoutProbe.umg.css">
+  <CanvasPanel name="CanvasPanel_63">
+    <Overlay name="Layer"
+        slot.LayoutData.Anchors.Minimum="0"
+        slot.LayoutData.Anchors.Maximum="1"
+        slot.LayoutData.Offsets="0">
+
+      <Border name="Scrim" BrushColor="var(--scrim)"
+          slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"/>
+      <HorizontalBox name="ScrimSplit" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill">
+        <BackgroundBlur name="ScrimLeft" BlurStrength="8" Padding="0" slot.Size="Fill 51.5">
+          <Border name="ScrimLeftTint" BrushColor="var(--scrim-left)"/>
+        </BackgroundBlur>
+        <Spacer name="ScrimRight" slot.Size="Fill 48.5"/>
+      </HorizontalBox>
+
+      <HorizontalBox name="Screen" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"
+          slot.Padding="96 54 96 144">
+        <VerticalBox name="Left" slot.Size="Fill 47.8">
+          <TextBlock name="Kicker" class="kicker">BETAHUB</TextBlock>
+          <TextBlock name="Title" class="title">REPORT A BUG</TextBlock>
+          <TextBlock name="Subtitle" class="sub">Goes straight to the developers</TextBlock>
+
+          <HorizontalBox name="DescriptionLabelRow" class="label-row">
+            <TextBlock name="DescriptionLabel" class="label label-focused">WHAT HAPPENED</TextBlock>
+            <Spacer name="DescriptionLabelGap" slot.Size="Fill"/>
+            <TextBlock name="DescriptionTag" class="tag">required</TextBlock>
+          </HorizontalBox>
+          <SizeBox name="DescriptionMin" bOverride_MinDesiredHeight="true" MinDesiredHeight="146">
+            <Border name="DescriptionBox" class="box box-focused">
+              <MultiLineEditableText name="DescriptionInput" class="input"
+                  HintText="Describe what happened">Dragging the sword onto the shield in the inventory freezes the game for about two seconds, then the sword is gone.</MultiLineEditableText>
+            </Border>
+          </SizeBox>
+
+          <HorizontalBox name="StepsLabelRow" class="label-row">
+            <TextBlock name="StepsLabel" class="label">STEPS TO REPRODUCE</TextBlock>
+            <Spacer name="StepsLabelGap" slot.Size="Fill"/>
+            <TextBlock name="StepsTag" class="tag">optional</TextBlock>
+          </HorizontalBox>
+          <Border name="StepsBox" class="box">
+            <EditableText name="StepsInput" class="input" HintText="Add steps if you can. It helps a lot."/>
+          </Border>
+        </VerticalBox>
+
+        <Spacer name="Gutter" slot.Size="Fill 7.8"/>
+
+        <VerticalBox name="Right" slot.Size="Fill 44.4">
+          <SizeBox name="PaneSize" bOverride_HeightOverride="true" HeightOverride="430">
+            <Border name="Pane" class="box" Padding="3">
+              <Image name="Shot" ColorAndOpacity="#2A2420"/>
+            </Border>
+          </SizeBox>
+          <HorizontalBox name="Caption" slot.Padding="0 4 0 40">
+            <TextBlock name="CaptionLeft" class="cap">YOUR SCREENSHOT · THIS FRAME</TextBlock>
+            <Spacer name="CaptionGap" slot.Size="Fill"/>
+            <TextBlock name="Description" Font.TypefaceFontName="Medium">13:27:39</TextBlock>
+          </HorizontalBox>
+          <HorizontalBox name="Group" slot.Padding.Bottom="12">
+            <TextBlock name="GroupLabel" class="cap">SENDING ALONG</TextBlock>
+            <Spacer name="GroupGap" slot.Size="Fill"/>
+            <TextBlock name="GroupCount" class="cap">4 OF 4</TextBlock>
+          </HorizontalBox>
+          <UniformGridPanel name="Rows" SlotPadding="0 0 4 4" MinDesiredSlotHeight="68">
+            <Border name="Row0" class="row" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill">
+              <HorizontalBox name="Row0Line">
+                <TextBlock name="Row0Name" class="row-name">Screenshot</TextBlock>
+                <TextBlock name="Row0Detail" class="row-detail">this frame</TextBlock>
+                <Spacer name="Row0Gap" slot.Size="Fill"/>
+                <TextBlock name="Row0Value" class="row-value">INCLUDED</TextBlock>
+              </HorizontalBox>
+            </Border>
+            <Border name="Row1" class="row" slot.Column="1" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill">
+              <HorizontalBox name="Row1Line">
+                <TextBlock name="Row1Name" class="row-name">Last 60 s of play</TextBlock>
+                <Spacer name="Row1Gap" slot.Size="Fill"/>
+                <TextBlock name="Row1Value" class="row-value">INCLUDED</TextBlock>
+              </HorizontalBox>
+            </Border>
+            <Border name="Row2" class="row" slot.Row="1" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill">
+              <HorizontalBox name="Row2Line">
+                <TextBlock name="Row2Name" class="row-name">Game log</TextBlock>
+                <TextBlock name="Row2Detail" class="row-detail">1.2 MB</TextBlock>
+                <Spacer name="Row2Gap" slot.Size="Fill"/>
+                <TextBlock name="Row2Value" class="row-value">LEFT OUT</TextBlock>
+              </HorizontalBox>
+            </Border>
+            <Border name="Row3" class="row" slot.Row="1" slot.Column="1">
+              <TextBlock name="Row3Name" class="row-name">System info</TextBlock>
+            </Border>
+          </UniformGridPanel>
+        </VerticalBox>
+      </HorizontalBox>
+
+      <Border name="PromptBar" BrushColor="var(--bar)" Padding="96 0"
+          slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Bottom">
+        <SizeBox name="PromptHeight" bOverride_HeightOverride="true" HeightOverride="125">
+          <HorizontalBox name="Prompts">
+            <Border name="EnterCap" class="keycap"><TextBlock name="EnterCapText" class="keycap-text">Enter</TextBlock></Border>
+            <TextBlock name="WritePrompt" class="prompt">Write</TextBlock>
+            <Border name="EscCap" class="keycap"><TextBlock name="EscCapText" class="keycap-text">Esc</TextBlock></Border>
+            <Button name="CloseButton" slot.VerticalAlignment="Center">
+              <TextBlock name="CloseLabel" class="prompt">Close</TextBlock>
+            </Button>
+            <Spacer name="PromptGap" slot.Size="Fill"/>
+            <Border name="CtrlCap" class="keycap"><TextBlock name="CtrlCapText" class="keycap-text">Ctrl</TextBlock></Border>
+            <Border name="SendCap" class="keycap"><TextBlock name="SendCapText" class="keycap-text">Enter</TextBlock></Border>
+            <TextBlock name="SendPrompt" class="prompt prompt-main">Send report</TextBlock>
+          </HorizontalBox>
+        </SizeBox>
+      </Border>
+    </Overlay>
+  </CanvasPanel>
+</Widget>

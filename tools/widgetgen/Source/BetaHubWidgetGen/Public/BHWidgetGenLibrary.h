@@ -46,6 +46,18 @@ public:
 	static FString ExportPropertyText(UObject* Target, const FString& PropertyName);
 
 	/**
+	 * Every reflected property of the given classes, as JSON, so tools can reject
+	 * a misspelt or misplaced property offline:
+	 *   {"classes": {"TextBlock": {"Font": {"type": "StructProperty",
+	 *                                       "struct": "SlateFontInfo"}, ...}},
+	 *    "structs": {"SlateFontInfo": {"LetterSpacing": {"type": "IntProperty"}, ...}}}
+	 * Names are the ones .T3D uses. Inherited properties are included; each struct
+	 * reachable from a property is described once, under "structs".
+	 */
+	UFUNCTION(BlueprintCallable, Category = "BetaHub|WidgetGen")
+	static FString DescribePropertiesJson(const TArray<UClass*>& Classes);
+
+	/**
 	 * Render a widget blueprint to a PNG, as Unreal itself lays it out.
 	 *
 	 * This is the ground truth for "does the generated widget look right" -

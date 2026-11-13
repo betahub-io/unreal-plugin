@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The report widget, direction B: a full-screen form over the game. What
+     happened on the left, what gets sent on the right, actions in the prompt bar.
+     A port of the Unity widget (Runtime/UI/BugReportWidget.uxml).
+
+     UBH_ReportScreenWidget binds the named widgets below, fills the texts, builds the
+     attachment rows, panes and prompts from BH_AttachmentRow, BH_ClipFrame,
+     BH_TextLine and BH_PromptItem, and switches state classes from the stylesheet.
+     The header's tabs are BH_Tabs, created into TabsSlot and PreviewTabsSlot.
+     Keep the names when customizing. The texts here are what the designer sees;
+     focus, hover and the other states are classes the widget switches at runtime. -->
+<Widget asset="BH_ReportScreen" parent="BH_ReportScreenWidget" styles="BH_Widgets.umg.css">
+  <Overlay name="Root">
+
+    <!-- the game stays faintly visible on the right, as on a pause screen -->
+    <Border name="Scrim" class="scrim" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"/>
+    <HorizontalBox name="ScrimSplit" Visibility="HitTestInvisible"
+        slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill">
+      <Border name="ScrimLeft" class="scrim-left" slot.Size="Fill 51.5"/>
+      <Spacer name="ScrimRight" slot.Size="Fill 48.5"/>
+    </HorizontalBox>
+
+    <!-- compose, sending, uploading and sent: two columns -->
+    <HorizontalBox name="Screen" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"
+        slot.Padding="96 54 96 144">
+      <!-- Unity's column is 47.8% including 7px of padding each side; the padding sits
+           inside an Overlay because a box slot's padding would change the Fill shares -->
+      <Overlay name="LeftColumn" slot.Size="Fill 47.8">
+      <VerticalBox name="Left" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"
+          slot.Padding.Right="14">
+        <VerticalBox name="Head" class="head">
+          <TextBlock name="Kicker" class="kicker">BETAHUB</TextBlock>
+          <TextBlock name="Title" class="title">REPORT A BUG</TextBlock>
+          <!-- the tabs take the title's place and height; filled with BH_Tabs at runtime -->
+          <SizeBox name="TabsSlot" class="tabs-slot" Visibility="Collapsed"/>
+          <TextBlock name="Subtitle" class="sub">Goes straight to the developers</TextBlock>
+        </VerticalBox>
+
+        <VerticalBox name="Form">
+          <SizeBox name="TypeRow" class="row-size field">
+            <Border name="TypeRowBox" class="row">
+              <HorizontalBox name="TypeRowLine">
+                <TextBlock name="TypeName" class="row-name">Report type</TextBlock>
+                <Spacer name="TypeGap" class="row-gap"/>
+                <Border name="TypeSwitch" class="switch">
+                  <HorizontalBox name="TypeSwitchLine">
+                    <Border name="TypeBug" class="switch-option">
+                      <TextBlock name="TypeBugText" class="switch-text">BUG</TextBlock>
+                    </Border>
+                    <Border name="TypeSuggestion" class="switch-option">
+                      <TextBlock name="TypeSuggestionText" class="switch-text">SUGGESTION</TextBlock>
+                    </Border>
+                  </HorizontalBox>
+                </Border>
+              </HorizontalBox>
+            </Border>
+          </SizeBox>
+
+          <VerticalBox name="DescriptionField" class="field">
+            <HorizontalBox name="DescriptionTop" class="field-top">
+              <TextBlock name="DescriptionLabel" class="label">WHAT HAPPENED</TextBlock>
+              <Spacer name="DescriptionTopGap" slot.Size="Fill"/>
+              <TextBlock name="DescriptionTag" class="tag">required</TextBlock>
+            </HorizontalBox>
+            <Overlay name="DescriptionWrap">
+              <Border name="DescriptionGlow" class="glow"/>
+              <Border name="DescriptionBox" class="box">
+                <SizeBox name="DescriptionSize" MinDesiredHeight="112" bOverride_MinDesiredHeight="true"
+                    MaxDesiredHeight="216" bOverride_MaxDesiredHeight="true">
+                  <Overlay name="DescriptionStack">
+                    <MultiLineEditableText name="DescriptionInput" class="input" AllowContextMenu="false"/>
+                    <TextBlock name="DescriptionHint" class="hint">Describe what happened</TextBlock>
+                  </Overlay>
+                </SizeBox>
+              </Border>
+            </Overlay>
+          </VerticalBox>
+
+          <VerticalBox name="StepsField" class="field">
+            <HorizontalBox name="StepsTop" class="field-top">
+              <TextBlock name="StepsLabel" class="label">STEPS TO REPRODUCE</TextBlock>
+              <Spacer name="StepsTopGap" slot.Size="Fill"/>
+              <TextBlock name="StepsTag" class="tag">optional</TextBlock>
+            </HorizontalBox>
+            <Overlay name="StepsWrap">
+              <Border name="StepsGlow" class="glow"/>
+              <Border name="StepsBox" class="box">
+                <SizeBox name="StepsSize" MaxDesiredHeight="144" bOverride_MaxDesiredHeight="true">
+                  <Overlay name="StepsStack">
+                    <MultiLineEditableText name="StepsInput" class="input" AllowContextMenu="false"/>
+                    <TextBlock name="StepsHint" class="hint">Add steps if you can. It helps a lot.</TextBlock>
+                  </Overlay>
+                </SizeBox>
+              </Border>
+            </Overlay>
+          </VerticalBox>
+
+          <SizeBox name="TermsRow" class="row-size">
+            <Border name="TermsRowBox" class="row">
+              <HorizontalBox name="TermsRowLine">
+                <SizeBox name="TermsCheck" class="check-size">
+                  <Border name="TermsCheckBox" class="check">
+                    <TextBlock name="TermsCheckMark" class="check-mark">✓</TextBlock>
+                  </Border>
+                </SizeBox>
+                <TextBlock name="TermsName" class="row-name">I accept the terms of bug reporting</TextBlock>
+              </HorizontalBox>
+            </Border>
+          </SizeBox>
+        </VerticalBox>
+
+        <VerticalBox name="Sent" Visibility="Collapsed">
+          <VerticalBox name="EmailField" class="field">
+            <HorizontalBox name="EmailTop" class="field-top">
+              <TextBlock name="EmailLabel" class="label">EMAIL ME WHEN IT'S FIXED</TextBlock>
+              <Spacer name="EmailTopGap" slot.Size="Fill"/>
+              <TextBlock name="EmailTag" class="tag">optional</TextBlock>
+            </HorizontalBox>
+            <Overlay name="EmailWrap">
+              <Border name="EmailGlow" class="glow"/>
+              <Border name="EmailBox" class="box">
+                <Overlay name="EmailStack">
+                  <EditableText name="EmailInput" class="input" AllowContextMenu="false"/>
+                  <TextBlock name="EmailHint" class="hint">you@example.com</TextBlock>
+                </Overlay>
+              </Border>
+            </Overlay>
+          </VerticalBox>
+          <TextBlock name="SentNote" class="note">One email when it's fixed. Nothing else, no account.</TextBlock>
+          <SizeBox name="LinkRow" class="row-size">
+            <Border name="LinkRowBox" class="row">
+              <HorizontalBox name="LinkRowLine">
+                <TextBlock name="LinkName" class="row-name">Report link</TextBlock>
+                <Spacer name="LinkGap" class="row-gap"/>
+                <TextBlock name="LinkValue" class="row-value">COPY</TextBlock>
+              </HorizontalBox>
+            </Border>
+          </SizeBox>
+        </VerticalBox>
+      </VerticalBox>
+      </Overlay>
+
+      <Spacer name="Gutter" slot.Size="Fill 7.8"/>
+
+      <VerticalBox name="Right" slot.Size="Fill 44.4">
+        <!-- 16:9 of the column's width; UBH_ReportScreenWidget keeps the height in step -->
+        <SizeBox name="PaneSize" HeightOverride="431" bOverride_HeightOverride="true">
+          <Border name="Pane" class="pane">
+            <Overlay name="PaneContent" class="pane-content">
+              <SizeBox name="PaneImageSize" slot.HorizontalAlignment="Center" slot.VerticalAlignment="Center">
+                <Image name="PaneImage" ColorAndOpacity="#2A2420"/>
+              </SizeBox>
+              <TextBlock name="PaneEmpty" class="empty" Visibility="Collapsed">No screenshot this time</TextBlock>
+              <UniformGridPanel name="PaneFrames" Visibility="Collapsed" SlotPadding="2 4"
+                  slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill" slot.Padding="10 8"/>
+              <VerticalBox name="PaneLog" Visibility="Collapsed"
+                  slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill" slot.Padding="23 19"/>
+            </Overlay>
+          </Border>
+        </SizeBox>
+        <HorizontalBox name="Caption" slot.Padding="0 15 0 25">
+          <TextBlock name="CaptionLeft" class="caption">YOUR SCREENSHOT · THIS FRAME</TextBlock>
+          <Spacer name="CaptionGap" slot.Size="Fill"/>
+          <Border name="CaptionAction" class="caption-action">
+            <HorizontalBox name="CaptionRight">
+              <HorizontalBox name="CaptionGlyph" slot.VerticalAlignment="Center"/>
+              <TextBlock name="CaptionRightText" class="caption-right">13:27:39</TextBlock>
+            </HorizontalBox>
+          </Border>
+        </HorizontalBox>
+
+        <VerticalBox name="Attachments">
+          <HorizontalBox name="Group" slot.Padding="0 7 0 12">
+            <TextBlock name="GroupLabel" class="group">SENDING ALONG</TextBlock>
+            <Spacer name="GroupGap" slot.Size="Fill"/>
+            <TextBlock name="GroupCount" class="group">3 OF 3</TextBlock>
+          </HorizontalBox>
+          <VerticalBox name="Rows"/>
+        </VerticalBox>
+
+        <VerticalBox name="SentWith" Visibility="Collapsed">
+          <HorizontalBox name="SentWithGroup" slot.Padding="0 7 0 12">
+            <TextBlock name="SentWithLabel" class="group">SENT WITH THIS REPORT</TextBlock>
+            <Spacer name="SentWithGap" slot.Size="Fill"/>
+            <TextBlock name="SentWithCount" class="group">3</TextBlock>
+          </HorizontalBox>
+          <TextBlock name="SentList" class="sent-list">Screenshot · Last 60 s of play · Game log</TextBlock>
+        </VerticalBox>
+      </VerticalBox>
+    </HorizontalBox>
+
+    <!-- full-screen preview of one attachment -->
+    <Overlay name="Preview" Visibility="Collapsed"
+        slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill">
+      <HorizontalBox name="PreviewHead" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Top"
+          slot.Padding="96 54 96 0">
+        <VerticalBox name="PreviewTitles" slot.Size="Fill">
+          <TextBlock name="PreviewKicker" class="kicker">BETAHUB</TextBlock>
+          <SizeBox name="PreviewTabsSlot" class="tabs-slot"/>
+          <TextBlock name="PreviewSubtitle" class="sub">Game log · Last lines · the full file is sent</TextBlock>
+        </VerticalBox>
+        <TextBlock name="PreviewCount" class="caption" slot.VerticalAlignment="Bottom" slot.Padding.Left="24">3 OF 3</TextBlock>
+      </HorizontalBox>
+      <HorizontalBox name="PreviewBody" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill"
+          slot.Padding="96 242 96 144">
+        <SizeBox name="PreviewListSize" WidthOverride="461" bOverride_WidthOverride="true" slot.Padding.Right="38">
+          <VerticalBox name="PreviewList"/>
+        </SizeBox>
+        <Border name="PreviewPane" class="pane" slot.Size="Fill">
+          <Overlay name="PreviewContent" class="pane-content">
+            <SizeBox name="PreviewImageSize" slot.HorizontalAlignment="Center" slot.VerticalAlignment="Center">
+              <Image name="PreviewImage" ColorAndOpacity="#2A2420"/>
+            </SizeBox>
+            <TextBlock name="PreviewEmpty" class="empty" Visibility="Collapsed">No screenshot this time</TextBlock>
+            <UniformGridPanel name="PreviewFrames" Visibility="Collapsed" SlotPadding="2 4"
+                slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill" slot.Padding="10 8"/>
+            <ScrollBox name="PreviewLog" class="log-scroll" Visibility="Collapsed" ScrollbarThickness="10"
+                slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Fill" slot.Padding="23 19 8 19">
+              <VerticalBox name="PreviewLogLines"/>
+            </ScrollBox>
+          </Overlay>
+        </Border>
+      </HorizontalBox>
+    </Overlay>
+
+    <!-- prompt bar: a 1px line, then the prompts centred in 70px and 54px below them.
+         Not one Border with bottom padding and centring: Slate centres a child with
+         asymmetric padding by the whole difference, not half of it as CSS does. -->
+    <VerticalBox name="Bar" slot.HorizontalAlignment="Fill" slot.VerticalAlignment="Bottom">
+      <SizeBox name="BarLineSize" HeightOverride="1" bOverride_HeightOverride="true">
+        <Border name="BarLine" class="bar-line"/>
+      </SizeBox>
+      <Border name="BarFill" class="bar">
+        <VerticalBox name="BarRows">
+          <SizeBox name="BarSize" HeightOverride="70" bOverride_HeightOverride="true">
+            <HorizontalBox name="Prompts" slot.VerticalAlignment="Center">
+              <HorizontalBox name="PromptsLeft" slot.VerticalAlignment="Center"/>
+              <Spacer name="PromptsGap" slot.Size="Fill"/>
+              <HorizontalBox name="PromptsRight" slot.VerticalAlignment="Center"/>
+            </HorizontalBox>
+          </SizeBox>
+          <Spacer name="BarBottom" Size="0 54"/>
+        </VerticalBox>
+      </Border>
+    </VerticalBox>
+  </Overlay>
+</Widget>

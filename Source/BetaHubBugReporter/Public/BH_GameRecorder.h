@@ -7,6 +7,7 @@
 #include "HAL/CriticalSection.h"
 #include "BH_VideoEncoder.h"
 #include "BH_FrameBuffer.h"
+#include "BH_ThumbnailRing.h"
 #include "UObject/NoExportTypes.h"
 #include "BH_SceneCaptureActor.h"
 #include "BH_Async.h"
@@ -53,6 +54,9 @@ public:
     // Sets the maximum video dimensions while maintaining aspect ratio
     void SetMaxVideoDimensions(int32 InMaxWidth, int32 InMaxHeight);
 
+    /** Small stills of the current recording, one every few seconds, oldest first. */
+    TArray<FBH_Thumbnail> GetThumbnails() const;
+
 private:
     UPROPERTY()
     TObjectPtr<UBH_FrameBuffer> FrameBuffer;
@@ -66,6 +70,10 @@ private:
 
     bool bIsRecording;
     bool bIsStopping;
+
+    TSharedPtr<FBH_ThumbnailRing> Thumbnails;
+    double LastThumbnailTime = 0.0;
+    void CaptureThumbnailIfDue();
 
     bool bIsResizing;
 

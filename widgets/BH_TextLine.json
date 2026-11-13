@@ -1,0 +1,40 @@
+{
+  "$schema": "betahub-umg-widget/1",
+  "asset": "BH_TextLine",
+  "parentClass": "BH_TextLineWidget",
+  "root": {
+    "name": "Line",
+    "class": "TextBlock",
+    "properties": {
+      "Font": {
+        "FontObject": {
+          "__ref__": "/BetaHubBugReporter/Fonts/JetBrainsMono.JetBrainsMono",
+          "__class__": "/Script/Engine.Font"
+        },
+        "TypefaceFontName": "Regular",
+        "Size": 15.0
+      },
+      "ColorAndOpacity": {
+        "SpecifiedColor": {
+          "R": 0.3564,
+          "G": 0.376262,
+          "B": 0.42869,
+          "A": 1.0
+        },
+        "ColorUseRule": "UseColor_Specified"
+      },
+      "ShadowOffset": {
+        "X": 0.0,
+        "Y": 0.0
+      },
+      "Text": {
+        "__text__": "[13:27:39] LogInventory: Warning: item 1043 has no owner"
+      }
+    }
+  },
+  "_stats": {
+    "widgetsReachable": 1,
+    "widgetsInTree": 1,
+    "slots": 0
+  }
+}

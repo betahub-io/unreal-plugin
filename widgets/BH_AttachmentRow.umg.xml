@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A settings-style row: an attachment on the compose and uploading screens, and in
+     the full-screen preview's list. UBH_AttachmentRowWidget sets the texts, the
+     checkbox, the value tone, the upload bar and the focus and hover classes. A click
+     on the checkbox includes or leaves out; a click elsewhere only selects the row. -->
+<Widget asset="BH_AttachmentRow" parent="BH_AttachmentRowWidget" styles="BH_Widgets.umg.css">
+  <SizeBox name="RowSize" class="row-size">
+    <Border name="Row" class="row">
+      <HorizontalBox name="Line">
+        <SizeBox name="Check" class="check-size">
+          <Border name="CheckBox" class="check">
+            <TextBlock name="CheckMark" class="check-mark">✓</TextBlock>
+          </Border>
+        </SizeBox>
+        <TextBlock name="Name" class="row-name">Screenshot</TextBlock>
+        <TextBlock name="Meta" class="row-meta">this frame</TextBlock>
+        <Spacer name="Gap" class="row-gap"/>
+        <SizeBox name="Mini" class="mini">
+          <Border name="MiniTrack" class="mini-track">
+            <SizeBox name="MiniFill" WidthOverride="0" bOverride_WidthOverride="true">
+              <Border name="MiniBar" class="mini-fill"/>
+            </SizeBox>
+          </Border>
+        </SizeBox>
+        <TextBlock name="Value" class="row-value">INCLUDED</TextBlock>
+      </HorizontalBox>
+    </Border>
+  </SizeBox>
+</Widget>

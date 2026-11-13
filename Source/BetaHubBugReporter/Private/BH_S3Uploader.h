@@ -44,6 +44,12 @@ public:
      * @param CustomName        Optional custom display name for the file
      * @param OnComplete        Callback when upload completes
      */
+    /**
+     * Optional: called on the game thread while the file itself is sent to S3, with
+     * the fraction sent (0..1). Set before UploadFileToS3.
+     */
+    TFunction<void(float)> OnUploadProgress;
+
     void UploadFileToS3(
         const FString& BaseUrl,
         const FString& ProjectId,

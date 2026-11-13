@@ -1,5 +1,11 @@
 # BetaHub Unreal Plugin
 
+![The report form over a running game](docs/images/report-form.webp)
+
+> **Version 2.0 brings a new report form.** If it gives you trouble, you can switch back to the previous
+> form in the project settings (see [The report form](#the-report-form)), or stay on
+> [v1.7.1](https://github.com/betahub-io/unreal-plugin/releases/tag/v1.7.1), the last 1.x release.
+
 ## How it works
 
 The plugin will start a *Background Service* that will record gameplay session as a video, including all the Unreal Engine logs. Then, it listens for the shortcut key (F12 by default) to open the bug reporter window. The user can then type in the bug description and submit it to the BetaHub platform.
@@ -59,6 +65,48 @@ There, you can also configure your shortcut key to open the bug reporter window.
 
 For full docs and guides, please visit the [BetaHub Documentation](https://betahub.io/docs/permalinks/unreal-plugin).
 
+## The report form
+
+The form is a full-screen report screen over the game (which keeps running), played with a keyboard, a mouse or a
+controller: what happened on the left, what gets sent along on the right, and every action in the prompt
+bar at the bottom, shown with the glyphs of the device the player last used (keyboard, Xbox,
+PlayStation or Switch). Players can switch between a bug report and a suggestion, leave out any
+attachment, preview the screenshot, the last seconds of play and the game log full screen, and after
+sending add an email to hear when the bug is fixed or copy a link to the report. The report and its
+attachments are two tabs, switched with 1 and 2 on a keyboard or the shoulder buttons on a controller;
+the arrow keys or the d-pad move between items, Tab and Shift+Tab go through them in order, and the
+first prompt in the bar always goes back.
+
+![The report form in the Light theme, with terms to accept](docs/images/report-form-light.webp)
+
+Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report Widget*:
+
+| Setting | What it does |
+| --- | --- |
+| **Theme** | One of six built-in colour themes (Dark by default). |
+| **Theme Asset** | Your studio's colours instead: create a *BH_ThemeAsset* data asset with an accent colour and a neutral tint, and the form derives a full, contrast-checked theme from them. |
+| **Require Terms Acceptance** / **Terms Url** | Players must accept your terms of bug reporting before they can send; *Read terms* opens the URL. |
+| **Suggestion Min Length** | The shortest suggestion the form sends. Keep it at your BetaHub project's minimum description length (80 unless changed there), or BetaHub refuses the suggestion. |
+
+On Steam Deck and in Big Picture, a controller player who starts typing gets Steam's floating keyboard,
+provided your game uses Steamworks; the plugin itself has no Steamworks dependency.
+
+The form takes keyboard and controller input only when it captures the mouse
+(`SpawnBugReportWidget(true)`, which the shortcut key uses). Opened with `false`, it leaves your game's
+controls alone, as the previous form did.
+
+The previous form is still included. To keep using it, pick *BugReportForm* for *Report Form Widget
+Class*, or set it in `DefaultGame.ini`:
+
+```ini
+[/Script/BetaHubBugReporter.BH_PluginSettings]
+ReportFormWidgetClass=/BetaHubBugReporter/BugReportForm.BugReportForm_C
+```
+
+C++ code that reaches into the previous form's widgets (`BugDescriptionEdit`, `SubmitButton` and the
+rest) through the pointer `SpawnBugReportWidget` returns finds them null on the new form: keep the
+previous form, or check them before use.
+
 ## Submission mode
 
 The *Media Upload Mode* setting under *Project Settings → Plugins → BetaHub Bug Reporter* controls when
@@ -66,8 +114,8 @@ the report form confirms a submission and lets the player return to the game:
 
 | Setting | What it does |
 | --- | --- |
-| **Upload in background** (default) | The form confirms and closes as soon as the draft is created on BetaHub; the screenshot/video upload and the publish then finish in the background. The player is back in the game in about one round-trip instead of waiting out the whole submission, which can take several seconds on projects with heavy server-side processing. |
-| **Wait for upload** | The form stays open on *Submitting…* until the media has fully uploaded and the report is published, then shows the result. This was the behavior before 1.7. |
+| **Upload in background** (default) | The form shows the report as sent as soon as the draft is created on BetaHub; the screenshot/video upload and the publish then finish in the background, under a small progress toast once the player is back in the game. The player is back in about one round-trip instead of waiting out the whole submission, which can take several seconds on projects with heavy server-side processing. |
+| **Wait for upload** | The form stays open, showing each attachment's upload progress, until the media has fully uploaded. This was the behavior before 1.7. |
 
 Background mode is safe against a lost connection: if the client's own publish call never lands (the game
 is closed or crashes right after submitting), BetaHub auto-publishes the draft shortly afterwards, so a

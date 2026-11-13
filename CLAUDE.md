@@ -5,13 +5,19 @@ The repository root **is** the shipped plugin: `BetaHubBugReporter.uplugin` sits
 
 ## UMG widgets are generated, not hand-edited
 
-`Content/BugReportForm.uasset` and `Content/BugReportFormPopup.uasset` are **build output**.
-The source of truth is `widgets/*.json`. They are committed only because Unreal cannot load
-anything else.
+`Content/BugReportForm.uasset`, `Content/BugReportFormPopup.uasset` and the report screen's
+`Content/BH_*.uasset` are **build output**. The source of truth is `widgets/*.json` — for the
+`BH_*` widgets compiled from `widgets/BH_*.umg.xml` and `widgets/BH_Widgets.umg.css`. They are
+committed only because Unreal cannot load anything else.
+
+The stylesheet's runtime part (theme tokens `--bh-*`, `Type.class` state rules) is compiled into
+`Source/.../Private/Generated/BH_WidgetStyles.inl` by `python3 tools/umg_markup.py styles`;
+`umg_markup.py check` reports a stale one.
 
 ```sh
-$EDITOR widgets/BugReportForm.json
+$EDITOR widgets/BugReportForm.json        # or widgets/<Asset>.umg.xml, compiled by tools/umg_markup.py
 python3 tools/validate_widget_json.py widgets/BugReportForm.json   # ~1s, no Unreal
+python3 tools/json_to_html.py widgets/BugReportForm.json -o /tmp/p.html   # ~1s, layout within 1px of UE 5.3
 # then regenerate on the build box — see tools/README.md
 ```
 
@@ -24,7 +30,8 @@ Full workflow, tool list and gotchas: **`tools/README.md`**.
 
 - **Generate under UE 5.3 only.** Later engines write a format UE 5.3 cannot load, which
   breaks every 5.3 customer. `tools/ue_generate_widgets.py` refuses other versions. This has
-  already happened once — commit `0503b80`, "Recreate widgets for Unreal 5.3".
+  already happened once — commit `0503b80`, "Recreate widgets for Unreal 5.3". The same
+  applies to `Content/Fonts/`, built by `tools/ue_import_fonts.py`.
 - **`tools/` and `widgets/` are developer-only and must never ship.** They are excluded by
   `RunUAT BuildPlugin` (which copies only the plugin's standard folders plus
   `Config/FilterPlugin.ini`) and by `.gitattributes` for source archives. **Never add a
@@ -40,7 +47,19 @@ Full workflow, tool list and gotchas: **`tools/README.md`**.
   reports success. Only `Asset.Name:WidgetTree` is authoritative.
 - **The `.T3D` export omits defaults**, so a property left at its class default is simply
   absent from the JSON. Six of thirteen text widgets carry no `Font` at all; their real size
-  is UMG's default 24 Bold. Never infer an absent property's value — measure it.
+  is UMG's default 24 Bold. This goes down to single struct fields: a ButtonSlot `Padding` of
+  `{"Left": 2, "Right": 2}` has Top and Bottom at the ButtonSlot default (2), not 0. Never
+  infer an absent value — `tools/umg_defaults.json` holds the engine's, dumped from UE 5.3.
+- **Slate centres a child with asymmetric padding by the whole difference**, not half of it as
+  CSS does (`offset = (allotted - child)/2 + pre - post`). A Border with `Padding: 82 0 82 54`
+  and vertical centring put the prompt bar 27px too high. Centre in a sized box and add the
+  space as a separate spacer.
+- **A runtime state class must not appear in markup.** A `Type.class` rule baked into the asset
+  can never be switched off (the runtime only knows the asset's own values); the compiler refuses it.
+- **A RoundedBox outline colour shows at 0px width**: Slate antialiases it into the corners. Set
+  the colour together with the width.
+- **UMG calls `NativeOnInitialized` only for a widget with a local player.** One created with just
+  a world (tests, games without a player) never gets it; the report widgets initialise lazily.
 - **Never conclude anything about widget generation from a non-5.3 engine.** UE 5.7 added
   `WidgetVariableNameToGuidMap`, which makes programmatic widget creation trip compiler
   ensures. UE 5.3 has no such map and is unaffected.
@@ -59,9 +78,18 @@ engine content I/O only.
 
 This plugin has a headless **Unreal Automation Test** suite. Tests live in
 `Source/BetaHubBugReporter/Private/Tests/` and are guarded by `#if WITH_DEV_AUTOMATION_TESTS`, so they
-compile into Development *editor* builds and are compiled out of Shipping/packaged builds.
+compile into Development builds — editor *and* game, which `RunUAT BuildPlugin` also compiles, so include
+what you use — and are compiled out of Shipping.
 
-Current tests (`BetaHub.VideoEncoder.*`, in `BH_VideoEncoderTest.cpp`):
+Suites: `BetaHub.ReportScreen.*` (the form's model, and the generated widget driven by key and pad events
+through `TakeWidget()->OnKeyDown`), `BetaHub.Input.*`, `BetaHub.ReportSubmit*`, `BetaHub.Theme.*`,
+`BetaHub.Styler.*`, `BetaHub.Thumbnails.*`, and `BetaHub.VideoEncoder.*`. Opt-in, both off by default:
+`-BetaHubE2E` sends real reports to the BetaHub demo project (`BetaHub.E2E.*`, one of them through the
+widget); `-BetaHubRenders` with a real RHI (no `-nullrhi`) writes the form's states to
+`Saved/BH_ScreenRenders/` for comparing with the Unity widget's renders. Add `-BetaHubRenderShot=<jpg>` to
+draw the form over that game frame, which also becomes the report's screenshot (images for docs).
+
+`BetaHub.VideoEncoder.*`, in `BH_VideoEncoderTest.cpp`:
 - `HappyPath` — drives `BH_VideoEncoder` with a synthetic `FBH_FrameSource` through the real bundled
   ffmpeg, then `MergeSegments`, and asserts a valid mp4 is produced. Exercises the whole segment
   lifecycle end to end **without a GPU/rendering session** — the frames are synthesized, so it does not
@@ -169,4 +197,6 @@ player ever sees.
 
 ```sh
 python3 tools/tests/test_widget_tools.py
+python3 tools/tests/test_preview.py   # preview vs real UE 5.3 renders; needs Chrome/Chromium
+python3 tools/tests/test_markup.py    # markup compiler, round trip of both shipped widgets
 ```
