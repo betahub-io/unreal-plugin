@@ -27,7 +27,15 @@ void UBH_Manager::BeginDestroy()
 
 bool UBH_Manager::IsReportFormOpen() const
 {
-    return BackgroundService && BackgroundService->IsReportFormOpen();
+    if (BackgroundService)
+    {
+        return BackgroundService->IsReportFormOpen();
+    }
+    // Refused as a second service: the form is the running service's.
+    const UGameInstance* GI = GameInstance.Get();
+    const UBH_GameInstanceSubsystem* Subsystem = GI ? GI->GetSubsystem<UBH_GameInstanceSubsystem>() : nullptr;
+    const UBH_Manager* Active = Subsystem ? Subsystem->GetActiveManager() : nullptr;
+    return Active && Active != this && Active->IsReportFormOpen();
 }
 
 UGameInstance* UBH_Manager::GetServiceGameInstance() const
@@ -55,12 +63,6 @@ void UBH_Manager::StartService(UGameInstance* GI)
             return;
         }
     }
-    GameInstance = GI;
-
-    BackgroundService = NewObject<UBH_BackgroundService>(this, UBH_BackgroundService::StaticClass(), TEXT("BH_Manager_BH_BackgroundService0"), RF_Transient);
-
-    BackgroundService->StartService(GI);
-
     // The subsystem's own manager is created inside the subsystem's Initialize, when the game
     // instance may not list it yet: find it through the outer first.
     UBH_GameInstanceSubsystem* Subsystem = GetTypedOuter<UBH_GameInstanceSubsystem>();
@@ -68,6 +70,21 @@ void UBH_Manager::StartService(UGameInstance* GI)
     {
         Subsystem = GI->GetSubsystem<UBH_GameInstanceSubsystem>();
     }
+    GameInstance = GI;
+    // One service per game instance: a second would record, capture the log and run ffmpeg again for
+    // nothing. This manager uses the running one instead (SpawnBugReportWidget), so a game that starts
+    // its own manager with the auto-started service still on keeps working.
+    if (Subsystem && Subsystem->GetActiveManager() && Subsystem->GetActiveManager() != this)
+    {
+        UE_LOG(LogBetaHub, Warning, TEXT("A BetaHub service already runs in this game instance; this manager uses it instead of starting a second one. "
+                                          "Turn off Spawn Background Service On Startup if you start the service yourself."));
+        return;
+    }
+
+    BackgroundService = NewObject<UBH_BackgroundService>(this, UBH_BackgroundService::StaticClass(), TEXT("BH_Manager_BH_BackgroundService0"), RF_Transient);
+
+    BackgroundService->StartService(GI);
+
     if (Subsystem)
     {
         Subsystem->RegisterService(this);
@@ -130,6 +147,13 @@ UBH_ReportFormWidget* UBH_Manager::SpawnBugReportWidget(bool bTryCaptureMouse)
 {
     if (!BackgroundService)
     {
+        // Started while another service ran in this game instance: open the form through that one.
+        const UGameInstance* GI = GameInstance.Get();
+        const UBH_GameInstanceSubsystem* Subsystem = GI ? GI->GetSubsystem<UBH_GameInstanceSubsystem>() : nullptr;
+        if (UBH_Manager* Active = Subsystem ? Subsystem->GetActiveManager() : nullptr; Active && Active != this)
+        {
+            return Active->SpawnBugReportWidget(bTryCaptureMouse);
+        }
         UE_LOG(LogBetaHub, Error, TEXT("Background service not initialized. Use StartService() first."));
         return nullptr;
     }

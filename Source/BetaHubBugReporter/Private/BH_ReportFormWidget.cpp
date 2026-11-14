@@ -438,8 +438,8 @@ bool UBH_ReportFormWidget::ShowPopup(const FString& Title, const FString& Descri
                 // it the configured mode, and - only if this form actually captured first - the snapshot
                 // we took on open, so the popup restores the game's real prior state rather than the
                 // UI-only state the form forced. If the form never captured (bTryCaptureMouse=false), the
-                // popup falls back to its own pre-force snapshot and still restores, so the game is never
-                // left stuck in UI-only input.
+                // popup falls back to its own pre-force snapshot and restores that: the game's own mode,
+                // so the popup's UI-only input never outlives it (a menu that was UI-only stays so).
                 const EBH_InputModeRestore RestoreMode =
                     Settings ? Settings->RestoreInputMode : EBH_InputModeRestore::Auto;
                 PopupWidget->ConfigureRestoreOnClose(RestoreMode, /*bOverrideSnapshot=*/bCursorStateModified, InputSnapshot);

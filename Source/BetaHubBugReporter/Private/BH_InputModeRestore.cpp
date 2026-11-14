@@ -3,7 +3,9 @@
 #include "BH_InputModeRestore.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/GameViewportClient.h"
+#include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "Framework/Application/SlateUser.h"
 
 FBH_InputModeSnapshot BH_CaptureInputModeSnapshot(APlayerController* PlayerController)
 {
@@ -24,7 +26,17 @@ FBH_InputModeSnapshot BH_CaptureInputModeSnapshot(APlayerController* PlayerContr
         Snapshot.CaptureMode = ViewportClient->GetMouseCaptureMode();
         Snapshot.LockMode = ViewportClient->GetMouseLockMode();
         Snapshot.bHideCursorDuringCapture = ViewportClient->HideCursorDuringCapture();
+        // UI Only is the one stock mode that makes the viewport ignore game input.
+        Snapshot.bUIOnly = ViewportClient->IgnoreInput();
         Snapshot.bValid = true;
+    }
+    if (const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
+    {
+        if (const TSharedPtr<const FSlateUser> SlateUser = LocalPlayer->GetSlateUser())
+        {
+            Snapshot.FocusedWidget = SlateUser->GetFocusedWidget();
+            Snapshot.bHadFocus = Snapshot.FocusedWidget.IsValid();
+        }
     }
 
     return Snapshot;
@@ -58,7 +70,24 @@ void BH_RestoreInputMode(APlayerController* PlayerController, const FBH_InputMod
         return;
     }
 
-    // Auto: reconstruct the stock mode from the captured behaviour. Permanent capture means the game was
+    // Auto: a menu with UI-only input gets it back, with the focus where it was, so its keys and pad
+    // navigation keep working after the form closes.
+    // If the widget that had the focus is gone (its menu closed meanwhile), UI-only input would leave
+    // nothing to take input: fall through to Game and UI, as before 2.1.1.
+    const TSharedPtr<SWidget> Focused = Snapshot.FocusedWidget.Pin();
+    if (Snapshot.bValid && Snapshot.bUIOnly && (Focused.IsValid() || !Snapshot.bHadFocus))
+    {
+        FInputModeUIOnly Mode;
+        Mode.SetLockMouseToViewportBehavior(Snapshot.LockMode);
+        if (Focused.IsValid())
+        {
+            Mode.SetWidgetToFocus(Focused);
+        }
+        PlayerController->SetInputMode(Mode);
+        return;
+    }
+
+    // Otherwise reconstruct the stock mode from the captured behaviour. Permanent capture means the game was
     // in Game Only; CapturePermanently consumes the click that captured, _IncludingInitialMouseDown does
     // not - preserve that distinction.
     if (Snapshot.bValid &&

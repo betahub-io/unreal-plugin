@@ -6,6 +6,7 @@
 #include "BH_InputModeRestore.generated.h"
 
 class APlayerController;
+class SWidget;
 
 // How the bug-report UI puts the game back into its input mode when the form or popup closes.
 UENUM(BlueprintType)
@@ -35,6 +36,12 @@ struct FBH_InputModeSnapshot
     EMouseLockMode LockMode = EMouseLockMode::DoNotLock;
     bool bHideCursorDuringCapture = false;
     bool bShowMouseCursor = false;
+    /** The game had UI-only input (its viewport ignored game input), as in a menu the form was opened from. */
+    bool bUIOnly = false;
+    /** The widget that had the player's focus, given it back with UI-only input. */
+    TWeakPtr<SWidget> FocusedWidget;
+    /** Whether a widget had the focus; if it is gone by restore time, UI-only input would have no target. */
+    bool bHadFocus = false;
 };
 
 // Reads the current mouse/input state from the player's game viewport. Call this BEFORE forcing
@@ -49,9 +56,10 @@ FBH_InputModeSnapshot BH_CaptureInputModeSnapshot(APlayerController* PlayerContr
 // FInputModeUIOnly set on open and re-issues the Slate focus/capture reply. A direct-flag restore would
 // leave the game deaf to input.
 //
-// - Auto: reconstruct the stock input mode the game was in from Snapshot.CaptureMode (permanent capture
-//   -> Game Only; capture-on-mouse-down / none -> Game and UI) and re-apply it with the snapshot's real
-//   lock/hide/cursor values. Falls back to a cursor-free Game and UI when the snapshot is invalid.
+// - Auto: reconstruct the stock input mode the game was in: UI Only when its viewport ignored game input
+//   (focus back on the widget that had it), else from Snapshot.CaptureMode (permanent capture -> Game
+//   Only; capture-on-mouse-down / none -> Game and UI), with the snapshot's real lock/hide/cursor values.
+//   Falls back to a cursor-free Game and UI when the snapshot is invalid.
 // - GameOnly / GameAndUI: ignore the snapshot's mode and force that mode - an explicit override for the
 //   games the Auto heuristic cannot serve.
 void BH_RestoreInputMode(APlayerController* PlayerController, const FBH_InputModeSnapshot& Snapshot, EBH_InputModeRestore RestoreMode);

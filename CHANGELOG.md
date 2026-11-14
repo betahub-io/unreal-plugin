@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A form opened from a menu with UI-only input gives the menu its input back.** On close, *Restore Input Mode: Auto* now restores UI-only input with the focus on the widget that had it, instead of switching the game to Game and UI.
+- A second recording service in the same game instance (for example the auto-started one and one the game starts itself) no longer starts and records alongside the first: it logs a warning, and that manager's *Spawn Bug Report Widget* opens the form through the running service.
+- A Blueprint custom field provider whose object is gone is skipped, as a C++ one bound with `CreateUObject` or `CreateWeakLambda` is, so a value set under the same name still goes; registering an unbound one logs a warning.
+- A manager garbage-collected without *Stop Service* no longer leaves its log capture attached to the engine log.
+- FFmpeg is also found in the plugin's own folder when the plugin is installed in the engine (Fab).
+
+### Changed
+
+- **C++:** the plugin's module declares UMG, HTTP and Json as public dependencies, since its public headers include them. A game module needs only `BetaHubBugReporter` in its `Build.cs` (the README published after 2.1.0 listed those three as well; they were never needed).
+- The *Report Form ZOrder* setting is shown as *Report Form Z Order*.
+
 ## 2.1.0 - 2026-11-13
 
 ### Added

@@ -3,6 +3,7 @@
 
 #include "BH_FFmpeg.h"
 #include "Misc/Paths.h"
+#include "Interfaces/IPluginManager.h"
 #include "BH_Log.h"
 #include "BH_Runnable.h"
 
@@ -15,6 +16,11 @@ FString BH_FFmpeg::GetFFmpegPath()
     Paths.Add(FPaths::Combine(FPaths::ProjectDir(), TEXT("Binaries/Win64/bh_ffmpeg.exe")));
     // editor
     Paths.Add(FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe")));
+    // editor, with the plugin installed in the engine (Fab): wherever the plugin really is
+    if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("BetaHubBugReporter")))
+    {
+        Paths.Add(FPaths::Combine(Plugin->GetBaseDir(), TEXT("ThirdParty/FFmpeg/Windows/ffmpeg.exe")));
+    }
 #elif PLATFORM_MAC
     Paths.Add(FPaths::Combine(FPaths::ProjectDir(), TEXT("Binaries/Mac/bh_ffmpeg")));
 

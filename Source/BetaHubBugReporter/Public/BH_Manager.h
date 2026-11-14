@@ -70,10 +70,11 @@ public:
     UFUNCTION(BlueprintCallable, Category="Bug Report")
     void StopService();
 
+    /** Whether this manager's own service runs; false for one refused because another already ran. */
     UFUNCTION(BlueprintPure, Category="Bug Report")
     bool IsServiceRunning() const { return BackgroundService != nullptr; }
 
-    /** Whether the report form this manager opened is on screen. */
+    /** Whether the report form is on screen: this manager's, or the running service's for a refused one. */
     UFUNCTION(BlueprintPure, Category="Bug Report")
     bool IsReportFormOpen() const;
 

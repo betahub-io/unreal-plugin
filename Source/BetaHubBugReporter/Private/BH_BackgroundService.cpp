@@ -139,13 +139,33 @@ void UBH_BackgroundService::InitializeService()
 
 void UBH_BackgroundService::StopService()
 {
-    GLog->RemoveOutputDevice(LogCapture);
-    delete LogCapture;
+    ReleaseLogCapture();
 
     if (GameRecorder)
     {
         GameRecorder->StopRecording();
     }
+}
+
+void UBH_BackgroundService::ReleaseLogCapture()
+{
+    if (LogCapture)
+    {
+        if (GLog)
+        {
+            GLog->RemoveOutputDevice(LogCapture);
+        }
+        delete LogCapture;
+        LogCapture = nullptr;
+    }
+}
+
+void UBH_BackgroundService::BeginDestroy()
+{
+    // Garbage-collected without StopService (a manager nothing kept): the engine log must stop
+    // writing into a capture nobody reads, which would otherwise grow for the rest of the session.
+    ReleaseLogCapture();
+    Super::BeginDestroy();
 }
 
 void UBH_BackgroundService::CaptureScreenshot()
@@ -206,7 +226,7 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
         };
     }
 
-    ReportForm->Setup(Settings, GameRecorder, ScreenshotPath, LogCapture->GetCapturedLogs(), bTryCaptureMouse);
+    ReportForm->Setup(Settings, GameRecorder, ScreenshotPath, LogCapture ? LogCapture->GetCapturedLogs() : FString(), bTryCaptureMouse);
     OpenForm = ReportForm;
 
     UE_LOG(LogBetaHub, Log, TEXT("ReportForm widget created successfully."));

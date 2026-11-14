@@ -13,15 +13,17 @@ Without FFmpeg, the plugin still works for submitting bug reports with screensho
 
 1. Download FFmpeg from the [official website](https://ffmpeg.org/download.html) or use a pre-built binary from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/).
 2. Place the `ffmpeg.exe` file in:
-   - **For editor use:** `<YourProject>/Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe`
+   - **For editor use:** the plugin's `ThirdParty/FFmpeg/Windows/ffmpeg.exe`, wherever the plugin is installed:
+     `<YourProject>/Plugins/BetaHubBugReporter/...` for a project plugin, or the engine's plugins folder for a
+     Fab install
    - **For packaged builds:** copy it into each packaged build as `<PackagedGame>/<ProjectName>/Binaries/Win64/bh_ffmpeg.exe`, next to the packaged game (the GitHub release does this for you when you package)
 
 ## Verifying Installation
 
-When the plugin starts, it searches for FFmpeg in the locations listed above. If FFmpeg is found, video recording will be enabled automatically. If not, you will see a warning in the Output Log:
+When the game or Play In Editor starts, the plugin searches for FFmpeg in the locations listed above. If FFmpeg is found, video recording is enabled automatically. If not, you will see a warning in the Output Log:
 
 ```
-Warning: FFmpeg not found. Video recording is disabled.
+LogBetaHub: Warning: FFmpeg not found. Video recording is disabled. Bug reports will include screenshots but not video. ...
 ```
 
 ## Supported Encoders

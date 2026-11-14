@@ -47,6 +47,7 @@ bool FBHCustomFieldsCollectTest::RunTest(const FString& Parameters)
         return FBH_CustomFieldValue::FromString(TEXT("Dungeon"));
     }));
     Subsystem->RegisterCustomFieldProvider(TEXT("unbound"), FBH_CustomFieldProvider());
+    AddExpectedError(TEXT("is not bound to a function"), EAutomationExpectedErrorFlags::Contains, 1);
     Subsystem->RegisterCustomFieldProviderDynamic(TEXT("blueprint_unbound"), FBH_CustomFieldProviderDynamic());
     Subsystem->OnBuildCustomFields.AddLambda([](const FBH_CustomFieldContext& Context, TMap<FString, FBH_CustomFieldValue>& Fields)
     {
@@ -163,9 +164,14 @@ bool FBHServiceRegistrationTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("found by the subsystem"), Subsystem->GetActiveManager() == Own.Get());
 
     TStrongObjectPtr<UBH_Manager> Second(NewObject<UBH_Manager>(GetTransientPackage()));
-    AddExpectedError(TEXT("A second BetaHub service started"), EAutomationExpectedErrorFlags::Contains, 1);
+    AddExpectedError(TEXT("A BetaHub service already runs in this game instance"), EAutomationExpectedErrorFlags::Contains, 1);
     Second->StartService(Game.Instance.Get());
+    TestFalse(TEXT("a second service does not start, so it records nothing"), Second->IsServiceRunning());
     TestTrue(TEXT("the first service stays active"), Subsystem->GetActiveManager() == Own.Get());
+    // The second manager opens the form through the first service (here it gets as far as the
+    // missing player), not "Background service not initialized" as an unstarted manager would.
+    AddExpectedError(TEXT("PlayerController is null"), EAutomationExpectedErrorFlags::Contains, 1);
+    TestNull(TEXT("no player in this game, so no form"), Second->SpawnBugReportWidget(false));
     Second->StopService();
     TestTrue(TEXT("stopping the second changes nothing"), Subsystem->GetActiveManager() == Own.Get());
 

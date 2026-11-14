@@ -34,12 +34,14 @@ All features have been tested and verified on these versions.
 The plugin requires FFmpeg for video recording. The plugin is built for Windows (Win64), and the GitHub
 release includes FFmpeg at `Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/ffmpeg.exe`; packaging
 your game copies it next to the game as `bh_ffmpeg.exe` automatically. The Fab build has no FFmpeg: place
-`ffmpeg.exe` in `YourProject/Plugins/BetaHubBugReporter/ThirdParty/FFmpeg/Windows/` for the editor, and copy
-it into each packaged build as `<PackagedGame>/<ProjectName>/Binaries/Win64/bh_ffmpeg.exe`, next to the packaged game. See [FFMPEG_SETUP.md](FFMPEG_SETUP.md).
+`ffmpeg.exe` in the plugin's `ThirdParty/FFmpeg/Windows/` folder, wherever the plugin is installed (with Fab,
+in your engine's plugins folder), for the editor, and copy it into each packaged build as
+`<PackagedGame>/<ProjectName>/Binaries/Win64/bh_ffmpeg.exe`, next to the packaged game. See
+[FFMPEG_SETUP.md](FFMPEG_SETUP.md).
 
 ## Video Encoder
 
-The plugin records by copying each frame off the GPU asynchronously, scaling it down on the GPU, and encoding it with the bundled FFmpeg (CPU). This is the only encoder in a standard build, and it works on every GPU — there is nothing to configure.
+The plugin records by copying each frame off the GPU asynchronously, scaling it down on the GPU, and encoding it with the bundled FFmpeg (through an NVIDIA or AMD GPU's H.264 encoder when FFmpeg finds one, otherwise on the CPU). This is the only encoder in a standard build, and it works on every GPU — there is nothing to configure.
 
 Frame capture never blocks the render thread waiting for the GPU, so recording costs a few percent of framerate rather than stalling every captured frame.
 
@@ -47,7 +49,7 @@ Frame capture never blocks the render thread waiting for the GPU, so recording c
 
 | Setting | What it does | Requirements |
 | --- | --- | --- |
-| **FFmpeg** (default) | Encodes on the CPU with the bundled FFmpeg. | None — works on every GPU. |
+| **FFmpeg** (default) | Encodes with the bundled FFmpeg, through an NVIDIA or AMD GPU's H.264 encoder when it finds one, otherwise on the CPU. | None — works on every GPU. |
 | **Hardware** | Encodes on the GPU (NVENC/AMF), keeping encoding off the CPU. | Windows, an NVIDIA or AMD GPU. |
 | **Auto** | Uses the hardware encoder when it is available, otherwise FFmpeg. | Same as Hardware; silently uses FFmpeg when hardware isn't available. |
 
@@ -143,14 +145,13 @@ MediaUploadMode=WaitForUpload
 
 ## Using the plugin from C++
 
-Add the plugin's module to your game module's `Build.cs`, with the engine modules its headers include.
-The plugin builds for Win64 only, so a game that also builds for other platforms adds it for Win64 and
-keeps its BetaHub code behind the same condition:
+Add the plugin's module to your game module's `Build.cs`. The plugin builds for Win64 only, so a game that
+also builds for other platforms adds it for Win64 and keeps its BetaHub code behind the same condition:
 
 ```csharp
 if (Target.Platform == UnrealTargetPlatform.Win64)
 {
-    PrivateDependencyModuleNames.AddRange(new string[] { "BetaHubBugReporter", "UMG", "HTTP", "Json" });
+    PrivateDependencyModuleNames.Add("BetaHubBugReporter");
     PublicDefinitions.Add("WITH_BETAHUB=1");
 }
 else
@@ -184,16 +185,15 @@ void UMyPauseMenu::OnReportBugClicked()
 }
 ```
 
-It works with the shortcut turned off. The form opens above your menus; *Report Form ZOrder* in the
-plugin settings (10000 by default) sets its viewport layer. Opened with `true`, when it closes it puts the
-game back in Game Only or Game and UI input (*Restore Input Mode*), so a menu that uses UI-only input sets
-its input mode again after the form closes (for example once *Is Report Form Open* on *Get Active Manager*
-returns false).
+It works with the shortcut turned off. The form opens above your menus; *Report Form Z Order* in the
+plugin settings (10000 by default) sets its viewport layer. Opened with `true`, when it closes it gives
+the game back the input mode it had (*Restore Input Mode: Auto*, the default), a menu's UI-only input and
+focus included.
 
 The plugin starts its recording service when the game starts. To start it yourself instead (for example
 only in test builds), turn off *Spawn Background Service On Startup* and start a manager in your game
-instance; the shortcut and *Open Report Form* then use it. Start one per game instance: a second one
-still records, but only logs a warning and stays inactive.
+instance; the shortcut and *Open Report Form* then use it. One service runs per game instance: a second
+one does not start (it logs a warning), and its *Spawn Bug Report Widget* opens the form through the first.
 
 ```cpp
 #include "BH_Manager.h"

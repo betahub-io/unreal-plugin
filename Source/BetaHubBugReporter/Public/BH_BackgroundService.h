@@ -23,7 +23,10 @@ private:
     UPROPERTY()
     TObjectPtr<UBH_GameRecorder> GameRecorder;
 
-    UBH_LogCapture* LogCapture;
+    UBH_LogCapture* LogCapture = nullptr;
+
+    /** Detach the log capture from the engine log and free it. */
+    void ReleaseLogCapture();
 
     /** Reports still on their way after their form closed, kept alive until they are done. */
     UPROPERTY()
@@ -45,6 +48,8 @@ private:
 
 public:
     UBH_BackgroundService();
+
+    virtual void BeginDestroy() override;
 
     UFUNCTION(BlueprintCallable, Category="BugReport")
     UBH_ReportFormWidget* SpawnBugReportWidget(APlayerController* LocalPlayerController, bool bTryCaptureMouse);

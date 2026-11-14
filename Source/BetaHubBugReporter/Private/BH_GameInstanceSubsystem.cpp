@@ -86,10 +86,18 @@ void UBH_GameInstanceSubsystem::RegisterCustomFieldProvider(const FString& Name,
 
 void UBH_GameInstanceSubsystem::RegisterCustomFieldProviderDynamic(const FString& Name, FBH_CustomFieldProviderDynamic Provider)
 {
-    // Unbound once its Blueprint object is gone: the value is then empty and the field left out.
-    RegisterCustomFieldProvider(Name, FBH_CustomFieldProvider::CreateLambda([Provider]()
+    // IsBound also checks the function exists, so a misnamed one is refused here, not on send.
+    UObject* Owner = Provider.GetUObject();
+    if (!Provider.IsBound() || !Owner)
     {
-        return Provider.IsBound() ? FBH_CustomFieldValue::FromString(Provider.Execute()) : FBH_CustomFieldValue();
+        UE_LOG(LogBetaHub, Warning, TEXT("Custom field provider '%s' is not bound to a function; it is not registered."), *Name);
+        return;
+    }
+    // Weak on the Blueprint object, as a C++ provider bound with CreateUObject: once the object is
+    // gone the provider is skipped, and a value set under the same name goes instead.
+    RegisterCustomFieldProvider(Name, FBH_CustomFieldProvider::CreateWeakLambda(Owner, [Provider]()
+    {
+        return FBH_CustomFieldValue::FromString(Provider.Execute());
     }));
 }
 
@@ -136,14 +144,12 @@ UBH_Manager* UBH_GameInstanceSubsystem::GetActiveManager() const
 
 void UBH_GameInstanceSubsystem::RegisterService(UBH_Manager* InManager)
 {
+    // UBH_Manager::StartService refuses a second service before starting it; this only keeps the first.
     const UBH_Manager* Active = GetActiveManager();
-    if (Active && Active != InManager)
+    if (!Active || Active == InManager)
     {
-        UE_LOG(LogBetaHub, Warning, TEXT("A second BetaHub service started in this game instance; the first one stays active. "
-                                          "Turn off Spawn Background Service On Startup if you start the service yourself."));
-        return;
+        ActiveManager = InManager;
     }
-    ActiveManager = InManager;
 }
 
 void UBH_GameInstanceSubsystem::UnregisterService(UBH_Manager* InManager)

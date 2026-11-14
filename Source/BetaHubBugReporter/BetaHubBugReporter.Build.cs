@@ -24,11 +24,15 @@ public class BetaHubBugReporter : ModuleRules
 			);
 			
 		
+		// Public: the plugin's public headers include these modules' headers, so a game module that
+		// includes them needs them too and gets them through this module.
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"Core",
-				// ... add other public dependencies that you statically link with here ...
+				"UMG",
+				"HTTP",
+				"Json",
 			}
 			);
 			
@@ -40,17 +44,21 @@ public class BetaHubBugReporter : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"UMG",
 				"InputCore",
-				"HTTP",
-				"Json",
 				"JsonUtilities",
+				"Projects",
 				"RenderCore",
 				"RHI",
 				"ApplicationCore",
 				// ... add private dependencies that you statically link with here ...
 			}
 			);
+
+		// The Play In Editor test drives a real PIE session (Private/Tests/BH_PlayInEditorTest.cpp).
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.Add("UnrealEd");
+		}
 
 		// Optional hardware video encode via the engine's AVCodecs plugins (Experimental).
 		// Default OFF, so the shipped plugin has NO dependency on Experimental engine plugins

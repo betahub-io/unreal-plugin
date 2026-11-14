@@ -13,7 +13,7 @@ class UBH_Manager;
 struct BETAHUBBUGREPORTER_API FBH_CustomFieldContext
 {
     EBH_ReportType Type = EBH_ReportType::Bug;
-    /** As it is sent: trimmed by the report form. */
+    /** As the form sends it: the report form trims it, the previous form does not. */
     FString Description;
 };
 
@@ -44,7 +44,10 @@ public:
     virtual void Initialize(FSubsystemCollectionBase& Collection) override;
     virtual void Deinitialize() override;
 
-    /** The subsystem of the game instance WorldContextObject belongs to; null without one (e.g. a dedicated server's or an editor world). */
+    /**
+     * The subsystem of the game instance WorldContextObject belongs to; null without one (e.g. an
+     * editor world outside Play In Editor). A dedicated server has one, but runs no BetaHub service.
+     */
     static UBH_GameInstanceSubsystem* Get(const UObject* WorldContextObject);
 
     /**
@@ -92,7 +95,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "BetaHub")
     UBH_Manager* GetActiveManager() const;
 
-    /** Called by UBH_Manager::StartService and StopService. The first running service stays the active one. */
+    /** Called by UBH_Manager::StartService and StopService. A second service is refused before it starts. */
     void RegisterService(UBH_Manager* InManager);
     void UnregisterService(UBH_Manager* InManager);
 
