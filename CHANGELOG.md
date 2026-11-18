@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.2.0 - 2026-11-18
+
+### Added
+
+- **The form reads your project's minimum description lengths from BetaHub** each time it opens, for a bug as for a suggestion, and counts towards the minimum next to the description's label (*0 / 50 min*), with *Send* disabled below it. A bug shorter than the project's minimum (50 characters by default) used to be refused by BetaHub only after *Send*. Until BetaHub answers, and in a private project, which does not share its minimums with a project token, the form uses the new *Bug Min Length* setting (50) and the existing *Suggestion Min Length* (80). A project that does not check descriptions takes a bug of any length, and BetaHub tells the form so.
+
+### Changed
+
+- **Bugs now have a minimum description length in the form, as suggestions had.** In a private project, which does not share its minimums, *Bug Min Length* (50) applies: if the project does not check descriptions, or has a lower minimum, set it to match, or the form keeps players from sending shorter bugs that BetaHub would take.
+- A suggestion has its own words: *YOUR IDEA* and *Describe your idea* for the description, *Send suggestion*, *Suggestion link* and *SENT WITH THIS SUGGESTION* once sent.
+- ffmpeg joins the recording's segments with `-nostdin -y`, as a safeguard: it never stops to ask a question while the game waits for it.
+
+### Fixed
+
+- **Try again after a suggestion fails to publish sends its screenshot again.** A report no longer deletes its screenshot when it ends; the next screenshot, or the service when it stops, deletes it, unless a report still uploading sends it.
+- A report opened while an earlier report's upload toast is on screen no longer has the toast in its screenshot: the toast is hidden and the game drawn again for the screenshot.
+- The recording's thumbnails are always opaque, whatever alpha the game leaves in its frames.
+- The error at the top of the form has no double space when BetaHub's message ends with a space.
+
 ## 2.1.1 - 2026-11-14
 
 ### Fixed

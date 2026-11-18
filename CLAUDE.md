@@ -91,8 +91,8 @@ game starts itself; with a real `UGameInstance` from `InitializeStandalone`), `B
 `-BetaHubE2E` adds a check that the demo project's replace the setting's); `-BetaHubGame`, in a game (`-game`)
 with a real RHI, checks the upload toast stays out of a report's screenshot where the viewport draws straight
 into the window (`BetaHub.Game.*`);
-`-BetaHubE2E` sends real reports to the BetaHub demo project (`BetaHub.E2E.*`, one of them through the
-widget); `-BetaHubRenders` with a real RHI (no `-nullrhi`) writes the form's states to
+`-BetaHubE2E` sends real reports to the BetaHub demo project and reads its minimums (`BetaHub.E2E.*`, one
+report through the widget); `-BetaHubRenders` with a real RHI (no `-nullrhi`) writes the form's states to
 `Saved/BH_ScreenRenders/` for comparing with the Unity widget's renders. Add `-BetaHubRenderShot=<jpg>` to
 draw the form over that game frame, which also becomes the report's screenshot (images for docs).
 
