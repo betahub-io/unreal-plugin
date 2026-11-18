@@ -170,6 +170,12 @@ namespace
         return P;
     }
 
+    /** BetaHub refuses a description shorter than the project's minimum for its type. */
+    int32 MinimumLength(const FBH_ScreenState& S)
+    {
+        return S.Type == EBH_ReportType::Suggestion ? S.SuggestionMinLength : S.BugMinLength;
+    }
+
     bool FocusedIncluded(const FBH_ScreenState& S)
     {
         const int32 Index = S.Focus.Attachment();
@@ -231,17 +237,32 @@ bool BH_ReportScreenModel::CanSend(const FBH_ScreenState& S)
     {
         return false;
     }
-    // BetaHub refuses suggestions shorter than the project's minimum.
-    if (S.Type == EBH_ReportType::Suggestion && S.Description.TrimStartAndEnd().Len() < S.SuggestionMinLength)
-    {
-        return false;
-    }
-    return true;
+    return S.Description.TrimStartAndEnd().Len() >= MinimumLength(S);
 }
 
 FText BH_ReportScreenModel::ReportTitle(EBH_ReportType Type)
 {
     return Type == EBH_ReportType::Suggestion ? LOCTEXT("SuggestTitle", "SUGGEST AN IDEA") : LOCTEXT("ReportTitle", "REPORT A BUG");
+}
+
+FText BH_ReportScreenModel::DescriptionLabel(EBH_ReportType Type)
+{
+    return Type == EBH_ReportType::Suggestion ? LOCTEXT("IdeaLabel", "YOUR IDEA") : LOCTEXT("DescriptionLabel", "WHAT HAPPENED");
+}
+
+FText BH_ReportScreenModel::DescriptionPrompt(EBH_ReportType Type)
+{
+    return Type == EBH_ReportType::Suggestion ? LOCTEXT("IdeaPrompt", "Describe your idea") : LOCTEXT("DescriptionPrompt", "Describe what happened");
+}
+
+FText BH_ReportScreenModel::LinkName(EBH_ReportType Type)
+{
+    return Type == EBH_ReportType::Suggestion ? LOCTEXT("SuggestionLink", "Suggestion link") : LOCTEXT("ReportLink", "Report link");
+}
+
+FText BH_ReportScreenModel::SentWithLabel(EBH_ReportType Type)
+{
+    return Type == EBH_ReportType::Suggestion ? LOCTEXT("SentWithSuggestion", "SENT WITH THIS SUGGESTION") : LOCTEXT("SentWith", "SENT WITH THIS REPORT");
 }
 
 FBH_Header BH_ReportScreenModel::Header(const FBH_ScreenState& S)
@@ -269,7 +290,7 @@ FBH_Header BH_ReportScreenModel::Header(const FBH_ScreenState& S)
     if (S.Screen == EBH_Screen::Compose && !S.SubmissionError.IsEmpty())
     {
         return {LOCTEXT("ErrorTitle", "COULDN'T SEND"),
-                FText::Format(LOCTEXT("ErrorSub", "Couldn't send. {0} Your text is kept."), FText::FromString(S.SubmissionError)),
+                FText::Format(LOCTEXT("ErrorSub", "Couldn't send. {0} Your text is kept."), FText::FromString(S.SubmissionError.TrimStartAndEnd())),
                 EBH_Tone::Err, true};
     }
     return {ReportTitle(S.Type), LOCTEXT("ComposeSub", "Goes straight to the developers"), EBH_Tone::Normal, true};
@@ -335,7 +356,9 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
             break;
     }
 
-    const FText SendLabel = S.SubmissionError.IsEmpty() ? LOCTEXT("SendReport", "Send report") : LOCTEXT("TryAgain", "Try again");
+    const FText SendLabel = !S.SubmissionError.IsEmpty() ? LOCTEXT("TryAgain", "Try again")
+        : S.Type == EBH_ReportType::Suggestion ? LOCTEXT("SendSuggestion", "Send suggestion")
+        : LOCTEXT("SendReport", "Send report");
     if (!S.bConfigured)
     {
         Bar.Left.Add(Prompt(EBH_Action::Back, Close));
@@ -389,13 +412,11 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
 
 FBH_TagText BH_ReportScreenModel::DescriptionTag(const FBH_ScreenState& S)
 {
-    if (S.Type == EBH_ReportType::Suggestion)
+    const int32 Length = S.Description.TrimStartAndEnd().Len();
+    const int32 Minimum = MinimumLength(S);
+    if (Length < Minimum)
     {
-        const int32 Length = S.Description.TrimStartAndEnd().Len();
-        if (Length < S.SuggestionMinLength)
-        {
-            return {FText::Format(LOCTEXT("TagMinimum", "{0} / {1} min"), Count(Length), Count(S.SuggestionMinLength)), false};
-        }
+        return {FText::Format(LOCTEXT("TagMinimum", "{0} / {1} min"), Count(Length), Count(Minimum)), false};
     }
     return LimitTag(S.Description.Len(), DescriptionLimit, LOCTEXT("Required", "required"));
 }

@@ -37,6 +37,12 @@ bool FBHScreenComposeTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("attachments tab counts what goes along"), Screen.TabText(false, TEXT("AttachmentsCount")), FString(TEXT("2")));
     TestEqual(TEXT("send prompt"), Screen.Prompts(true), TArray<FString>{TEXT("Send report")});
     TestTrue(TEXT("send disabled without text"), FMath::IsWithin(Screen.PromptOpacity(true, 0), 0.0f, 1.0f));
+    TestEqual(TEXT("a bug counts towards BetaHub's minimum"), Screen.Text(TEXT("DescriptionTag")), FString(TEXT("0 / 50 min")));
+    TestEqual(TEXT("bug label"), Screen.Text(TEXT("DescriptionLabel")), FString(TEXT("WHAT HAPPENED")));
+    TestEqual(TEXT("bug prompt"), Screen.Text(TEXT("DescriptionHint")), FString(TEXT("Describe what happened")));
+    // The project's own minimum, once BetaHub tells it, replaces the settings'.
+    Screen.Widget->SetDescriptionMinimums(40, 80);
+    TestEqual(TEXT("the project's minimum"), Screen.Text(TEXT("DescriptionTag")), FString(TEXT("0 / 40 min")));
     TestFalse(TEXT("terms row hidden"), Screen.Shown(TEXT("TermsRow")));
     TestEqual(TEXT("focused label is bold, from the stylesheet's runtime class"),
               Screen.Find<UTextBlock>(TEXT("DescriptionLabel"))->GetFont().TypefaceFontName, FName(TEXT("Bold")));
@@ -92,6 +98,9 @@ bool FBHScreenComposeTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("suggestion title"), Screen.Text(TEXT("Title")), FString(TEXT("SUGGEST AN IDEA")));
     TestEqual(TEXT("report tab follows the type"), Screen.TabText(false, TEXT("ReportText")), FString(TEXT("SUGGEST AN IDEA")));
     TestFalse(TEXT("no steps for a suggestion"), Screen.Shown(TEXT("StepsField")));
+    TestEqual(TEXT("suggestion label"), Screen.Text(TEXT("DescriptionLabel")), FString(TEXT("YOUR IDEA")));
+    TestEqual(TEXT("suggestion prompt"), Screen.Text(TEXT("DescriptionHint")), FString(TEXT("Describe your idea")));
+    TestEqual(TEXT("suggestion send prompt"), Screen.Prompts(true), TArray<FString>{TEXT("Send suggestion")});
     TestEqual(TEXT("only the screenshot goes with a suggestion"), Screen.Find<UVerticalBox>(TEXT("Rows"))->GetChildrenCount(), 1);
 
     // Too short for BetaHub: Ctrl+Enter does nothing, the tag says why.
@@ -131,7 +140,8 @@ bool FBHScreenPadTest::RunTest(const FString& Parameters)
 
     // Terms: required, so sending waits for them.
     TestTrue(TEXT("terms row shown"), Screen.Shown(TEXT("TermsRow")));
-    Screen.Find<UMultiLineEditableText>(TEXT("DescriptionInput"))->SetText(FText::FromString(TEXT("The sword vanishes.")));
+    Screen.Find<UMultiLineEditableText>(TEXT("DescriptionInput"))->SetText(
+        FText::FromString(TEXT("The sword vanishes when I drop it on the bridge in the second level.")));
     Screen.Press(EKeys::Gamepad_DPad_Down);
     TestEqual(TEXT("terms prompts"), Screen.Prompts(false), TArray<FString>{TEXT("Close"), TEXT("Move"), TEXT("Accept"), TEXT("Read terms")});
     TestTrue(TEXT("send waits for the terms"), FMath::IsWithin(Screen.PromptOpacity(true, 0), 0.0f, 1.0f));

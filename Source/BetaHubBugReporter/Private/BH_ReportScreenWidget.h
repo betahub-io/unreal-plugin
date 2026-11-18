@@ -60,6 +60,9 @@ public:
 
     void SetTheme(const FBH_ThemeColors& InTheme);
 
+    /** The project's shortest descriptions BetaHub takes, replacing the settings' minimums. */
+    void SetDescriptionMinimums(int32 Bug, int32 Suggestion);
+
     /** Called with every report this form starts, so something longer-lived can keep it until it is done. */
     TFunction<void(UBH_ReportSubmission*)> KeepSubmission;
 

@@ -102,6 +102,9 @@ public:
     /** Failed after BetaHub had the draft, which BetaHub then publishes by itself. */
     bool IsSentDespiteFailure() const;
 
+    /** Whether the report, still on its way, sends the file at Path. */
+    bool IsUsingFile(const FString& Path) const;
+
     UFUNCTION(BlueprintPure, Category = "BetaHub")
     EBH_SubmissionState GetState() const { return State; }
 
@@ -152,6 +155,8 @@ private:
         draft exists: a refused draft leaves them with the caller, for a retry. */
     TArray<FString> OwnedFiles;
     TArray<FString> OwnedOnceDrafted;
+    /** Every file the attachments are sent from. */
+    TArray<FString> AttachmentFiles;
     int32 NextUpload = 0;
 
     EBH_SubmissionState State = EBH_SubmissionState::Preparing;

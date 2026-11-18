@@ -197,8 +197,6 @@ void UBH_ReportScreenWidget::InitializeScreen()
     Kicker->SetText(LOCTEXT("Kicker", "BETAHUB"));
     PreviewKicker->SetText(LOCTEXT("Kicker", "BETAHUB"));
     TypeName->SetText(LOCTEXT("TypeLabel", "Report type"));
-    DescriptionLabel->SetText(LOCTEXT("DescriptionLabel", "WHAT HAPPENED"));
-    DescriptionHint->SetText(LOCTEXT("DescriptionPrompt", "Describe what happened"));
     StepsLabel->SetText(LOCTEXT("StepsLabel", "STEPS TO REPRODUCE"));
     StepsHint->SetText(LOCTEXT("StepsPrompt", "Add steps if you can. It helps a lot."));
     TermsName->SetText(LOCTEXT("TermsLabel", "I accept the terms of bug reporting"));
@@ -206,9 +204,7 @@ void UBH_ReportScreenWidget::InitializeScreen()
     TypeSuggestionText->SetText(LOCTEXT("TypeSuggestion", "SUGGESTION"));
     EmailLabel->SetText(LOCTEXT("EmailLabel", "EMAIL ME WHEN IT'S FIXED"));
     EmailHint->SetText(LOCTEXT("EmailPrompt", "you@example.com"));
-    LinkName->SetText(LOCTEXT("ReportLink", "Report link"));
     GroupLabel->SetText(LOCTEXT("AttachmentsGroup", "SENDING ALONG"));
-    SentWithLabel->SetText(LOCTEXT("SentWith", "SENT WITH THIS REPORT"));
 
     HeadTabs = MakeTabs(TabsSlot);
     PreviewTabs = MakeTabs(PreviewTabsSlot);
@@ -260,6 +256,7 @@ void UBH_ReportScreenWidget::Setup(UBH_PluginSettings* InSettings, UBH_GameRecor
     if (Settings)
     {
         S.bTermsRequired = Settings->bRequireTermsAcceptance;
+        S.BugMinLength = Settings->BugMinLength;
         S.SuggestionMinLength = Settings->SuggestionMinLength;
         SetTheme(Settings->ResolveTheme());
     }
@@ -351,6 +348,13 @@ void UBH_ReportScreenWidget::SetTheme(const FBH_ThemeColors& InTheme)
     FullPaneKey.Empty();
 }
 
+void UBH_ReportScreenWidget::SetDescriptionMinimums(int32 Bug, int32 Suggestion)
+{
+    S.BugMinLength = Bug;
+    S.SuggestionMinLength = Suggestion;
+    Render();
+}
+
 void UBH_ReportScreenWidget::SetClass(UWidget* Widget, const FString& Class, bool bOn)
 {
     if (Styler && Widget && Styler->HasClass(Widget, Class) != bOn)
@@ -382,7 +386,9 @@ void UBH_ReportScreenWidget::BuildAttachments()
         Shot.Meta = LOCTEXT("ScreenshotMeta", "this frame");
         Shot.Kind = EBH_AttachmentKind::Image;
         Shot.FilePath = ScreenshotPath;
-        Shot.bRemoveAfterUpload = true;
+        // Kept after the upload: after a failed publish, Try again sends it again. The service
+        // that took it deletes it at its next capture.
+        Shot.bRemoveAfterUpload = false;
         AttachmentSet.Add(Shot);
     }
     if (GameRecorder && Settings && !BH_FFmpeg::GetFFmpegPath().IsEmpty())
@@ -1639,6 +1645,8 @@ void UBH_ReportScreenWidget::RenderForm()
     auto Editing = [&](EBH_Field Field) { return bCompose && S.bTyping && !S.bTypingEmail && S.TypingField == Field; };
 
     const bool bBug = S.Type == EBH_ReportType::Bug;
+    DescriptionLabel->SetText(BH_ReportScreenModel::DescriptionLabel(S.Type));
+    DescriptionHint->SetText(BH_ReportScreenModel::DescriptionPrompt(S.Type));
     SetClass(TypeBug, TEXT("switch-option--on"), bBug);
     SetClass(TypeBugText, TEXT("switch-text--on"), bBug);
     SetClass(TypeSuggestion, TEXT("switch-option--on"), !bBug);
@@ -1879,6 +1887,8 @@ void UBH_ReportScreenWidget::RenderSent()
     {
         return;
     }
+    LinkName->SetText(BH_ReportScreenModel::LinkName(S.Type));
+    SentWithLabel->SetText(BH_ReportScreenModel::SentWithLabel(S.Type));
     const bool bShowEmail = S.bCanEmail || !PendingEmail.IsEmpty();
     Show(EmailField, bShowEmail);
     Show(SentNote, bShowEmail || !EmailNote.IsEmpty());

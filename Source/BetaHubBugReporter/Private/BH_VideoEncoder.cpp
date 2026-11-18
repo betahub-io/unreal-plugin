@@ -580,9 +580,7 @@ FString BH_VideoEncoder::MergeSegments(int32 MaxSegments)
         *FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8))));
 
     // FFmpeg command to merge segments
-    FString CommandLine = FString::Printf(TEXT("-f concat -safe 0 -i \"%s\" -c copy \"%s\""),
-        *ConcatFilePath,
-        *MergedFilePath);
+    FString CommandLine = MergeArguments(ConcatFilePath, MergedFilePath);
 
     // Create and start the runnable for merging
     FBH_Runnable* MergeRunnable = new FBH_Runnable(*ffmpegPath, CommandLine);
@@ -684,4 +682,10 @@ void BH_VideoEncoder::RemoveOldFiles()
             }
         }
     }
+}
+
+FString BH_VideoEncoder::MergeArguments(const FString& ConcatFilePath, const FString& OutputPath)
+{
+    // -nostdin and -y: ffmpeg never stops to ask (an existing output file, say) while the game waits for it.
+    return FString::Printf(TEXT("-nostdin -y -f concat -safe 0 -i \"%s\" -c copy \"%s\""), *ConcatFilePath, *OutputPath);
 }

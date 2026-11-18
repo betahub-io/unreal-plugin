@@ -57,7 +57,7 @@ FBH_Thumbnail FBH_ThumbnailRing::Downscale(const TArray<FColor>& Source, int32 S
         {
             const int32 X0 = static_cast<int32>(static_cast<int64>(X) * SourceWidth / Out.Width);
             const int32 X1 = FMath::Max(X0 + 1, static_cast<int32>(static_cast<int64>(X + 1) * SourceWidth / Out.Width));
-            uint32 B = 0, G = 0, R = 0, A = 0;
+            uint32 B = 0, G = 0, R = 0;
             for (int32 SY = Y0; SY < Y1; ++SY)
             {
                 const FColor* Row = Source.GetData() + static_cast<int64>(SY) * SourceWidth;
@@ -66,11 +66,12 @@ FBH_Thumbnail FBH_ThumbnailRing::Downscale(const TArray<FColor>& Source, int32 S
                     B += Row[SX].B;
                     G += Row[SX].G;
                     R += Row[SX].R;
-                    A += Row[SX].A;
                 }
             }
             const uint32 Count = static_cast<uint32>((Y1 - Y0) * (X1 - X0));
-            Out.Pixels[Y * Out.Width + X] = FColor(R / Count, G / Count, B / Count, A / Count);
+            // Opaque whatever the source's alpha: a back buffer's is whatever the scene left there, often 0,
+            // and a thumbnail drawn with it lets the pane behind show through.
+            Out.Pixels[Y * Out.Width + X] = FColor(R / Count, G / Count, B / Count, 255);
         }
     }
     return Out;

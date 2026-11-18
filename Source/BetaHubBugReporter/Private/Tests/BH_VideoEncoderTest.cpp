@@ -251,4 +251,18 @@ bool FBHVideoEncoderUniqueMergedNamesTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHVideoEncoderMergeArgumentsTest,
+    "BetaHub.VideoEncoder.MergeArgumentsNeverAsk",
+    BH_AUTOMATION_TEST_FLAGS)
+
+bool FBHVideoEncoderMergeArgumentsTest::RunTest(const FString& Parameters)
+{
+    // The merge runs while the game waits for it. ffmpeg must never stop to ask on stdin (for example
+    // "Overwrite? [y/N]" over an existing file): nothing answers, and the game would freeze.
+    const FString Args = BH_VideoEncoder::MergeArguments(TEXT("C:/Saved/concat.txt"), TEXT("C:/Saved/Gameplay.mp4"));
+    TestEqual(TEXT("merge arguments"), Args,
+              FString(TEXT("-nostdin -y -f concat -safe 0 -i \"C:/Saved/concat.txt\" -c copy \"C:/Saved/Gameplay.mp4\"")));
+    return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

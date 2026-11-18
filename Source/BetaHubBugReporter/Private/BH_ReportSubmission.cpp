@@ -39,6 +39,10 @@ void UBH_ReportSubmission::Start(TSharedRef<IBH_IssueClient> InClient,
     {
         Uploads.Add(Attachment.Id, FBH_UploadState());
         UploadOrder.Add(Attachment.Id);
+        if (!Attachment.FilePath.IsEmpty())
+        {
+            AttachmentFiles.Add(Attachment.FilePath);
+        }
         if (Attachment.bRemoveAfterUpload && !Attachment.FilePath.IsEmpty())
         {
             OwnedOnceDrafted.Add(Attachment.FilePath);
@@ -341,6 +345,11 @@ void UBH_ReportSubmission::SetUpload(const FString& Id, EBH_UploadStatus Status,
     Upload.Status = Status;
     Upload.Progress = Progress;
     OnAttachmentUploadChanged.Broadcast(this, Id);
+}
+
+bool UBH_ReportSubmission::IsUsingFile(const FString& Path) const
+{
+    return !IsFinished() && AttachmentFiles.Contains(Path);
 }
 
 void UBH_ReportSubmission::SetState(EBH_SubmissionState NewState)

@@ -245,6 +245,8 @@ public:
 
 protected:
     virtual FString StyleAsset() const override { return TEXT("BH_UploadToast"); }
+    virtual void NativeConstruct() override;
+    virtual void NativeDestruct() override;
     virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
     virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
                               FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle,
@@ -272,6 +274,28 @@ namespace BH_ReportScreens
 {
     /** Report screens in a viewport now. The toast stays out of their way. */
     int32& OpenCount();
+}
+
+namespace BH_UploadToasts
+{
+    /**
+     * While it lives, upload toasts stay hidden, also through a redraw: a widget ticks while it is
+     * painted, and a toast's tick would otherwise show it again before the report screen opens.
+     */
+    class FHidden
+    {
+    public:
+        FHidden();
+        ~FHidden();
+        FHidden(const FHidden&) = delete;
+        FHidden& operator=(const FHidden&) = delete;
+
+        /** A toast was on screen when this hid it. */
+        bool WasShowing() const { return bWasShowing; }
+
+    private:
+        bool bWasShowing = false;
+    };
 }
 
 namespace BH_WidgetPaint

@@ -8,6 +8,7 @@
 #include "BH_ReportFormWidget.h"
 #include "BH_BackgroundService.generated.h"
 
+class FBH_ProjectLimits;
 class UBH_ReportSubmission;
 class UGameInstance;
 
@@ -38,6 +39,13 @@ private:
     FTimerHandle TimerHandle;
 
     FString ScreenshotPath;
+
+    /** Screenshots taken for report screens. Each stays for Try again until the next capture, then goes once no report sends it. */
+    TArray<FString> ReportScreenshots;
+    void DeleteUnusedScreenshots();
+
+    /** The project's minimum description lengths, read when a report screen opens. */
+    TSharedPtr<FBH_ProjectLimits> ProjectLimits;
 
     /** The game instance the service runs in, whose world drives its timers. */
     TWeakObjectPtr<UGameInstance> GameInstance;

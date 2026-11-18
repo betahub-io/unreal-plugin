@@ -15,7 +15,8 @@ namespace
     FBH_ScreenState Compose(int32 Attachments = 3)
     {
         FBH_ScreenState S;
-        S.Description = TEXT("The sword vanishes.");
+        // Over BetaHub's default minimum for a bug (50 characters).
+        S.Description = TEXT("The sword vanishes when I drop it on the bridge in the second level.");
         S.Focus.Reset(FieldsFor(S.Type, S.bTermsRequired), Attachments, EBH_Field::Description);
         S.AttachmentIncluded.Init(true, Attachments);
         return S;
@@ -94,6 +95,16 @@ bool FBHCanSendTest::RunTest(const FString& Parameters)
     S.Description = FString::ChrN(DescriptionLimit + 1, TEXT('a'));
     TestFalse(TEXT("over the limit"), CanSend(S));
 
+    // BetaHub refuses a bug shorter than the project's minimum, 50 by default.
+    S.Description = TEXT("The sword vanishes.  ");
+    TestFalse(TEXT("bug under the minimum"), CanSend(S));
+    TestEqual(TEXT("bug minimum tag counts the trimmed text"), DescriptionTag(S).Text.ToString(), FString(TEXT("19 / 50 min")));
+    TestFalse(TEXT("short of a minimum is not a warning"), DescriptionTag(S).bWarn);
+    S.BugMinLength = 19;
+    TestTrue(TEXT("the project's lower minimum"), CanSend(S));
+    TestEqual(TEXT("at the minimum the tag says required again"), DescriptionTag(S).Text.ToString(), FString(TEXT("required")));
+    S.BugMinLength = 50;
+
     S.Description = TEXT("Short idea");
     S.Type = EBH_ReportType::Suggestion;
     TestFalse(TEXT("suggestion under the minimum"), CanSend(S));
@@ -143,7 +154,12 @@ bool FBHPromptsTest::RunTest(const FString& Parameters)
     Bar = Prompts(S);
     TestTrue(TEXT("send disabled without text"), Bar.Right[0].bDisabled);
     S.Description = TEXT("x");
+    TestEqual(TEXT("a bug sends a report"), Prompts(S).Right[0].Label.ToString(), FString(TEXT("Send report")));
+    S.Type = EBH_ReportType::Suggestion;
+    TestEqual(TEXT("a suggestion sends a suggestion"), Prompts(S).Right[0].Label.ToString(), FString(TEXT("Send suggestion")));
     S.SubmissionError = TEXT("Network down.");
+    TestEqual(TEXT("retry, whatever the type"), Prompts(S).Right[0].Label.ToString(), FString(TEXT("Try again")));
+    S.Type = EBH_ReportType::Bug;
     TestEqual(TEXT("retry"), Prompts(S).Right[0].Label.ToString(), FString(TEXT("Try again")));
 
     S.Screen = EBH_Screen::Sending;
@@ -193,6 +209,10 @@ bool FBHHeaderTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("a failed send keeps the tabs"), H.bTabs);
     TestEqual(TEXT("so the subtitle says it"), H.Subtitle.ToString(), FString(TEXT("Couldn't send. Network down. Your text is kept.")));
     TestEqual(TEXT("error tone"), H.Tone, EBH_Tone::Err);
+    // BetaHub's messages can end with a space.
+    S.SubmissionError = TEXT(" Description must be at least 50 characters long. ");
+    TestEqual(TEXT("the server's message is trimmed"), Header(S).Subtitle.ToString(),
+              FString(TEXT("Couldn't send. Description must be at least 50 characters long. Your text is kept.")));
     S.SubmissionError.Empty();
     S.Screen = EBH_Screen::Preview;
     TestTrue(TEXT("the preview is the attachments tab"), Header(S).bTabs);
@@ -208,6 +228,23 @@ bool FBHHeaderTest::RunTest(const FString& Parameters)
     S.bDevelopmentBuild = false;
     TestEqual(TEXT("players do not"), Header(S).Subtitle.ToString(), FString(TEXT("Bug reporting isn't available right now.")));
     TestFalse(TEXT("nothing to switch to while unavailable"), Header(S).bTabs);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHTypeTextsTest, "BetaHub.ReportScreen.TypeTexts", BH_MODEL_TEST_FLAGS)
+bool FBHTypeTextsTest::RunTest(const FString& Parameters)
+{
+    // The words follow the report type, as in the Unity widget.
+    const EBH_ReportType Bug = EBH_ReportType::Bug;
+    const EBH_ReportType Idea = EBH_ReportType::Suggestion;
+    TestEqual(TEXT("bug label"), DescriptionLabel(Bug).ToString(), FString(TEXT("WHAT HAPPENED")));
+    TestEqual(TEXT("suggestion label"), DescriptionLabel(Idea).ToString(), FString(TEXT("YOUR IDEA")));
+    TestEqual(TEXT("bug prompt"), DescriptionPrompt(Bug).ToString(), FString(TEXT("Describe what happened")));
+    TestEqual(TEXT("suggestion prompt"), DescriptionPrompt(Idea).ToString(), FString(TEXT("Describe your idea")));
+    TestEqual(TEXT("bug link row"), LinkName(Bug).ToString(), FString(TEXT("Report link")));
+    TestEqual(TEXT("suggestion link row"), LinkName(Idea).ToString(), FString(TEXT("Suggestion link")));
+    TestEqual(TEXT("bug sent list"), SentWithLabel(Bug).ToString(), FString(TEXT("SENT WITH THIS REPORT")));
+    TestEqual(TEXT("suggestion sent list"), SentWithLabel(Idea).ToString(), FString(TEXT("SENT WITH THIS SUGGESTION")));
     return true;
 }
 

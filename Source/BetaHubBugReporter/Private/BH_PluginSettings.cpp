@@ -7,7 +7,8 @@
 
 namespace
 {
-    /** BetaHub's default minimum description length for feature requests. */
+    /** BetaHub's default minimum description lengths, for bugs and for feature requests. */
+    constexpr int32 DefaultBugMinLength = 50;
     constexpr int32 DefaultSuggestionMinLength = 80;
     /** Over the menus of a typical UMG or CommonUI game. */
     constexpr int32 DefaultReportFormZOrder = 10000;
@@ -49,6 +50,7 @@ UBH_PluginSettings::UBH_PluginSettings()
 
     Theme = EBH_BuiltInTheme::Dark;
     bRequireTermsAcceptance = false;
+    BugMinLength = DefaultBugMinLength;
     SuggestionMinLength = DefaultSuggestionMinLength;
     ReportFormZOrder = DefaultReportFormZOrder;
 

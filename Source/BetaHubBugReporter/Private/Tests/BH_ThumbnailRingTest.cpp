@@ -54,6 +54,13 @@ bool FBHThumbnailDownscaleTest::RunTest(const FString& Parameters)
 
     FBH_Thumbnail Same = FBH_ThumbnailRing::Downscale(Source, 4, 2, 180);
     TestEqual(TEXT("never upscaled"), Same.Height, 2);
+
+    // A back buffer's alpha is whatever the scene left in it, often 0: a frame of the game is opaque,
+    // or the pane behind the thumbnail shows through it.
+    const FColor Clear(200, 100, 50, 0);
+    FBH_Thumbnail Opaque = FBH_ThumbnailRing::Downscale({Clear, Clear}, 2, 1, 1);
+    TestEqual(TEXT("colour kept"), Opaque.Pixels[0].R, static_cast<uint8>(200));
+    TestEqual(TEXT("always opaque"), Opaque.Pixels[0].A, static_cast<uint8>(255));
     return true;
 }
 

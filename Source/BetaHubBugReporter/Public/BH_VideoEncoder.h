@@ -75,4 +75,7 @@ public:
 
     FString MergeSegments(int32 MaxSegments);
     void RemoveOldFiles(); // New function declaration
+
+    /** ffmpeg's arguments to join the segments listed in ConcatFilePath into OutputPath. */
+    static FString MergeArguments(const FString& ConcatFilePath, const FString& OutputPath);
 };

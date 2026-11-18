@@ -459,6 +459,54 @@ void UBH_TextLineWidget::Show(const FString& InText, EBH_Tone InTone, bool bWrap
 
 // ----------------------------------------------------------------------------- toast
 
+namespace
+{
+    TArray<TWeakObjectPtr<UBH_UploadToastWidget>>& LiveToasts()
+    {
+        static TArray<TWeakObjectPtr<UBH_UploadToastWidget>> Toasts;
+        return Toasts;
+    }
+
+    /** FHidden scopes alive now. */
+    int32& HiddenScopes()
+    {
+        static int32 Count = 0;
+        return Count;
+    }
+}
+
+BH_UploadToasts::FHidden::FHidden()
+{
+    ++HiddenScopes();
+    LiveToasts().RemoveAll([](const TWeakObjectPtr<UBH_UploadToastWidget>& Toast) { return !Toast.IsValid(); });
+    for (const TWeakObjectPtr<UBH_UploadToastWidget>& Toast : LiveToasts())
+    {
+        UWidget* Root = Toast->GetRootWidget();
+        if (Toast->IsInViewport() && Root && Root->IsVisible())
+        {
+            Root->SetVisibility(ESlateVisibility::Hidden);
+            bWasShowing = true;
+        }
+    }
+}
+
+BH_UploadToasts::FHidden::~FHidden()
+{
+    HiddenScopes() = FMath::Max(0, HiddenScopes() - 1);
+}
+
+void UBH_UploadToastWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+    LiveToasts().AddUnique(this);
+}
+
+void UBH_UploadToastWidget::NativeDestruct()
+{
+    LiveToasts().Remove(this);
+    Super::NativeDestruct();
+}
+
 void UBH_UploadToastWidget::Observe(UBH_ReportSubmission* InSubmission, const FBH_ThemeColors& Theme)
 {
     Submission = InSubmission;
@@ -518,7 +566,8 @@ void UBH_UploadToastWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
     // Over a report screen it would cover the form (Unity hides it while the form shows).
     if (UWidget* Root = GetRootWidget())
     {
-        const ESlateVisibility Wanted = BH_ReportScreens::OpenCount() > 0 ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible;
+        const bool bHidden = BH_ReportScreens::OpenCount() > 0 || HiddenScopes() > 0;
+        const ESlateVisibility Wanted = bHidden ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible;
         if (Root->GetVisibility() != Wanted)
         {
             Root->SetVisibility(Wanted);

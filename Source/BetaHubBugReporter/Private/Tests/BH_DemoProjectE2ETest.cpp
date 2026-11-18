@@ -5,6 +5,7 @@
 
 #include "BH_HttpIssueClient.h"
 #include "BH_PluginSettings.h"
+#include "BH_ProjectLimits.h"
 #include "BH_ReportSubmission.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
@@ -167,6 +168,37 @@ bool FBHE2ESuggestionTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("published"), S->GetState(), EBH_SubmissionState::Published);
         TestTrue(TEXT("suggestion url"), S->GetIssueUrl().StartsWith(TEXT("http")));
         AddInfo(FString::Printf(TEXT("Published suggestion #%s %s"), *S->GetIssueId(), *S->GetIssueUrl()));
+        return true;
+    }));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHDemoProjectLimitsTest, "BetaHub.E2E.ProjectLimitsOfDemoProject", BH_E2E_TEST_FLAGS)
+bool FBHDemoProjectLimitsTest::RunTest(const FString& Parameters)
+{
+    if (!Enabled(*this))
+    {
+        return true;
+    }
+    // The demo project is public, so its project token may read it: BetaHub's default minimums.
+    TSharedRef<FBH_ProjectLimits> Limits = MakeShared<FBH_ProjectLimits>();
+    TSharedRef<TOptional<FBH_DescriptionMinimums>> Told = MakeShared<TOptional<FBH_DescriptionMinimums>>();
+    Limits->Refresh(DemoTarget(), [Told](const FBH_DescriptionMinimums& Minimums) { *Told = Minimums; });
+
+    const double Started = FPlatformTime::Seconds();
+    ADD_LATENT_AUTOMATION_COMMAND(FFunctionLatentCommand([this, Limits, Told, Started]()
+    {
+        if (!Told->IsSet())
+        {
+            if (FPlatformTime::Seconds() - Started > TimeoutSeconds)
+            {
+                AddError(TEXT("BetaHub never gave the demo project's minimums"));
+                return true;
+            }
+            return false;
+        }
+        TestEqual(TEXT("bug minimum"), Told->GetValue().Bug, 50);
+        TestEqual(TEXT("suggestion minimum"), Told->GetValue().Suggestion, 80);
         return true;
     }));
     return true;

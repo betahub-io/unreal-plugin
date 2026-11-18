@@ -146,7 +146,11 @@ public:
     FString TermsUrl;
 
     UPROPERTY(EditAnywhere, Config, Category="Report Widget",
-        meta=(ClampMin="1", ToolTip="Shortest suggestion the widget sends. Keep it at your BetaHub project's minimum description length (80 unless changed there): BetaHub refuses shorter suggestions."))
+        meta=(ClampMin="1", ToolTip="Shortest bug description the widget sends while your BetaHub project's own minimum is unknown. The widget reads the project's minimum when it opens; until then, or if the project does not reveal it, this applies. BetaHub's default is 50; a project that does not check descriptions takes any length, so set 1 there."))
+    int32 BugMinLength;
+
+    UPROPERTY(EditAnywhere, Config, Category="Report Widget",
+        meta=(ClampMin="1", ToolTip="Shortest suggestion the widget sends while your BetaHub project's own minimum is unknown. The widget reads the project's minimum when it opens; until then, or if the project does not reveal it, this applies. BetaHub's default is 80."))
     int32 SuggestionMinLength;
 
     /** The colours the report widget uses: the theme asset when set, otherwise the built-in theme. */

@@ -92,7 +92,7 @@ Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report
 | **Theme** | One of six built-in colour themes (Dark by default). |
 | **Theme Asset** | Your studio's colours instead: create a *BH_ThemeAsset* data asset with an accent colour, a neutral tint, a light or dark mode and a corner radius, and the form derives a full, contrast-checked theme from them. |
 | **Require Terms Acceptance** / **Terms Url** | Players must accept your terms of bug reporting before they can send; *Read terms* opens the URL. |
-| **Suggestion Min Length** | The shortest suggestion the form sends. Keep it at your BetaHub project's minimum description length (80 unless changed there), or BetaHub refuses the suggestion. |
+| **Bug Min Length** / **Suggestion Min Length** | The shortest bug description and suggestion the form sends while it does not know your project's own minimums. The form reads those from BetaHub each time it opens and counts towards them next to the description's label. A private project does not share them with a project token, so there these two apply: keep them at the project's minimum description lengths (BetaHub's defaults are 50 and 80), or BetaHub refuses shorter reports. A project that does not check descriptions takes a bug of any length: BetaHub tells the form 1, and a private one sets *Bug Min Length* to 1. |
 
 The same in `DefaultGame.ini`; the built-in themes are `Dark`, `Light`, `Neutral`, `Ocean`, `Forest` and `Violet`:
 
@@ -101,6 +101,7 @@ The same in `DefaultGame.ini`; the built-in themes are `Dark`, `Light`, `Neutral
 Theme=Ocean
 bRequireTermsAcceptance=True
 TermsUrl=https://example.com/bug-reporting-terms
+BugMinLength=50
 SuggestionMinLength=80
 ```
 

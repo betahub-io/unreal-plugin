@@ -173,6 +173,8 @@ struct FBH_ScreenState
     FString Email;
     bool bTermsRequired = false;
     bool bTermsAccepted = false;
+    /** The shortest description BetaHub takes, by report type: the project's, or the settings' until it is known. */
+    int32 BugMinLength = 50;
     int32 SuggestionMinLength = 80;
 
     /** Set after a failed send: the compose screen shows it and offers to try again. */
@@ -220,6 +222,11 @@ namespace BH_ReportScreenModel
     bool ArrowLeavesField(bool bShiftDown, bool bTextSelected, bool bCaretAtEdge);
     /** "REPORT A BUG" or "SUGGEST AN IDEA": the compose title and the report tab. */
     FText ReportTitle(EBH_ReportType Type);
+    /** The description field's label and prompt, and the sent screen's link row and list header, by report type. */
+    FText DescriptionLabel(EBH_ReportType Type);
+    FText DescriptionPrompt(EBH_ReportType Type);
+    FText LinkName(EBH_ReportType Type);
+    FText SentWithLabel(EBH_ReportType Type);
     FBH_Header Header(const FBH_ScreenState& S);
     FBH_PromptBar Prompts(const FBH_ScreenState& S);
 

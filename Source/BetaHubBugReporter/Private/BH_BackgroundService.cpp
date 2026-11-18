@@ -2,8 +2,12 @@
 #include "BH_BackgroundService.h"
 #include "BH_Log.h"
 #include "BH_FFmpeg.h"
+#include "BH_HttpIssueClient.h"
+#include "BH_ProjectLimits.h"
+#include "BH_ScreenshotFiles.h"
 #include "BH_ReportScreenWidget.h"
 #include "BH_ReportSubmission.h"
+#include "BH_ReportWidgets.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
@@ -14,6 +18,30 @@
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
 #include "Misc/Guid.h"
+
+namespace
+{
+    /** Gives the form the project's minimum description lengths, now if known and when BetaHub replies. */
+    void ApplyProjectLimits(TSharedPtr<FBH_ProjectLimits>& Limits, const UBH_PluginSettings& Settings, UBH_ReportScreenWidget& Screen)
+    {
+        if (Settings.ProjectId.IsEmpty() || Settings.ProjectToken.IsEmpty())
+        {
+            return;
+        }
+        if (!Limits)
+        {
+            Limits = MakeShared<FBH_ProjectLimits>();
+        }
+        TWeakObjectPtr<UBH_ReportScreenWidget> WeakScreen(&Screen);
+        Limits->Refresh(FBH_ApiTarget::FromSettings(Settings), [WeakScreen](const FBH_DescriptionMinimums& Minimums)
+        {
+            if (UBH_ReportScreenWidget* Open = WeakScreen.Get())
+            {
+                Open->SetDescriptionMinimums(Minimums.Bug, Minimums.Suggestion);
+            }
+        });
+    }
+}
 
 UBH_BackgroundService::UBH_BackgroundService()
     : Settings(nullptr), GameRecorder(nullptr)
@@ -140,6 +168,7 @@ void UBH_BackgroundService::InitializeService()
 void UBH_BackgroundService::StopService()
 {
     ReleaseLogCapture();
+    DeleteUnusedScreenshots();
 
     if (GameRecorder)
     {
@@ -168,8 +197,26 @@ void UBH_BackgroundService::BeginDestroy()
     Super::BeginDestroy();
 }
 
+void UBH_BackgroundService::DeleteUnusedScreenshots()
+{
+    BH_ScreenshotFiles::DeleteUnused(ReportScreenshots, [this](const FString& Path)
+    {
+        if (IsReportFormOpen() && Path == ScreenshotPath)
+        {
+            return true;
+        }
+        return Submissions.ContainsByPredicate([&Path](const TObjectPtr<UBH_ReportSubmission>& Kept)
+        {
+            return Kept && Kept->IsUsingFile(Path);
+        });
+    });
+}
+
 void UBH_BackgroundService::CaptureScreenshot()
 {
+    DeleteUnusedScreenshots();
+    // Nothing left of the last one: a capture that fails leaves the form without a screenshot.
+    ScreenshotPath.Empty();
     if (GameRecorder)
     {
         // Unique per capture: with background upload a second report can be opened while the first report's
@@ -178,6 +225,19 @@ void UBH_BackgroundService::CaptureScreenshot()
         const FString UniqueScreenshotPath = FPaths::Combine(FPaths::ProjectSavedDir(),
             FString::Printf(TEXT("BH_Screenshot_%s.jpg"),
             *FGuid::NewGuid().ToString(EGuidFormats::Digits).Left(8)));
+        // The recorded frames show the upload toast of an earlier report: hide it, and draw the game again without it.
+        const BH_UploadToasts::FHidden Hidden;
+        if (Hidden.WasShowing())
+        {
+            const UWorld* World = GetServiceWorld();
+            UGameViewportClient* Viewport = World ? World->GetGameViewport() : nullptr;
+            if (Viewport && BH_ScreenshotFiles::CaptureViewport(*Viewport, UniqueScreenshotPath))
+            {
+                ScreenshotPath = UniqueScreenshotPath;
+                return;
+            }
+            UE_LOG(LogBetaHub, Warning, TEXT("Could not draw the game again without the upload toast; the screenshot shows it."));
+        }
         ScreenshotPath = GameRecorder->CaptureScreenshotToJPG(UniqueScreenshotPath);
     }
 }
@@ -228,6 +288,18 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
 
     ReportForm->Setup(Settings, GameRecorder, ScreenshotPath, LogCapture ? LogCapture->GetCapturedLogs() : FString(), bTryCaptureMouse);
     OpenForm = ReportForm;
+    if (UBH_ReportScreenWidget* Screen = Cast<UBH_ReportScreenWidget>(ReportForm))
+    {
+        // The classic form deletes its screenshot itself; the report screen leaves it for Try again.
+        if (!ScreenshotPath.IsEmpty())
+        {
+            ReportScreenshots.AddUnique(ScreenshotPath);
+        }
+        if (Settings)
+        {
+            ApplyProjectLimits(ProjectLimits, *Settings, *Screen);
+        }
+    }
 
     UE_LOG(LogBetaHub, Log, TEXT("ReportForm widget created successfully."));
 

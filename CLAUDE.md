@@ -83,8 +83,14 @@ what you use — and are compiled out of Shipping.
 
 Suites: `BetaHub.ReportScreen.*` (the form's model, and the generated widget driven by key and pad events
 through `TakeWidget()->OnKeyDown`), `BetaHub.Extension.*` (custom fields, opening the form, the service a
-game starts itself; with a real `UGameInstance` from `InitializeStandalone`), `BetaHub.Input.*`, `BetaHub.ReportSubmit*`, `BetaHub.Theme.*`,
-`BetaHub.Styler.*`, `BetaHub.Thumbnails.*`, and `BetaHub.VideoEncoder.*`. Opt-in, both off by default:
+game starts itself; with a real `UGameInstance` from `InitializeStandalone`), `BetaHub.Input.*`, `BetaHub.Submission.*`, `BetaHub.Attachments.*`,
+`BetaHub.ProjectLimits.*` (the project's minimum description lengths, over a fake BetaHub), `BetaHub.Theme.*`,
+`BetaHub.Styler.*`, `BetaHub.Thumbnails.*`, and `BetaHub.VideoEncoder.*`. Opt-in, all off by default:
+`-BetaHubPIE` with a real RHI plays the shortcut, the form and the upload toast in a Play In Editor session
+(`BetaHub.PlayInEditor.*`; the form asks BetaHub for the configured project's minimums whenever it opens, and
+`-BetaHubE2E` adds a check that the demo project's replace the setting's); `-BetaHubGame`, in a game (`-game`)
+with a real RHI, checks the upload toast stays out of a report's screenshot where the viewport draws straight
+into the window (`BetaHub.Game.*`);
 `-BetaHubE2E` sends real reports to the BetaHub demo project (`BetaHub.E2E.*`, one of them through the
 widget); `-BetaHubRenders` with a real RHI (no `-nullrhi`) writes the form's states to
 `Saved/BH_ScreenRenders/` for comparing with the Unity widget's renders. Add `-BetaHubRenderShot=<jpg>` to
@@ -101,6 +107,8 @@ draw the form over that game frame, which also becomes the report's screenshot (
   disk, and carry the `Gameplay_<date>_<time>_<guid>` structure. Guards the per-report unique filename
   that background upload relies on (a second report must not clobber a file the first is still uploading);
   a revert to a timestamp-only name fails the structure check.
+- `MergeArgumentsNeverAsk` — the merge's ffmpeg arguments carry `-nostdin -y`: the game waits for the
+  merge, so ffmpeg must never stop to ask on stdin.
 
 ### Running the tests (headless, Windows)
 

@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "BH_ReportSubmission.h"
+#include "BH_ScreenshotFiles.h"
 #include "BH_ReportAttachment.h"
 #include "HAL/PlatformFileManager.h"
 #include "Misc/FileHelper.h"
@@ -430,6 +431,45 @@ bool FBHSubmissionPublishGuardTest::RunTest(const FString& Parameters)
     H.Submission->Publish(false);
     TestEqual(TEXT("still preparing"), H.Submission->GetState(), EBH_SubmissionState::Preparing);
     TestEqual(TEXT("nothing sent"), H.Client->Calls.Num(), 0);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSubmissionFilesInUseTest, "BetaHub.Submission.FilesInUse", BH_SUBMISSION_TEST_FLAGS)
+bool FBHSubmissionFilesInUseTest::RunTest(const FString& Parameters)
+{
+    // The service asks before it deletes an earlier screenshot.
+    const FString Shot = TEXT("C:/Saved/BH_Screenshot_a.jpg");
+    FHarness H;
+    TestFalse(TEXT("nothing before it starts"), H.Submission->IsUsingFile(Shot));
+    H.Start({MakeAttachment(BH_AttachmentIds::Screenshot, EBH_AttachmentKind::Image, Shot)});
+    TestTrue(TEXT("while the draft is created"), H.Submission->IsUsingFile(Shot));
+    TestFalse(TEXT("only its own files"), H.Submission->IsUsingFile(TEXT("C:/Saved/BH_Screenshot_b.jpg")));
+    H.Client->CompleteDraft();
+    TestTrue(TEXT("while it uploads"), H.Submission->IsUsingFile(Shot));
+    H.Client->CompleteUpload();
+    H.Submission->Publish(false);
+    H.Client->CompletePublish();
+    TestFalse(TEXT("not once finished"), H.Submission->IsUsingFile(Shot));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenshotFilesTest, "BetaHub.Submission.ScreenshotKeptUntilNextCapture", BH_SUBMISSION_TEST_FLAGS)
+bool FBHScreenshotFilesTest::RunTest(const FString& Parameters)
+{
+    // A screenshot stays after its report, for Try again; the next capture deletes it unless a report still sends it.
+    const FString First = WriteOwnedFile(TEXT("BH_ScreenshotFilesTest_1.jpg"));
+    const FString Second = WriteOwnedFile(TEXT("BH_ScreenshotFilesTest_2.jpg"));
+    TArray<FString> Taken = {First, Second};
+    FString InUse = First;
+    BH_ScreenshotFiles::DeleteUnused(Taken, [&InUse](const FString& Path) { return Path == InUse; });
+    TestTrue(TEXT("a report still sends the first"), FPaths::FileExists(First));
+    TestFalse(TEXT("the second is deleted"), FPaths::FileExists(Second));
+    TestTrue(TEXT("and forgotten"), Taken == TArray<FString>{First});
+
+    InUse.Empty();
+    BH_ScreenshotFiles::DeleteUnused(Taken, [&InUse](const FString& Path) { return Path == InUse; });
+    TestFalse(TEXT("deleted once its report is done"), FPaths::FileExists(First));
+    TestEqual(TEXT("nothing left to track"), Taken.Num(), 0);
     return true;
 }
 
