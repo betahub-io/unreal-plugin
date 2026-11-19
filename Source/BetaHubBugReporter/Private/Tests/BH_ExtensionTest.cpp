@@ -213,7 +213,7 @@ bool FBHShortcutTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("shortcut disabled"), Shortcut::ShouldTrigger(EKeys::F12, false, false, EKeys::F12, false));
     TestFalse(TEXT("another key"), Shortcut::ShouldTrigger(EKeys::F11, false, true, EKeys::F12, false));
     TestFalse(TEXT("no key set"), Shortcut::ShouldTrigger(EKeys::Invalid, false, true, EKeys::Invalid, false));
-    TestFalse(TEXT("form open: the key goes to the form, which closes on it"),
+    TestFalse(TEXT("form open: the key goes to the form, which takes it without closing"),
               Shortcut::ShouldTrigger(EKeys::F12, false, true, EKeys::F12, /*bFormOpen*/ true));
     return true;
 }

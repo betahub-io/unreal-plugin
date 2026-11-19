@@ -20,8 +20,8 @@ public:
     explicit FBH_ShortcutProcessor(UBH_Manager* InManager);
 
     /**
-     * Whether a press asks for the form, the game's focus aside. Not while the form is open:
-     * the form takes the same key to close itself.
+     * Whether a press asks for the form, the game's focus aside. Not while the form is open: a form with
+     * the keyboard handles the key without acting on it, so it does not reach the game.
      */
     static bool ShouldTrigger(const FKey& Pressed, bool bRepeat, bool bShortcutEnabled, const FKey& ShortcutKey, bool bFormOpen);
 

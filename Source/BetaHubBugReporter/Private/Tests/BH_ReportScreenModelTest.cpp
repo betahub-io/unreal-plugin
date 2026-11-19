@@ -174,10 +174,20 @@ bool FBHPromptsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("email is the main action"), Bar.Right[0].Label.ToString(), FString(TEXT("Email me a link")));
     S.SentFocus = EBH_SentFocus::Link;
     TestEqual(TEXT("sent, link focused"), Labels(Prompts(S).Left), TArray<FString>{TEXT("Back to game"), TEXT("Move"), TEXT("Copy link")});
+    TestTrue(TEXT("the link row has the focus once moved to"), LinkFocused(S));
+    S.SentFocus = EBH_SentFocus::Email;
+    TestFalse(TEXT("the email row has it first"), LinkFocused(S));
     S.bCanEmail = false;
     Bar = Prompts(S);
     TestEqual(TEXT("sent, done: back first here too"), Labels(Bar.Left), TArray<FString>{TEXT("Back to game"), TEXT("Copy link")});
-    TestTrue(TEXT("and it is the main action"), Bar.Left[0].bPrimary);
+    // No email step (a suggestion, or once the email is given): the link is the row to act on, so it has the focus.
+    TestTrue(TEXT("the link has the focus"), LinkFocused(S));
+    TestEqual(TEXT("and Confirm copies it"), Bar.Left[1].Action, EBH_Action::Confirm);
+    TestTrue(TEXT("back to game is the main action"), Bar.Left[0].bPrimary);
+    // A click into the given email's read-only field: that field has the focus, not the link.
+    S.bTyping = true;
+    TestFalse(TEXT("not while in the email field"), LinkFocused(S));
+    S.bTyping = false;
     TestEqual(TEXT("nothing on the right"), Bar.Right.Num(), 0);
 
     S.Screen = EBH_Screen::Preview;

@@ -296,6 +296,11 @@ FBH_Header BH_ReportScreenModel::Header(const FBH_ScreenState& S)
     return {ReportTitle(S.Type), LOCTEXT("ComposeSub", "Goes straight to the developers"), EBH_Tone::Normal, true};
 }
 
+bool BH_ReportScreenModel::LinkFocused(const FBH_ScreenState& S)
+{
+    return !S.bTyping && (!S.bCanEmail || S.SentFocus == EBH_SentFocus::Link);
+}
+
 FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
 {
     // Back is always the first prompt, so it never moves between screens.
@@ -327,7 +332,7 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
             if (!S.bCanEmail)
             {
                 Bar.Left.Add(Prompt(EBH_Action::Back, LOCTEXT("BackToGame", "Back to game"), true));
-                Bar.Left.Add(Prompt(EBH_Action::Alt, LOCTEXT("CopyLink", "Copy link")));
+                Bar.Left.Add(Prompt(EBH_Action::Confirm, LOCTEXT("CopyLink", "Copy link")));
                 return Bar;
             }
             if (S.bTyping)

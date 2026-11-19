@@ -229,6 +229,8 @@ namespace BH_ReportScreenModel
     FText SentWithLabel(EBH_ReportType Type);
     FBH_Header Header(const FBH_ScreenState& S);
     FBH_PromptBar Prompts(const FBH_ScreenState& S);
+    /** The sent screen's link row has the focus, so Confirm copies the link: always when it is the only row. */
+    bool LinkFocused(const FBH_ScreenState& S);
 
     FBH_TagText DescriptionTag(const FBH_ScreenState& S);
     FBH_TagText StepsTag(const FBH_ScreenState& S);

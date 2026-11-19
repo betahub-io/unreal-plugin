@@ -624,14 +624,10 @@ FReply UBH_ReportScreenWidget::NativeOnKeyDown(const FGeometry& InGeometry, cons
         ScrollPreview(Intent.Scroll);
         return FReply::Handled();
     }
-    // The key that opened the form closes it, but not in the middle of typing.
+    // The shortcut only opens the form: pressed again, it would lose what the player wrote, and a double
+    // press would flash the form open and shut. Taken here so it does not reach the game; Esc closes the form.
     if (Settings && Settings->bEnableShortcut && Key == Settings->ShortcutKey)
     {
-        SyncState();
-        if (S.Screen != EBH_Screen::Sending && !S.bTyping)
-        {
-            Close();
-        }
         return FReply::Handled();
     }
     return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
@@ -903,7 +899,7 @@ void UBH_ReportScreenWidget::ActSent(EBH_Action Action)
             }
             break;
         case EBH_Action::Confirm:
-            if (S.bCanEmail && S.SentFocus == EBH_SentFocus::Link)
+            if (BH_ReportScreenModel::LinkFocused(S))
             {
                 CopyLink();
             }
@@ -1895,7 +1891,7 @@ void UBH_ReportScreenWidget::RenderSent()
     const bool bEditing = S.bTyping && S.bTypingEmail;
     RenderField(EmailView, BH_ReportScreenModel::EmailTag(S), S.bCanEmail && !bEditing && S.SentFocus == EBH_SentFocus::Email, bEditing,
                 !S.Email.IsEmpty());
-    const bool bLinkFocused = S.bCanEmail && !bEditing && S.SentFocus == EBH_SentFocus::Link;
+    const bool bLinkFocused = BH_ReportScreenModel::LinkFocused(S);
     SetClass(LinkRowBox, TEXT("row--focused"), bLinkFocused);
     SetClass(LinkName, TEXT("row-name--focused"), bLinkFocused);
     EmailInput->SetIsReadOnly(!S.bCanEmail);

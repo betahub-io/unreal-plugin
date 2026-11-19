@@ -10,6 +10,7 @@
 #include "BH_ReportSubmission.h"
 #include "BH_ReportWidgets.h"
 #include "BH_ScreenshotFiles.h"
+#include "Components/MultiLineEditableText.h"
 #include "Components/TextBlock.h"
 #include "Editor.h"
 #include "HAL/FileManager.h"
@@ -35,7 +36,7 @@
  * The shortcut and the form in a real Play In Editor session: a game viewport, a player
  * controller, and keys sent through Slate as a keyboard sends them, input preprocessors
  * included. Covers what the headless tests cannot: the shortcut in play, in a UI-only menu
- * and while paused, closing on the same key, and the input mode the form leaves behind.
+ * and while paused, the same key leaving an open form alone, and the input mode the form leaves behind.
  * Opt-in with -BetaHubPIE, with a real RHI (no -nullrhi).
  */
 #define BH_PIE_TEST_FLAGS (EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -190,17 +191,42 @@ bool FBHPlayInEditorTest::RunTest(const FString& Parameters)
         const UTextBlock* Text = Form ? Cast<UTextBlock>(Form->GetWidgetFromName(Name)) : nullptr;
         return Text ? Text->GetText().ToString() : FString();
     };
+    auto FormDescription = [Subsystem]()
+    {
+        UBH_GameInstanceSubsystem* Sub = Subsystem();
+        UUserWidget* Form = Sub ? Sub->OpenReportForm(true) : nullptr;
+        return Form ? Cast<UMultiLineEditableText>(Form->GetWidgetFromName(TEXT("DescriptionInput"))) : nullptr;
+    };
+    const FString Draft = TEXT("Half a description, not sent yet.");
 
     auto& S = Script->Steps;
     // The game is running with the plugin's service and a player.
     S.Add([=, this]() { return Active() && Player() && Viewport() && Viewport()->GetGameViewportWidget().IsValid(); });
 
-    // In play: the shortcut opens the form, and the same key closes it.
+    // In play: the shortcut opens the form. Pressed again it leaves the form and what the player wrote
+    // alone (a toggle would lose a half-written report); Esc closes it.
     S.Add([=, this]() { Player()->SetInputMode(FInputModeGameOnly()); Press(EKeys::F12); return true; });
-    S.Add([=, this]() { TestTrue(TEXT("in play: F12 opens the form"), FormOpen()); Press(EKeys::F12); return true; });
     S.Add([=, this]()
     {
-        TestFalse(TEXT("in play: F12 again closes it"), FormOpen());
+        TestTrue(TEXT("in play: F12 opens the form"), FormOpen());
+        if (UMultiLineEditableText* Description = FormDescription())
+        {
+            Description->SetText(FText::FromString(Draft));
+        }
+        Press(EKeys::F12);
+        return true;
+    });
+    S.Add([=, this]()
+    {
+        TestTrue(TEXT("in play: F12 again leaves the form open"), FormOpen());
+        const UMultiLineEditableText* Description = FormOpen() ? FormDescription() : nullptr;
+        TestEqual(TEXT("in play: with what the player wrote"), Description ? Description->GetText().ToString() : FString(), Draft);
+        Press(EKeys::Escape);
+        return true;
+    });
+    S.Add([=, this]()
+    {
+        TestFalse(TEXT("in play: Esc closes it"), FormOpen());
         TestFalse(TEXT("in play: the game takes input again"), Viewport()->IgnoreInput());
         return true;
     });
@@ -237,9 +263,10 @@ bool FBHPlayInEditorTest::RunTest(const FString& Parameters)
     // Paused: the shortcut still opens the form.
     S.Add([=, this]() { UGameplayStatics::SetGamePaused(Game(), true); Press(EKeys::F12); return true; });
     S.Add([=, this]() { TestTrue(TEXT("paused: F12 opens the form"), FormOpen()); Press(EKeys::F12); return true; });
+    S.Add([=, this]() { TestTrue(TEXT("paused: F12 again leaves it open"), FormOpen()); Press(EKeys::Escape); return true; });
     S.Add([=, this]()
     {
-        TestFalse(TEXT("paused: F12 again closes it"), FormOpen());
+        TestFalse(TEXT("paused: Esc closes it"), FormOpen());
         UGameplayStatics::SetGamePaused(Game(), false);
         return true;
     });
