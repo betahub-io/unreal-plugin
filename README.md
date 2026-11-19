@@ -170,7 +170,8 @@ else
 ## Opening the form from your game
 
 Players open the form with the shortcut key (F12 by default) during play, in your menus and while the
-game is paused. To open it from your own button, a pause menu or a store screen, call *Open Report Form*
+game is paused. The key only opens it; Esc (B on a controller) closes it. To open it from your own button,
+a pause menu or a store screen, call *Open Report Form*
 on the *BH Game Instance Subsystem*: in Blueprint through *Get BH Game Instance Subsystem*, in C++
 
 ```cpp

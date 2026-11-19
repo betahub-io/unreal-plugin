@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.1 - 2026-11-19
+
+### Changed
+
+- **The shortcut key only opens the report form.** Pressed while the form is open, it does nothing; Esc, or B on a controller, closes the form, as the prompt bar shows. Since 2.0 the key closed an open form, which lost a half-written report and let a double press flash the form open and shut.
+- After sending a suggestion, or once a bug's email is given, the report link has the focus: Enter, or A on a controller, copies it. *Copy link* (P, or the left face button on a controller) still works as before.
+
 ## 2.2.0 - 2026-11-18
 
 ### Added
