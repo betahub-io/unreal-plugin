@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.3.0 - 2026-11-20
+
+### Added
+
+- **Report modules:** data the plugin adds to bug reports, switched on or off in *Project Settings → Plugins → BetaHub Bug Reporter → Modules*, on the command line (`-BetaHubModules=hardware,network`), or from the game (*Set Module Enabled* on the *BH Game Instance Subsystem*, which wins). Each offers rows in the report form that the player can leave out; suggestions take none, and the previous form does not offer them.
+- **Hardware module, on by default:** how hard the machine worked in the seconds before the form opened, as long as the gameplay video: frame rate and the longest frame, game thread, render thread and GPU frame times, CPU load of the machine and of the game, the game's video memory against its budget, RAM, I/O and free disk space. A summary goes in the custom field `performance`, every second in `betahub-performance-v1.json` for BetaHub's view (row *Performance*). Row *Device* sends the machine (CPU, GPU, RAM, OS), which BetaHub adds as the report's device after saving it.
+- **Network module, off by default,** as the Unity plugin's latency and geolocation providers: ping times to BetaHub in the custom field `latency` (row *Network*); the player's country and network provider in `country` and `asn` (row *Location*), asked for only when a report is sent with that row left in. ICMP pings while the form is open, HTTP when ICMP fails; with *Ping Continuously* also every *Ping Interval Seconds* (15) in the background.
+- **C++:** a game's own module, a `UBH_ReportModule` registered with `RegisterModule`.
+
+### Changed
+
+- A bug report waits up to 10 seconds for the modules' data before its draft is created; only the network module's location request takes time.
+
 ## 2.2.1 - 2026-11-19
 
 ### Changed
