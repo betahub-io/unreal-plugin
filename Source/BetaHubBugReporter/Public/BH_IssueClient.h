@@ -14,6 +14,8 @@ struct BETAHUBBUGREPORTER_API FBH_ReportContent
     FString ReleaseLabel;
     /** Sent with a bug report; a suggestion takes none. */
     TMap<FString, FBH_CustomFieldValue> CustomFields;
+    /** The machine in words, which BetaHub turns into the report's device after saving it. Bug reports only. */
+    FString DeviceInfo;
 };
 
 /** Outcome of creating the draft: an issue on BetaHub, or an error. */

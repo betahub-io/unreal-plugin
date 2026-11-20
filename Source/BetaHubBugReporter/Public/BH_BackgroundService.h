@@ -9,6 +9,7 @@
 #include "BH_BackgroundService.generated.h"
 
 class FBH_ProjectLimits;
+class UBH_ReportModules;
 class UBH_ReportSubmission;
 class UGameInstance;
 
@@ -49,6 +50,10 @@ private:
 
     /** The game instance the service runs in, whose world drives its timers. */
     TWeakObjectPtr<UGameInstance> GameInstance;
+
+    /** Its game instance's report modules, which run while the service runs. */
+    TWeakObjectPtr<UBH_ReportModules> ReportModules;
+    UBH_ReportModules* FindReportModules() const;
 
     void RetryInitializeService();
     void InitializeService();

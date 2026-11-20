@@ -36,6 +36,14 @@ enum class EBH_MediaUploadMode : uint8
     WaitForUpload      UMETA(DisplayName = "Wait for upload (block until fully submitted)")
 };
 
+// How the network module measures ping times. Mirrors the Unity plugin's PingMethod.
+UENUM(BlueprintType)
+enum class EBH_PingMethod : uint8
+{
+    ICMP,
+    HTTP
+};
+
 UCLASS(Config=Game, defaultconfig)
 class BETAHUBBUGREPORTER_API UBH_PluginSettings : public UObject
 {
@@ -152,6 +160,48 @@ public:
     UPROPERTY(EditAnywhere, Config, Category="Report Widget",
         meta=(ClampMin="1", ToolTip="Shortest suggestion the widget sends while your BetaHub project's own minimum is unknown. The widget reads the project's minimum when it opens; until then, or if the project does not reveal it, this applies. BetaHub's default is 80."))
     int32 SuggestionMinLength;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Hardware",
+        meta=(DisplayName="Enable Hardware Module",
+              ToolTip="Record how hard the machine works while the game runs (frame rate and frame times, CPU, GPU, RAM, video memory, I/O), once a second, for as long as the gameplay video. A bug report gets the seconds before its form opened (row Performance): a summary in the custom field 'performance' and every second in betahub-performance-v1.json, for BetaHub's view. Row Device sends the machine (CPU, GPU, RAM, OS), which BetaHub adds as the report's device. The player can leave either out. Module id: hardware."))
+    bool bEnableHardwareModule;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(DisplayName="Enable Network Module",
+              ToolTip="Measure ping times to BetaHub, and send the player's country and network provider, as the Unity plugin's latency and geolocation providers do: custom fields 'latency', 'country' and 'asn'. The player can leave each out. Module id: network."))
+    bool bEnableNetworkModule;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(ToolTip="ICMP pings the hosts below, and switches to HTTP when every host fails three times in a row. HTTP times requests to the HTTP endpoint."))
+    EBH_PingMethod PingMethod;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(ToolTip="Hosts pinged over ICMP, all at once in each round."))
+    TArray<FString> PingHosts;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(ToolTip="Timed for HTTP pings. Its response headers also give the player's country and network provider."))
+    FString PingHttpEndpoint;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(ClampMin="1", ClampMax="20", ToolTip="Ping rounds while the report form is open, or the fewest results a report has in continuous mode."))
+    int32 PingCount;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(ToolTip="Ping in the background while the game runs, not only while the report form is open."))
+    bool bPingContinuously;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(EditCondition="bPingContinuously", ClampMin="1", ToolTip="Seconds between background pings."))
+    float PingIntervalSeconds;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(ToolTip="Send the player's country (custom field 'country'). Asked from the HTTP endpoint only when the player sends a report with Location left in."))
+    bool bSendCountry;
+
+    UPROPERTY(EditAnywhere, Config, Category="Modules|Network",
+        meta=(ToolTip="Send the player's network provider (custom field 'asn'). Asked from the HTTP endpoint only when the player sends a report with Location left in."))
+    bool bSendNetworkProvider;
 
     /** The colours the report widget uses: the theme asset when set, otherwise the built-in theme. */
     FBH_ThemeColors ResolveTheme() const;

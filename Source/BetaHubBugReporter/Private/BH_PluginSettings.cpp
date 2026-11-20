@@ -12,6 +12,11 @@ namespace
     constexpr int32 DefaultSuggestionMinLength = 80;
     /** Over the menus of a typical UMG or CommonUI game. */
     constexpr int32 DefaultReportFormZOrder = 10000;
+    /** The Unity plugin's LatencyProvider defaults. */
+    const TCHAR* const DefaultPingHost = TEXT("ping.betahub.io");
+    const TCHAR* const DefaultPingHttpEndpoint = TEXT("https://ping.betahub.io/ping.txt");
+    constexpr int32 DefaultPingCount = 10;
+    constexpr float DefaultPingIntervalSeconds = 15.0f;
 }
 
 UBH_PluginSettings::UBH_PluginSettings()
@@ -53,6 +58,18 @@ UBH_PluginSettings::UBH_PluginSettings()
     BugMinLength = DefaultBugMinLength;
     SuggestionMinLength = DefaultSuggestionMinLength;
     ReportFormZOrder = DefaultReportFormZOrder;
+
+    // Hardware load is the game's own; where the player is, is the player's: that module is opt-in.
+    bEnableHardwareModule = true;
+    bEnableNetworkModule = false;
+    PingMethod = EBH_PingMethod::ICMP;
+    PingHosts = { DefaultPingHost };
+    PingHttpEndpoint = DefaultPingHttpEndpoint;
+    PingCount = DefaultPingCount;
+    bPingContinuously = false;
+    PingIntervalSeconds = DefaultPingIntervalSeconds;
+    bSendCountry = true;
+    bSendNetworkProvider = true;
 
     // The report screen is the default; the classic form stays selectable. Both are found here, so
     // both are cooked into a game whichever it uses, and the classic form is the fallback should

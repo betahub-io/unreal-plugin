@@ -84,13 +84,17 @@ what you use — and are compiled out of Shipping.
 Suites: `BetaHub.ReportScreen.*` (the form's model, and the generated widget driven by key and pad events
 through `TakeWidget()->OnKeyDown`), `BetaHub.Extension.*` (custom fields, opening the form, the service a
 game starts itself; with a real `UGameInstance` from `InitializeStandalone`), `BetaHub.Input.*`, `BetaHub.Submission.*`, `BetaHub.Attachments.*`,
-`BetaHub.ProjectLimits.*` (the project's minimum description lengths, over a fake BetaHub), `BetaHub.Theme.*`,
+`BetaHub.ProjectLimits.*` (the project's minimum description lengths, over a fake BetaHub), `BetaHub.Modules.*`
+(the report modules: switching, collecting with a time limit, hardware samples, ping rounds, over fake readings
+and fake pings), `BetaHub.Theme.*`,
 `BetaHub.Styler.*`, `BetaHub.Thumbnails.*`, and `BetaHub.VideoEncoder.*`. Opt-in, all off by default:
 `-BetaHubPIE` with a real RHI plays the shortcut, the form and the upload toast in a Play In Editor session
 (`BetaHub.PlayInEditor.*`; the form asks BetaHub for the configured project's minimums whenever it opens, and
 `-BetaHubE2E` adds a check that the demo project's replace the setting's); `-BetaHubGame`, in a game (`-game`)
 with a real RHI, checks the upload toast stays out of a report's screenshot where the viewport draws straight
-into the window (`BetaHub.Game.*`);
+into the window, that the hardware module reads the real machine (frame times, CPU, video memory through
+DXGI) and logs its summary, `betahub-performance-v1.json` and `device_info`, and that the network module pings `ping.betahub.io` over ICMP and gets a
+country from its endpoint (`BetaHub.Game.*`);
 `-BetaHubE2E` sends real reports to the BetaHub demo project and reads its minimums (`BetaHub.E2E.*`, one
 report through the widget); `-BetaHubRenders` with a real RHI (no `-nullrhi`) writes the form's states to
 `Saved/BH_ScreenRenders/` for comparing with the Unity widget's renders. Add `-BetaHubRenderShot=<jpg>` to
@@ -135,6 +139,10 @@ Success looks like `Test Completed. Result={Success}` per test, ending in `Autom
 - **The automation framework fails any test that emits a `LogError`.** When a path legitimately logs an
   error (e.g. the fail-fast refusal), declare it with `AddExpectedError(...)`. Never lower the product's
   log level just to satisfy a test — fix the test, not the business logic.
+- **Unity builds merge the plugin's files**: two files' anonymous-namespace helpers with one name, or a
+  test's file-scope `using namespace`, collide in a clean build (5.3 showed it; an incremental build with the
+  files in the git working set does not). Name file-local helpers after their file, and put test
+  `using namespace` inside the test function. The engine's own names (`FStats`) collide too.
 - **`windows.h` leaks macros that collide with engine identifiers** — `DeleteFile` → `DeleteFileW`
   (notably 5.3, colliding with `IPlatformFile::DeleteFile`) and `Yield` (breaking
   `FPlatformProcess::Yield`). Prefer `#include "Windows/WindowsHWrapper.h"` over raw `<windows.h>`;

@@ -4,6 +4,7 @@
 #include "BH_Log.h"
 #include "BH_Manager.h"
 #include "BH_PluginSettings.h"
+#include "BH_ReportModules.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -18,6 +19,10 @@ void UBH_GameInstanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     }
 
     UE_LOG(LogBetaHub, Log, TEXT("BH_GameInstanceSubsystem initialized."));
+
+    // Before the service: it starts the modules that are on.
+    Modules = NewObject<UBH_ReportModules>(this);
+    Modules->AddBuiltInModules();
 
     UBH_PluginSettings* Settings = GetMutableDefault<UBH_PluginSettings>();
 
@@ -134,6 +139,27 @@ TMap<FString, FBH_CustomFieldValue> UBH_GameInstanceSubsystem::CustomFieldsFor(c
 {
     const UBH_GameInstanceSubsystem* Subsystem = Get(WorldContextObject);
     return Subsystem ? Subsystem->CollectCustomFields(Context) : TMap<FString, FBH_CustomFieldValue>();
+}
+
+void UBH_GameInstanceSubsystem::SetModuleEnabled(FName ModuleId, bool bEnabled)
+{
+    if (Modules)
+    {
+        Modules->SetEnabled(ModuleId, bEnabled);
+    }
+}
+
+bool UBH_GameInstanceSubsystem::IsModuleEnabled(FName ModuleId) const
+{
+    return Modules && Modules->IsEnabled(ModuleId);
+}
+
+void UBH_GameInstanceSubsystem::RegisterModule(UBH_ReportModule* Module)
+{
+    if (Modules)
+    {
+        Modules->Add(Module);
+    }
 }
 
 UBH_Manager* UBH_GameInstanceSubsystem::GetActiveManager() const

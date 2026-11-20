@@ -35,6 +35,10 @@ namespace
     const TCHAR* ScreenshotsEndpoint = TEXT("screenshots");
     const TCHAR* VideoClipsEndpoint = TEXT("video_clips");
     const TCHAR* LogFilesEndpoint = TEXT("log_files");
+    /** BetaHub parses device_info after saving the report, and never refuses the report over it. */
+    const TCHAR* DeviceInfoValueField = TEXT("issue[extras][device_info][value]");
+    const TCHAR* DeviceInfoModeField = TEXT("issue[extras][device_info][validation_mode]");
+    const TCHAR* DeviceInfoBackgroundMode = TEXT("background");
 
     bool Succeeded(bool bWasSuccessful, const FHttpResponsePtr& Response)
     {
@@ -100,6 +104,10 @@ namespace
         {
             return TEXT("video/mp4");
         }
+        if (Extension == TEXT("json"))
+        {
+            return TEXT("application/json");
+        }
         return TEXT("text/plain");
     }
 
@@ -163,6 +171,11 @@ void FBH_BugIssueClient::CreateDraft(const FBH_ReportContent& Content, const TAr
     {
         Request->AddField(Field.Key, Field.Value);
     }
+    if (!Content.DeviceInfo.IsEmpty())
+    {
+        Request->AddField(DeviceInfoValueField, Content.DeviceInfo);
+        Request->AddField(DeviceInfoModeField, DeviceInfoBackgroundMode);
+    }
     Request->FinalizeFormData();
 
     TWeakPtr<FBH_BugIssueClient> WeakSelf = SharedThis(this);
@@ -204,6 +217,9 @@ void FBH_BugIssueClient::Upload(const FBH_ReportAttachment& Attachment, TFunctio
         case EBH_AttachmentKind::Clip: Endpoint = VideoClipsEndpoint; break;
         case EBH_AttachmentKind::Log: Endpoint = LogFilesEndpoint; break;
         case EBH_AttachmentKind::File: Endpoint = LogFilesEndpoint; break;
+        case EBH_AttachmentKind::Data:
+            OnDone(TEXT("Travels as custom fields with the report; nothing to upload"));
+            return;
     }
 
     // Text without a file (the captured game log) goes up as a temporary file.
@@ -241,7 +257,7 @@ void FBH_BugIssueClient::Upload(const FBH_ReportAttachment& Attachment, TFunctio
         OnGameThread([OnDone, Error]() { OnDone(Error); });
     });
     Uploader->UploadFileToS3(Target.Endpoint, Target.ProjectId, IssueKey, UpdateToken, Endpoint, Path,
-                             ContentTypeFor(Path), FString(), Complete);
+                             ContentTypeFor(Path), Attachment.UploadName, Complete);
 }
 
 void FBH_BugIssueClient::SetReporterEmail(const FString& Email, TFunction<void(const FString&)> OnDone)

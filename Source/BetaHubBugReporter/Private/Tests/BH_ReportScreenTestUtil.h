@@ -6,6 +6,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "BH_PluginSettings.h"
+#include "BH_ReportModules.h"
 #include "BH_ReportScreenWidget.h"
 #include "BH_ReportWidgets.h"
 #include "Blueprint/UserWidget.h"
@@ -87,6 +88,8 @@ namespace BH_ScreenTest
         FString Log = TEXT("LogTemp: Display: started\nLogTemp: Warning: slow frame\nLogTemp: Error: sword lost\n");
         /** The world to open the form in; any world when null. A game instance's world gives the form its subsystem. */
         UWorld* World = nullptr;
+        /** Report modules whose rows the form offers, as the service hands them over. */
+        UBH_ReportModules* Modules = nullptr;
     };
 
     /** One report screen and the means to play it. */
@@ -115,6 +118,7 @@ namespace BH_ScreenTest
             {
                 Find<UMultiLineEditableText>(TEXT("DescriptionInput"))->SetText(FText::FromString(Options.Description));
             }
+            Widget->Modules = Options.Modules;
             Widget->Setup(Settings, Options.Recorder, WriteScreenshot(), Options.Log, false);
             Slate = Widget->TakeWidget();
             return true;

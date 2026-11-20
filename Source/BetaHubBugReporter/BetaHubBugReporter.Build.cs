@@ -50,9 +50,17 @@ public class BetaHubBugReporter : ModuleRules
 				"RenderCore",
 				"RHI",
 				"ApplicationCore",
+				// The network report module's ICMP pings.
+				"Icmp",
 				// ... add private dependencies that you statically link with here ...
 			}
 			);
+
+		// The hardware report module reads video memory through DXGI.
+		if (Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			PublicSystemLibraries.Add("dxgi.lib");
+		}
 
 		// The Play In Editor test drives a real PIE session (Private/Tests/BH_PlayInEditorTest.cpp).
 		if (Target.bBuildEditor)

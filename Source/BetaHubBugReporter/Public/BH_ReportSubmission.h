@@ -6,6 +6,7 @@
 #include "Templates/Function.h"
 #include "BH_IssueClient.h"
 #include "BH_ReportAttachment.h"
+#include "BH_ReportModule.h"
 #include "BH_ReportSubmission.generated.h"
 
 UENUM(BlueprintType)
@@ -56,6 +57,12 @@ struct BETAHUBBUGREPORTER_API FBH_SubmissionOptions
      * has no file yet. Returns the saved file, or empty when saving failed.
      */
     TFunction<FString()> SaveRecording;
+    /**
+     * Called on the game thread before the draft, for the data the report modules add at send
+     * time. The report stays Preparing until Done; the modules' fields join the report's own
+     * (which win), and their rows are filled in.
+     */
+    TFunction<void(FBH_OnModuleCollected Done)> Collect;
 };
 
 class UBH_ReportSubmission;
@@ -87,6 +94,9 @@ public:
 
     /** Request publication. Valid while UploadingMedia or AwaitingPublish; waits for uploads and email. */
     void Publish(bool bEmailMyReport);
+
+    /** Adds what the modules collected: their fields under the report's own, their files in their rows, the device. */
+    static void AddCollected(const FBH_ModuleContribution& Collected, FBH_ReportContent& Content, TArray<FBH_ReportAttachment>& Attachments);
 
     /** Mark the report failed, e.g. when it cannot even start. */
     void Fail(const FString& InError);
@@ -136,6 +146,9 @@ public:
 
 private:
     void SetState(EBH_SubmissionState NewState);
+    /** FilesMadeForIt: files the modules wrote for this report, its own at once, whatever happens to the draft. */
+    void CreateDraft(const FBH_ReportContent& Content, const TArray<FBH_ReportAttachment>& Attachments,
+                     const TSet<FString>& FilesMadeForIt = TSet<FString>());
     void OnDraftDone(const FBH_DraftResult& Result);
     void UploadNext();
     void SetUpload(const FString& Id, EBH_UploadStatus Status, float Progress);
@@ -151,6 +164,8 @@ private:
     TArray<FBH_ReportAttachment> PendingUploads;
     TArray<FString> UploadOrder;
     TMap<FString, FBH_UploadState> Uploads;
+    /** Rows that travel as custom fields: sent with the draft. */
+    TArray<FString> DataRows;
     /** Deleted when the report is finished. Files the caller passed in join only once the
         draft exists: a refused draft leaves them with the caller, for a retry. */
     TArray<FString> OwnedFiles;
@@ -165,6 +180,8 @@ private:
     FString Error;
     bool bStarted = false;
     bool bPublishRequested = false;
+    /** The form let go of the report: no retry will use its files. */
+    bool bLetGo = false;
     bool bPublishDispatched = false;
     bool bEmailMyReport = false;
     bool bEmailInFlight = false;

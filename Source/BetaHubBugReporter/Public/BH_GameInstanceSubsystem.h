@@ -8,6 +8,8 @@
 #include "BH_GameInstanceSubsystem.generated.h"
 
 class UBH_Manager;
+class UBH_ReportModule;
+class UBH_ReportModules;
 
 /** What a report is about, for code that adds custom fields to it. */
 struct BETAHUBBUGREPORTER_API FBH_CustomFieldContext
@@ -91,6 +93,23 @@ public:
 
     FBH_OnBuildCustomFields OnBuildCustomFields;
 
+    /**
+     * Switch a report module on or off in this game instance, whatever Project Settings and the
+     * command line say: "hardware" (machine load) or "network" (ping times and location).
+     */
+    UFUNCTION(BlueprintCallable, Category = "BetaHub|Modules")
+    void SetModuleEnabled(FName ModuleId, bool bEnabled);
+
+    /** Whether a report module runs while the BetaHub service runs. False for an unknown module. */
+    UFUNCTION(BlueprintPure, Category = "BetaHub|Modules")
+    bool IsModuleEnabled(FName ModuleId) const;
+
+    /** Add a report module of the game's own. It runs while the BetaHub service runs, if enabled. */
+    void RegisterModule(UBH_ReportModule* Module);
+
+    /** The report modules of this game instance; null on a dedicated server. */
+    UBH_ReportModules* GetModules() const { return Modules; }
+
     /** The manager whose service runs in this game instance, if any. */
     UFUNCTION(BlueprintPure, Category = "BetaHub")
     UBH_Manager* GetActiveManager() const;
@@ -103,6 +122,9 @@ protected:
     /** The manager this subsystem starts when Spawn Background Service On Startup is set. */
     UPROPERTY(BlueprintReadOnly, Transient, Category = "BetaHub")
     TObjectPtr<UBH_Manager> Manager = nullptr;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UBH_ReportModules> Modules = nullptr;
 
 private:
     void SetField(const FString& Name, const FBH_CustomFieldValue& Value);

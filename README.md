@@ -305,6 +305,176 @@ BugReport->SubmitReportWithMedia(
     TEXT(""), TEXT(""), CustomFields);
 ```
 
+## Report modules
+
+Data the plugin itself adds to bug reports, which you switch on or off. Each module offers rows in the
+report form, and the player can leave a row out as any attachment. Suggestions take none, and the
+previous form (*BugReportForm*) does not offer them.
+
+| Module | On by default | What a bug report gets |
+| --- | --- | --- |
+| `hardware` | yes | How hard the machine worked in the seconds before the form opened, as long as the gameplay video (*Max Recording Duration*, 60 s): a summary in the custom field `performance` and every second in the file `betahub-performance-v1.json`; one row, *Performance*, takes or leaves out both. Row *Device* sends the machine (CPU, GPU, RAM, OS), which BetaHub adds as the report's device. |
+| `network` | no | Ping times to BetaHub in the custom field `latency` (row *Network*), and the player's country and network provider in `country` and `asn` (row *Location*), as the Unity plugin's latency and geolocation providers send them. |
+
+The fields are text fields, which BetaHub creates on the first report that has them. A report waits up to
+10 seconds for the modules' data (only the location request takes time), then goes without a module that
+has not answered.
+
+**Switching modules**, each level winning over the one before it:
+
+1. *Project Settings → Plugins → BetaHub Bug Reporter → Modules*: *Enable Hardware Module*, *Enable
+   Network Module*, and the network module's options.
+2. The command line, for a test run without a rebuild: `-BetaHubModules=hardware,network` runs exactly the
+   modules named and no other, `-BetaHubModules=none` runs none.
+3. The game: *Set Module Enabled* on the *BH Game Instance Subsystem*, for example only after the player
+   agrees, or only in test builds. The choice lasts for the game instance, so set it again each session.
+   *Is Module Enabled* tells whether a module is switched on.
+
+```cpp
+if (UBH_GameInstanceSubsystem* BetaHub = UBH_GameInstanceSubsystem::Get(this))
+{
+    BetaHub->SetModuleEnabled(TEXT("network"), bPlayerAgreed);
+}
+```
+
+### Hardware
+
+Sampled once a second on the game thread:
+
+| Line in `performance` | Measured |
+| --- | --- |
+| PC | CPU and its threads, GPU, RAM, Windows version |
+| FPS | Average frames per second, and the lowest of any second; the longest single frame |
+| Frame time, avg | Game thread, render thread and GPU, as `stat unit` shows them; the GPU's peak, its slowest second |
+| CPU | Load of the whole machine and the game's share of it, average and peak |
+| VRAM | The game's video memory at its peak, and the budget Windows gives it |
+| RAM | The game's memory at its peak; the free memory at its lowest |
+| I/O | The game's reads and writes per second at their peak (files, and other I/O such as the network); free disk space |
+
+CPU, VRAM and I/O are read from Windows.
+
+```text
+PC: AMD Ryzen 7 5800X (16 threads), NVIDIA GeForce RTX 3070, 32 GB RAM, Windows 11 (24H2) [10.0.26100.4061]
+FPS: avg 58, min 31; longest frame 212 ms
+Frame time, avg: game thread 12.1 ms, render thread 8.0 ms, GPU 14.2 ms (peak 31.0 ms)
+CPU: machine avg 41%, peak 97%; game avg 22%, peak 35%
+VRAM: game peak 5.8 GB of 7.2 GB budget
+RAM: game peak 6.1 GB; free min 2.3 GB of 32 GB
+I/O: game read peak 120 MB/s, write peak 15 MB/s; disk free 112 GB
+Last 60 s before the report
+```
+
+The file, for BetaHub's view of a report, goes with the report's logs under the name
+`betahub-performance-v1.json`. It has a row for about each second. A row's `seconds` is when its second
+ended, counted back from the form opening, as the gameplay video ends when the form opens. A long hitch
+stretches a row over more than a second, so line the rows up with the video by `seconds`, not by their order.
+A value nobody could read is `null`. A new version of the format gets a new name.
+
+```json
+{
+  "format": "betahub-performance",
+  "version": 1,
+  "sample_seconds": 1,
+  "ends_at": "form_opened",
+  "machine": {"cpu": "AMD Ryzen 7 5800X", "logical_cores": 16, "gpu": "NVIDIA GeForce RTX 3070", "ram_gb": 32, "os": "Windows 11 (24H2) [10.0.26100.4061]"},
+  "columns": ["seconds", "fps", "frame_max_ms", "game_thread_ms", "render_thread_ms", "gpu_ms", "cpu_machine_pct", "cpu_game_pct", "ram_game_mb", "ram_free_mb", "vram_game_mb", "vram_budget_mb", "io_read_mb_s", "io_write_mb_s", "disk_free_gb"],
+  "samples": [
+    [-59.6, 58.1, 23.4, 11.2, 8.1, 13.4, 41, 23, 6100, 2410, 5210, 7300, 1.20, 0.20, 112.0],
+    ...
+    [-0.6, 57.9, 24.0, 11.0, 8.3, 15.1, 39, 24, 6140, 2380, 6120, 7300, 0.90, 0.10, 112.0]
+  ]
+}
+```
+
+The GPU's load in percent is not measured; its frame time shows how busy it is.
+
+*Device* sends the PC line as `device_info`. After the report is saved, BetaHub adds the device it recognises
+in it (CPU, GPU, memory, OS) as the report's device, the one its *Device* card and device filters show, unless
+the project's Device field is disabled. Reading it never delays or refuses the report. Leaving *Device* out
+does not keep the machine out of the report: *Performance* names it too.
+
+### Network
+
+When the report form opens, the module pings the *Ping Hosts* (`ping.betahub.io`) over ICMP: *Ping Count*
+(10) rounds, each 0.1 s after the last one's answers (a ping waits up to 5 s), while the player writes; the
+report takes the times measured so far. If every host fails three times in a row, it times requests to the
+*Ping Http Endpoint* instead, as *Ping Method: HTTP* does from the start. With *Ping Continuously*, it pings
+every *Ping Interval Seconds* (15) in the background, and the form adds the rounds a host still lacks to reach
+*Ping Count* answers; the counts then run from the start of the game, and min/avg/max cover each host's
+newest 256 times.
+
+`latency` has a line per host pinged, for example:
+
+```text
+ping.betahub.io: min/avg/max = 18ms/24ms/41ms (9/10 requests), Lost: 1/10 (10.0%)
+```
+
+After a switch to HTTP, a second line for the endpoint follows `ping.betahub.io: latency unavailable`.
+
+The player's country and network provider are asked from the *Ping Http Endpoint* only when a report is
+sent with *Location* left in, read from its response headers, and kept for the session. *Send Country* and
+*Send Network Provider* choose which of the two go. The options can be set while *Enable Network Module* is
+off, for a game that switches the module on itself.
+
+To switch the network module on for every player, with its options at their defaults:
+
+```ini
+[/Script/BetaHubBugReporter.BH_PluginSettings]
+bEnableNetworkModule=True
+PingMethod=ICMP
++PingHosts=ping.betahub.io
+PingHttpEndpoint=https://ping.betahub.io/ping.txt
+PingCount=10
+bPingContinuously=False
+PingIntervalSeconds=15
+bSendCountry=True
+bSendNetworkProvider=True
+```
+
+### Your own module (C++)
+
+A module is a `UBH_ReportModule`: it runs while the BetaHub service runs, offers rows when the form
+opens, and is asked for its data when a bug report is sent with one of its rows left in (always, if it
+offers no rows).
+
+```cpp
+#include "BH_ReportModule.h"
+#include "ServerStateModule.generated.h"
+
+UCLASS()
+class UServerStateModule : public UBH_ReportModule
+{
+    GENERATED_BODY()
+public:
+    virtual FName GetModuleId() const override { return TEXT("server"); }
+
+    virtual void AddAttachments(TArray<FBH_ReportAttachment>& OutRows) const override
+    {
+        FBH_ReportAttachment Row;
+        Row.Id = TEXT("server-state");                 // start with the module id
+        Row.Name = FText::FromString(TEXT("Server"));
+        Row.Meta = FText::FromString(TEXT("match state"));
+        Row.Kind = EBH_AttachmentKind::Data;           // sent as custom fields, nothing to upload
+        OutRows.Add(Row);
+    }
+
+    virtual void Collect(const TSet<FString>& IncludedRows, FBH_OnModuleCollected Done) override
+    {
+        FBH_ModuleContribution Data;
+        Data.CustomFields.Add(TEXT("server_region"), FBH_CustomFieldValue::FromString(TEXT("eu-west")));
+        Done(Data);   // once, within 10 seconds
+    }
+};
+
+// Once the game instance is up:
+BetaHub->RegisterModule(NewObject<UServerStateModule>(BetaHub));
+```
+
+A module of your own runs unless `SetModuleEnabled` switches it off or a `-BetaHubModules` list leaves it
+out; override `IsEnabledByDefault` for one that starts off. *Start*, *Stop*, *OnFormOpened*, *OnFormClosed*
+and *PreviewText* are there to override as well. A custom field your game sets itself wins
+over a module's field of the same name.
+
 ## Getting Help
 
 **Found a problem? Tell us on [Discord](https://discord.gg/g2wpRtG).** That's where our team is, and

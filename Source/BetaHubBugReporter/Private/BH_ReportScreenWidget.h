@@ -22,6 +22,7 @@ class UTexture2D;
 class UUniformGridPanel;
 class UVerticalBox;
 class UBH_AttachmentRowWidget;
+class UBH_ReportModules;
 class UBH_ClipFrameWidget;
 class UBH_GlyphWidget;
 class UBH_PromptItemWidget;
@@ -65,6 +66,12 @@ public:
 
     /** Called with every report this form starts, so something longer-lived can keep it until it is done. */
     TFunction<void(UBH_ReportSubmission*)> KeepSubmission;
+
+    /** The report modules whose rows a bug report offers and whose data it sends. Set before Setup. */
+    TWeakObjectPtr<UBH_ReportModules> Modules;
+
+    /** Called once when the form goes, however it goes. */
+    TFunction<void()> OnClosed;
 
     UPROPERTY(EditDefaultsOnly, Category = "BetaHub|Widgets")
     TSubclassOf<UBH_AttachmentRowWidget> AttachmentRowClass;
@@ -286,6 +293,10 @@ private:
     void RenderPromptSide(UHorizontalBox* Side, const TArray<FBH_Prompt>& Prompts, bool bRight);
     void RenderCaptionGlyph();
     void FillPane(FPaneView& Pane, const FBH_ReportAttachment* Item, bool bFullScreen);
+    /** Text shown line by line in a pane, as the game log is. */
+    void ShowLines(FPaneView& Pane, const FString& Text, bool bFullScreen, int32 MaxLines);
+    /** A report module's row: shown as the module's text. */
+    bool IsModuleRow(const FBH_ReportAttachment* Item) const;
     void UpdateHover();
     void UpdatePaneSizes();
     /** Where the full-screen log is scrolled; true when that changed the prompts. */

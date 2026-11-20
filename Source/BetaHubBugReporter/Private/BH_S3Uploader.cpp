@@ -45,7 +45,8 @@ void BH_S3Uploader::UploadFileToS3(
     }
 
     // Calculate file properties
-    const FString Filename = FPaths::GetCleanFilename(FilePath);
+    // A file the report names (the hardware module's) keeps that name on BetaHub, for its view and its download.
+    const FString Filename = CustomName.IsEmpty() ? FPaths::GetCleanFilename(FilePath) : CustomName;
     const int64 FileSize = FileData.Num();
     const FString Checksum = CalculateMD5Checksum(FileData);
 

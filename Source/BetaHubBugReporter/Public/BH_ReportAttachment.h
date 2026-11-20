@@ -11,7 +11,9 @@ enum class EBH_AttachmentKind : uint8
     Image,
     Clip,
     Log,
-    File
+    File,
+    /** Travels as custom fields with the report: nothing to upload (a report module's ping times). */
+    Data
 };
 
 /** One item the player can send along with a report: a row in the report form. */
@@ -49,6 +51,10 @@ struct BETAHUBBUGREPORTER_API FBH_ReportAttachment
     /** Delete FilePath once the report no longer needs it. */
     UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
     bool bRemoveAfterUpload = false;
+
+    /** The file's name on BetaHub; the uploaded file's own name when empty. */
+    UPROPERTY(BlueprintReadWrite, Category = "BetaHub")
+    FString UploadName;
 };
 
 /** Identifiers of the attachments the plugin itself provides. */

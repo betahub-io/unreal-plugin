@@ -34,18 +34,90 @@ void UBH_ReportSubmission::Start(TSharedRef<IBH_IssueClient> InClient,
     Options = InOptions;
     bPublishRequested = Options.bAutoPublish;
 
+    // Nothing else need hold on to a report on its way: its form may close, or the game may
+    // spawn and drop the form itself. Released in Finish.
+    AddToRoot();
+    // In use from now on, while the modules collect too: the service must not delete them.
+    for (const FBH_ReportAttachment& Attachment : Attachments)
+    {
+        if (!Attachment.FilePath.IsEmpty())
+        {
+            AttachmentFiles.AddUnique(Attachment.FilePath);
+        }
+    }
+    if (!Options.Collect)
+    {
+        CreateDraft(Content, Attachments);
+        return;
+    }
+    TWeakObjectPtr<UBH_ReportSubmission> WeakThis(this);
+    Options.Collect([WeakThis, Content, Attachments](FBH_ModuleContribution Collected)
+    {
+        UBH_ReportSubmission* Self = WeakThis.Get();
+        if (!Self || Self->IsFinished())
+        {
+            return;
+        }
+        FBH_ReportContent Completed = Content;
+        TArray<FBH_ReportAttachment> Filled = Attachments;
+        AddCollected(Collected, Completed, Filled);
+        TSet<FString> FilesMadeForIt;
+        for (const FBH_ReportAttachment& Row : Collected.Attachments)
+        {
+            if (Row.bRemoveAfterUpload && !Row.FilePath.IsEmpty())
+            {
+                FilesMadeForIt.Add(Row.FilePath);
+            }
+        }
+        Self->CreateDraft(Completed, Filled, FilesMadeForIt);
+    });
+}
+
+void UBH_ReportSubmission::AddCollected(const FBH_ModuleContribution& Collected, FBH_ReportContent& Content,
+                                        TArray<FBH_ReportAttachment>& Attachments)
+{
+    for (const TPair<FString, FBH_CustomFieldValue>& Field : Collected.CustomFields)
+    {
+        if (!Content.CustomFields.Contains(Field.Key))
+        {
+            Content.CustomFields.Add(Field.Key, Field.Value);
+        }
+    }
+    if (Content.DeviceInfo.IsEmpty())
+    {
+        Content.DeviceInfo = Collected.DeviceInfo;
+    }
+    for (FBH_ReportAttachment& Attachment : Attachments)
+    {
+        if (const FBH_ReportAttachment* Filled = Collected.Attachments.FindByPredicate(
+                [&Attachment](const FBH_ReportAttachment& Row) { return Row.Id == Attachment.Id; }))
+        {
+            Attachment = *Filled;
+        }
+    }
+}
+
+void UBH_ReportSubmission::CreateDraft(const FBH_ReportContent& Content, const TArray<FBH_ReportAttachment>& Attachments,
+                                       const TSet<FString>& FilesMadeForIt)
+{
     TArray<FBH_ReportAttachment> Inline;
     for (const FBH_ReportAttachment& Attachment : Attachments)
     {
         Uploads.Add(Attachment.Id, FBH_UploadState());
         UploadOrder.Add(Attachment.Id);
+        if (Attachment.Kind == EBH_AttachmentKind::Data)
+        {
+            DataRows.Add(Attachment.Id);
+            continue;
+        }
         if (!Attachment.FilePath.IsEmpty())
         {
-            AttachmentFiles.Add(Attachment.FilePath);
+            AttachmentFiles.AddUnique(Attachment.FilePath);
         }
         if (Attachment.bRemoveAfterUpload && !Attachment.FilePath.IsEmpty())
         {
-            OwnedOnceDrafted.Add(Attachment.FilePath);
+            // A module's file, or any once the form let go, has nobody else to delete it, even after a refused draft.
+            (bLetGo || FilesMadeForIt.Contains(Attachment.FilePath) ? OwnedFiles : OwnedOnceDrafted).Add(Attachment.FilePath);
         }
         if (Client->SupportsUploads())
         {
@@ -57,9 +129,6 @@ void UBH_ReportSubmission::Start(TSharedRef<IBH_IssueClient> InClient,
         }
     }
 
-    // Nothing else need hold on to a report on its way: its form may close, or the game may
-    // spawn and drop the form itself. Released in Finish.
-    AddToRoot();
     SetState(EBH_SubmissionState::CreatingDraft);
     TWeakObjectPtr<UBH_ReportSubmission> WeakThis(this);
     Client->CreateDraft(Content, Inline, [WeakThis](const FBH_DraftResult& Result)
@@ -88,9 +157,9 @@ void UBH_ReportSubmission::OnDraftDone(const FBH_DraftResult& Result)
     OwnedFiles.Append(MoveTemp(OwnedOnceDrafted));
 
     // Items that travelled with the draft are done now.
-    if (!Client->SupportsUploads())
+    for (const FString& Id : UploadOrder)
     {
-        for (const FString& Id : UploadOrder)
+        if (!Client->SupportsUploads() || DataRows.Contains(Id))
         {
             SetUpload(Id, EBH_UploadStatus::Sent, 1.0f);
         }
@@ -386,11 +455,19 @@ void UBH_ReportSubmission::PublishWhenReady()
 {
     switch (State)
     {
+        case EBH_SubmissionState::Preparing:
+            if (!bStarted)
+            {
+                break;
+            }
+            // Started, and waiting for the modules' data: as while creating the draft.
+            [[fallthrough]];
         case EBH_SubmissionState::CreatingDraft:
             // OnDraftDone goes straight to Publishing. The caller is letting go, so nobody will
             // retry with these files: they are the report's to delete however the draft ends.
             bPublishRequested = true;
             bEmailMyReport = false;
+            bLetGo = true;
             OwnedFiles.Append(MoveTemp(OwnedOnceDrafted));
             break;
         case EBH_SubmissionState::UploadingMedia:

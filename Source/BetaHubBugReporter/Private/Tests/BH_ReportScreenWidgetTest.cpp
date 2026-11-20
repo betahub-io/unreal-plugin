@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "BH_ReportScreenTestUtil.h"
+#include "BH_NetworkModule.h"
 
 /**
  * The generated BH_ReportScreen asset driven the way a player drives it: key and pad
@@ -286,6 +287,47 @@ bool FBHScreenMovePromptTest::RunTest(const FString& Parameters)
     Screen.ClickPrompt(false, 0);
     TestTrue(TEXT("other prompts still click"), Clicked.Num() == 1 && Clicked[0] == EBH_Action::Back);
     Screen.Close();
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenModuleRowsTest, "BetaHub.ReportScreen.Widget.ModuleRows", BH_SCREEN_TEST_FLAGS)
+bool FBHScreenModuleRowsTest::RunTest(const FString& Parameters)
+{
+    // The network module, switched on by the game, with pings that answer at once.
+    TStrongObjectPtr<UBH_ReportModules> Modules(NewObject<UBH_ReportModules>());
+    UBH_NetworkModule* Network = NewObject<UBH_NetworkModule>(Modules.Get());
+    Network->PingIcmp = [](const FString&, UBH_NetworkModule::FOnPing OnDone) { OnDone(true, 20.0); };
+    Network->GetHttp = [](const FString&, UBH_NetworkModule::FOnHttp OnDone) { OnDone(false, 0.0, {}); };
+    Modules->Add(Network);
+    Modules->SetEnabled(UBH_NetworkModule::Id, true);
+    Modules->Start(TEXT(""));
+    Modules->FormOpened();
+
+    BH_ScreenTest::FOpenOptions Options;
+    Options.Modules = Modules.Get();
+    FScreen Screen;
+    if (!Screen.Open(*this, Options))
+    {
+        Modules->Stop();
+        return false;
+    }
+    TestEqual(TEXT("the module's rows after the game's"), Screen.Find<UVerticalBox>(TEXT("Rows"))->GetChildrenCount(), 4);
+    TestEqual(TEXT("network row"), Screen.RowText(2, TEXT("Name")), FString(TEXT("Network")));
+    TestEqual(TEXT("location row"), Screen.RowText(3, TEXT("Name")), FString(TEXT("Location")));
+    TestTrue(TEXT("included until the player leaves it out"), Screen.RowChecked(2) && Screen.RowChecked(3));
+    TestEqual(TEXT("counted with the others"), Screen.Text(TEXT("GroupCount")), FString(TEXT("4 OF 4")));
+
+    // BetaHub takes no custom fields with a suggestion: up to the type, Enter switches it.
+    for (int32 i = 0; i < 4; ++i)
+    {
+        Screen.Press(EKeys::Up);
+    }
+    Screen.Press(EKeys::Enter);
+    TestEqual(TEXT("a suggestion now"), Screen.Text(TEXT("Title")), FString(TEXT("SUGGEST AN IDEA")));
+    TestEqual(TEXT("a suggestion offers only the screenshot"), Screen.Find<UVerticalBox>(TEXT("Rows"))->GetChildrenCount(), 1);
+
+    Screen.Close();
+    Modules->Stop();
     return true;
 }
 

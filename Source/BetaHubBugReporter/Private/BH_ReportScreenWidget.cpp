@@ -1,5 +1,6 @@
 // Copyright (c) 2024-2026 Upsoft sp. z o. o.
 #include "BH_ReportScreenWidget.h"
+#include "BH_ReportModules.h"
 #include "BH_GameInstanceSubsystem.h"
 #include "BH_FFmpeg.h"
 #include "BH_GameRecorder.h"
@@ -309,6 +310,12 @@ void UBH_ReportScreenWidget::NativeDestruct()
         }
     }
     Detach();
+    if (OnClosed)
+    {
+        TFunction<void()> Closed = MoveTemp(OnClosed);
+        OnClosed = nullptr;
+        Closed();
+    }
     Super::NativeDestruct();
 }
 
@@ -411,6 +418,13 @@ void UBH_ReportScreenWidget::BuildAttachments()
         Log.TextContent = LogFileContents;
         AttachmentSet.Add(Log);
     }
+    if (UBH_ReportModules* ReportModules = Modules.Get())
+    {
+        for (const FBH_ReportAttachment& Row : ReportModules->Attachments())
+        {
+            AttachmentSet.Add(Row);
+        }
+    }
 
     // BetaHub takes only the screenshot with a suggestion.
     VisibleItems.Reset();
@@ -491,7 +505,7 @@ void UBH_ReportScreenWidget::SyncState()
     }
     PreviewIndex = VisibleCount() > 0 ? FMath::Clamp(PreviewIndex, 0, VisibleCount() - 1) : 0;
     const FBH_ReportAttachment* PreviewItem = VisibleItem(PreviewIndex);
-    S.bPreviewIsLog = PreviewItem && PreviewItem->Kind == EBH_AttachmentKind::Log;
+    S.bPreviewIsLog = PreviewItem && (PreviewItem->Kind == EBH_AttachmentKind::Log || IsModuleRow(PreviewItem));
     S.IssueId = Submission ? Submission->GetIssueId() : FString();
     S.bCanEmail = Submission && Submission->CanSetReporterEmail() && PendingEmail.IsEmpty();
     S.bEmailSaved = Submission && Submission->IsEmailSaved();
@@ -1310,6 +1324,30 @@ void UBH_ReportScreenWidget::SubmitReport()
     FBH_SubmissionOptions Options;
     Options.bWaitForUpload = Settings->MediaUploadMode == EBH_MediaUploadMode::WaitForUpload;
     Options.bAutoPublish = S.Type == EBH_ReportType::Suggestion;
+    // A bug report takes the modules' data for the rows left in; a suggestion takes none.
+    if (S.Type == EBH_ReportType::Bug && Modules.IsValid())
+    {
+        TSet<FString> ModuleRows;
+        for (const FBH_ReportAttachment& Attachment : Included)
+        {
+            if (Modules->OwnsRow(Attachment.Id))
+            {
+                ModuleRows.Add(Attachment.Id);
+            }
+        }
+        TWeakObjectPtr<UBH_ReportModules> WeakModules = Modules;
+        Options.Collect = [WeakModules, ModuleRows](FBH_OnModuleCollected Done)
+        {
+            if (UBH_ReportModules* ReportModules = WeakModules.Get())
+            {
+                ReportModules->Collect(ModuleRows, MoveTemp(Done));
+            }
+            else
+            {
+                Done(FBH_ModuleContribution());
+            }
+        };
+    }
 
     // An included recording is the send's to save; the recorder runs again right after the
     // save, or after a failure before it, whatever happens to this form meanwhile (as in the
@@ -1813,21 +1851,41 @@ void UBH_ReportScreenWidget::FillPane(FPaneView& Pane, const FBH_ReportAttachmen
     }
     if (Item->Kind == EBH_AttachmentKind::Log && TextLineClass)
     {
-        Pane.Log->SetVisibility(ESlateVisibility::Visible);
-        for (const FString& Line : LogTail(Item->TextContent, bFullScreen ? FullScreenLogLines : LogTailLines))
-        {
-            UBH_TextLineWidget* Text = CreateWidget<UBH_TextLineWidget>(this, TextLineClass);
-            Text->SetTheme(Theme);
-            Text->Show(Line, LogLineTone(Line), bFullScreen);
-            Cast<UVerticalBoxSlot>(Pane.LogLines->AddChild(Text))->SetPadding(FMargin(0, 0, 0, LogLineGap));
-        }
+        ShowLines(Pane, Item->TextContent, bFullScreen, bFullScreen ? FullScreenLogLines : LogTailLines);
         if (bFullScreen)
         {
             PreviewLog->ScrollToEnd();
         }
         return;
     }
+    if (IsModuleRow(Item) && TextLineClass)
+    {
+        const FString Text = Modules->PreviewText(Item->Id);
+        if (!Text.IsEmpty())
+        {
+            ShowLines(Pane, Text, bFullScreen, bFullScreen ? FullScreenLogLines : LogTailLines);
+            return;
+        }
+    }
     ShowEmpty(LOCTEXT("FileAddedBy", "Added by the game"));
+}
+
+void UBH_ReportScreenWidget::ShowLines(FPaneView& Pane, const FString& Text, bool bFullScreen, int32 MaxLines)
+{
+    Pane.Log->SetVisibility(ESlateVisibility::Visible);
+    for (const FString& Line : LogTail(Text, MaxLines))
+    {
+        UBH_TextLineWidget* LineWidget = CreateWidget<UBH_TextLineWidget>(this, TextLineClass);
+        LineWidget->SetTheme(Theme);
+        LineWidget->Show(Line, LogLineTone(Line), bFullScreen);
+        Cast<UVerticalBoxSlot>(Pane.LogLines->AddChild(LineWidget))->SetPadding(FMargin(0, 0, 0, LogLineGap));
+    }
+}
+
+bool UBH_ReportScreenWidget::IsModuleRow(const FBH_ReportAttachment* Item) const
+{
+    const UBH_ReportModules* ReportModules = Modules.Get();
+    return Item && ReportModules && ReportModules->OwnsRow(Item->Id);
 }
 
 void UBH_ReportScreenWidget::RenderPane()
@@ -1938,6 +1996,10 @@ void UBH_ReportScreenWidget::RenderPreview()
     else if (Item->Kind == EBH_AttachmentKind::Log)
     {
         Describe = LOCTEXT("PreviewLog", "Last lines \u00B7 the full file is sent");
+    }
+    else if (IsModuleRow(Item))
+    {
+        Describe = Item->Meta;
     }
     else
     {

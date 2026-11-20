@@ -39,6 +39,7 @@ namespace
         bool bServerPublishes = false;
         TArray<FString> Calls;
         TArray<FBH_ReportAttachment> InlineSeen;
+        FBH_ReportContent ContentSeen;
         TFunction<void(const FBH_DraftResult&)> PendingDraft;
         TArray<FPendingUpload> PendingUploads;
         TFunction<void(const FString&)> PendingEmail;
@@ -50,6 +51,7 @@ namespace
         {
             Calls.Add(TEXT("draft"));
             InlineSeen = Inline;
+            ContentSeen = Content;
             PendingDraft = MoveTemp(OnDone);
         }
         virtual bool SupportsUploads() const override { return bUploads; }
@@ -396,6 +398,114 @@ bool FBHSubmissionInlineTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("no email for this client"), H.Submission->CanSetReporterEmail());
     H.Client->CompletePublish();
     TestEqual(TEXT("published"), H.Submission->GetState(), EBH_SubmissionState::Published);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSubmissionModuleDataTest, "BetaHub.Submission.ModuleData", BH_SUBMISSION_TEST_FLAGS)
+bool FBHSubmissionModuleDataTest::RunTest(const FString& Parameters)
+{
+    const FString PerformanceRow = TEXT("hardware-performance");
+    const FString NetworkRow = TEXT("network-latency");
+    FHarness H;
+    FBH_ReportContent WithGameField = Content();
+    WithGameField.CustomFields.Add(TEXT("level"), FBH_CustomFieldValue::FromString(TEXT("from the game")));
+
+    TFunction<void(FBH_ModuleContribution)> PendingCollect;
+    FBH_SubmissionOptions Options;
+    Options.Collect = [&PendingCollect](FBH_OnModuleCollected Done) { PendingCollect = MoveTemp(Done); };
+    FBH_ReportAttachment Performance = MakeAttachment(PerformanceRow, EBH_AttachmentKind::File, FString());
+    FBH_ReportAttachment Network = MakeAttachment(NetworkRow, EBH_AttachmentKind::Data, FString());
+    H.Submission->Start(H.Client, WithGameField, {MakeAttachment(BH_AttachmentIds::Screenshot, EBH_AttachmentKind::Image), Performance, Network}, Options);
+    TestEqual(TEXT("preparing while the modules collect"), H.Submission->GetState(), EBH_SubmissionState::Preparing);
+    TestFalse(TEXT("no draft yet"), H.Client->Calls.Contains(TEXT("draft")));
+
+    FBH_ModuleContribution Collected;
+    Collected.CustomFields.Add(TEXT("performance"), FBH_CustomFieldValue::FromString(TEXT("FPS: avg 60")));
+    Collected.CustomFields.Add(TEXT("latency"), FBH_CustomFieldValue::FromString(TEXT("ping.betahub.io: 20ms")));
+    Collected.CustomFields.Add(TEXT("level"), FBH_CustomFieldValue::FromString(TEXT("from a module")));
+    Collected.DeviceInfo = TEXT("PC: Test CPU, Test GPU, 16 GB RAM, Windows 11");
+    Performance.FilePath = TEXT("C:/saved/performance.csv");
+    Collected.Attachments.Add(Performance);
+    PendingCollect(Collected);
+
+    TestTrue(TEXT("draft after the modules"), H.Client->Calls.Contains(TEXT("draft")));
+    const TMap<FString, FBH_CustomFieldValue>& Fields = H.Client->ContentSeen.CustomFields;
+    TestEqual(TEXT("module field"), Fields.Contains(TEXT("performance")) ? Fields[TEXT("performance")].Value : FString(), FString(TEXT("FPS: avg 60")));
+    TestTrue(TEXT("a data row's field"), Fields.Contains(TEXT("latency")));
+    TestEqual(TEXT("the game's own field wins"), Fields.Contains(TEXT("level")) ? Fields[TEXT("level")].Value : FString(), FString(TEXT("from the game")));
+    TestEqual(TEXT("the device goes with the draft"), H.Client->ContentSeen.DeviceInfo, Collected.DeviceInfo);
+
+    H.Client->CompleteDraft();
+    TestEqual(TEXT("a data row is sent with the draft"), H.Status(NetworkRow), EBH_UploadStatus::Sent);
+    H.Client->CompleteUpload();
+    TestEqual(TEXT("the module's file is uploaded next"), H.Client->PendingUploads.Num() == 1 ? H.Client->PendingUploads[0].FilePath : FString(),
+              FString(TEXT("C:/saved/performance.csv")));
+    H.Client->CompleteUpload();
+    TestFalse(TEXT("a data row is never uploaded"), H.Client->Calls.Contains(TEXT("upload:") + NetworkRow));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSubmissionModuleFileTest, "BetaHub.Submission.ModuleFileDeletedOnFailure", BH_SUBMISSION_TEST_FLAGS)
+bool FBHSubmissionModuleFileTest::RunTest(const FString& Parameters)
+{
+    AddExpectedError(TEXT("Bug report submission failed"), EAutomationExpectedErrorFlags::Contains, 1);
+    const FString PerformanceRow = TEXT("hardware-performance");
+    const FString Csv = WriteOwnedFile(TEXT("BH_SubmissionTest_Module.csv"));
+    const FString Screenshot = WriteOwnedFile(TEXT("BH_SubmissionTest_ModuleShot.jpg"));
+    FHarness H;
+    FBH_SubmissionOptions Options;
+    Options.Collect = [&Csv, &PerformanceRow](FBH_OnModuleCollected Done)
+    {
+        FBH_ModuleContribution Collected;
+        FBH_ReportAttachment Row = MakeAttachment(PerformanceRow, EBH_AttachmentKind::File, Csv);
+        Row.bRemoveAfterUpload = true;
+        Collected.Attachments.Add(Row);
+        Done(Collected);
+    };
+    H.Start({OwnedScreenshot(Screenshot), MakeAttachment(PerformanceRow, EBH_AttachmentKind::File, FString())}, Options);
+    H.Client->CompleteDraft(TEXT("refused"));
+    IPlatformFile& File = FPlatformFileManager::Get().GetPlatformFile();
+    TestFalse(TEXT("the module's file goes with the failed report"), File.FileExists(*Csv));
+    TestTrue(TEXT("the form's screenshot stays for Try again"), File.FileExists(*Screenshot));
+    IFileManager::Get().Delete(*Screenshot);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSubmissionLetGoWhileCollectingTest, "BetaHub.Submission.LetGoWhileCollecting", BH_SUBMISSION_TEST_FLAGS)
+bool FBHSubmissionLetGoWhileCollectingTest::RunTest(const FString& Parameters)
+{
+    // The form goes while the report waits for the modules' data, as a level travel can do.
+    AddExpectedError(TEXT("Bug report submission failed"), EAutomationExpectedErrorFlags::Contains, 1);
+    const FString NetworkRow = TEXT("network-latency");
+    const FString Shot = WriteOwnedFile(TEXT("BH_SubmissionTest_Collecting.jpg"));
+    TFunction<void(FBH_ModuleContribution)> PendingCollect;
+    FBH_SubmissionOptions Options;
+    Options.Collect = [&PendingCollect](FBH_OnModuleCollected Done) { PendingCollect = MoveTemp(Done); };
+
+    FHarness H;
+    H.Start({OwnedScreenshot(Shot), MakeAttachment(NetworkRow, EBH_AttachmentKind::Data, FString())}, Options);
+    TestEqual(TEXT("waiting for the modules"), H.Submission->GetState(), EBH_SubmissionState::Preparing);
+    TestTrue(TEXT("its screenshot is in use while it waits"), H.Submission->IsUsingFile(Shot));
+    H.Submission->PublishWhenReady();
+    PendingCollect(FBH_ModuleContribution());
+    H.Client->CompleteDraft();
+    TestEqual(TEXT("publishes on its own"), H.Submission->GetState(), EBH_SubmissionState::Publishing);
+    H.Client->CompleteUpload();
+    if (!TestTrue(TEXT("publish sent"), H.Client->Calls.Contains(TEXT("publish"))))
+    {
+        return false;
+    }
+    H.Client->CompletePublish();
+    TestEqual(TEXT("published"), H.Submission->GetState(), EBH_SubmissionState::Published);
+
+    // Refused after the form let go: nobody will try again, so its files go.
+    const FString RefusedShot = WriteOwnedFile(TEXT("BH_SubmissionTest_CollectingRefused.jpg"));
+    FHarness Refused;
+    Refused.Start({OwnedScreenshot(RefusedShot)}, Options);
+    Refused.Submission->PublishWhenReady();
+    PendingCollect(FBH_ModuleContribution());
+    Refused.Client->CompleteDraft(TEXT("refused"));
+    TestFalse(TEXT("the screenshot of a report let go is deleted"), FPlatformFileManager::Get().GetPlatformFile().FileExists(*RefusedShot));
     return true;
 }
 

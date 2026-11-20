@@ -2,8 +2,10 @@
 #include "BH_BackgroundService.h"
 #include "BH_Log.h"
 #include "BH_FFmpeg.h"
+#include "BH_GameInstanceSubsystem.h"
 #include "BH_HttpIssueClient.h"
 #include "BH_ProjectLimits.h"
+#include "BH_ReportModules.h"
 #include "BH_ScreenshotFiles.h"
 #include "BH_ReportScreenWidget.h"
 #include "BH_ReportSubmission.h"
@@ -18,6 +20,7 @@
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
 #include "Misc/Guid.h"
+#include "Misc/CommandLine.h"
 
 namespace
 {
@@ -67,12 +70,30 @@ UWorld* UBH_BackgroundService::GetServiceWorld() const
     return GI && GI->GetWorld() ? GI->GetWorld() : GetWorld();
 }
 
+UBH_ReportModules* UBH_BackgroundService::FindReportModules() const
+{
+    // The subsystem's own manager starts this service inside the subsystem's Initialize, before
+    // the game instance lists the subsystem: find it through the outers first.
+    const UBH_GameInstanceSubsystem* Subsystem = GetTypedOuter<UBH_GameInstanceSubsystem>();
+    if (!Subsystem && GameInstance.IsValid())
+    {
+        Subsystem = GameInstance->GetSubsystem<UBH_GameInstanceSubsystem>();
+    }
+    return Subsystem ? Subsystem->GetModules() : nullptr;
+}
+
 void UBH_BackgroundService::StartService()
 {
     GameRecorder = NewObject<UBH_GameRecorder>(this);
     LogCapture = new UBH_LogCapture();
     
     GLog->AddOutputDevice(LogCapture);
+
+    ReportModules = FindReportModules();
+    if (UBH_ReportModules* Modules = ReportModules.Get())
+    {
+        Modules->Start(FCommandLine::Get());
+    }
     
     if (GEngine && GEngine->GameViewport && GEngine->GameViewport->GetWorld())
     {
@@ -169,6 +190,10 @@ void UBH_BackgroundService::StopService()
 {
     ReleaseLogCapture();
     DeleteUnusedScreenshots();
+    if (UBH_ReportModules* Modules = ReportModules.Get())
+    {
+        Modules->Stop();
+    }
 
     if (GameRecorder)
     {
@@ -284,6 +309,20 @@ UBH_ReportFormWidget* UBH_BackgroundService::SpawnBugReportWidget(APlayerControl
                 Self->KeepSubmission(Submission);
             }
         };
+        // The report screen offers the modules' rows; the classic form does not.
+        if (UBH_ReportModules* Modules = ReportModules.Get())
+        {
+            Modules->FormOpened();
+            Screen->Modules = Modules;
+            TWeakObjectPtr<UBH_ReportModules> WeakModules(Modules);
+            Screen->OnClosed = [WeakModules]()
+            {
+                if (UBH_ReportModules* Open = WeakModules.Get())
+                {
+                    Open->FormClosed();
+                }
+            };
+        }
     }
 
     ReportForm->Setup(Settings, GameRecorder, ScreenshotPath, LogCapture ? LogCapture->GetCapturedLogs() : FString(), bTryCaptureMouse);
