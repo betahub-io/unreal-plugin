@@ -451,7 +451,8 @@ FText BH_ReportScreenModel::DescriptionNote(const FBH_ScreenState& S)
     {
         return FText::GetEmpty();
     }
-    return FText::Format(LOCTEXT("NoteMinimum", "Write at least {0} characters ({1} more)."), Count(Minimum), Count(Minimum - Length));
+    return FText::Format(LOCTEXT("NoteMinimum", "Write at least {0} {2}|plural(one=character,other=characters) ({1} more)."),
+        Count(Minimum), Count(Minimum - Length), Minimum);
 }
 
 FText BH_ReportScreenModel::TermsNote(const FBH_ScreenState& S)

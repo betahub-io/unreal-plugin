@@ -283,6 +283,8 @@ bool FBHShortOfMinimumTest::RunTest(const FString& Parameters)
     S.Description.Empty();
     TestTrue(TEXT("empty after trying to send: the count warns"), DescriptionTag(S).bWarn);
     TestEqual(TEXT("and the note"), DescriptionNote(S).ToString(), FString(TEXT("Write at least 50 characters (50 more).")));
+    S.BugMinLength = 1;   // what BetaHub gives for a project that does not check descriptions
+    TestEqual(TEXT("one character, singular"), DescriptionNote(S).ToString(), FString(TEXT("Write at least 1 character (1 more).")));
     S.Screen = EBH_Screen::Sending;
     TestTrue(TEXT("only while composing"), DescriptionNote(S).IsEmpty());
     return true;
