@@ -126,6 +126,8 @@ protected:
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> DescriptionBox;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UMultiLineEditableText> DescriptionInput;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> DescriptionHint;
+    /** Optional, so a copy of BH_ReportScreen made before 2.4 still compiles: it just does not say why. */
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> DescriptionNote;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> StepsField;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> StepsLabel;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> StepsTag;

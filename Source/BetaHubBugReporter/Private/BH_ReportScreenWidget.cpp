@@ -836,6 +836,10 @@ void UBH_ReportScreenWidget::ActCompose(EBH_Action Action)
             {
                 SubmitReport();
             }
+            else
+            {
+                S.bSendRefused = true;
+            }
             break;
         case EBH_Action::Back:
             if (S.bTyping)
@@ -864,7 +868,13 @@ void UBH_ReportScreenWidget::ActCompose(EBH_Action Action)
             }
             else if (S.Focus.Field() == EBH_Field::Type)
             {
-                SwitchType();
+                // Left and right or a click choose the type; Confirm takes it and goes on to the description,
+                // typing there on a keyboard as Tab does.
+                S.Focus.FocusField(EBH_Field::Description);
+                if (GlyphSet == EBH_GlyphSet::Keyboard)
+                {
+                    StartTyping(EBH_Field::Description);
+                }
             }
             else if (S.Focus.Field() == EBH_Field::Terms)
             {
@@ -1689,6 +1699,12 @@ void UBH_ReportScreenWidget::RenderForm()
     SetClass(TypeName, TEXT("row-name--focused"), Focused(EBH_Field::Type));
 
     RenderField(DescriptionView, BH_ReportScreenModel::DescriptionTag(S), Focused(EBH_Field::Description), Editing(EBH_Field::Description), !S.Description.IsEmpty());
+    if (DescriptionNote)
+    {
+        const FText Note = BH_ReportScreenModel::DescriptionNote(S);
+        DescriptionNote->SetText(Note);
+        Show(DescriptionNote, !Note.IsEmpty());
+    }
     DescriptionInput->SetIsReadOnly(!bCompose);
     Show(StepsField, S.Type == EBH_ReportType::Bug);
     RenderField(StepsView, BH_ReportScreenModel::StepsTag(S), Focused(EBH_Field::Steps), Editing(EBH_Field::Steps), !S.Steps.IsEmpty());

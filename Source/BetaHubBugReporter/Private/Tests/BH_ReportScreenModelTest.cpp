@@ -99,7 +99,7 @@ bool FBHCanSendTest::RunTest(const FString& Parameters)
     S.Description = TEXT("The sword vanishes.  ");
     TestFalse(TEXT("bug under the minimum"), CanSend(S));
     TestEqual(TEXT("bug minimum tag counts the trimmed text"), DescriptionTag(S).Text.ToString(), FString(TEXT("19 / 50 min")));
-    TestFalse(TEXT("short of a minimum is not a warning"), DescriptionTag(S).bWarn);
+    TestTrue(TEXT("short of a minimum warns"), DescriptionTag(S).bWarn);
     S.BugMinLength = 19;
     TestTrue(TEXT("the project's lower minimum"), CanSend(S));
     TestEqual(TEXT("at the minimum the tag says required again"), DescriptionTag(S).Text.ToString(), FString(TEXT("required")));
@@ -255,6 +255,36 @@ bool FBHTypeTextsTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("suggestion link row"), LinkName(Idea).ToString(), FString(TEXT("Suggestion link")));
     TestEqual(TEXT("bug sent list"), SentWithLabel(Bug).ToString(), FString(TEXT("SENT WITH THIS REPORT")));
     TestEqual(TEXT("suggestion sent list"), SentWithLabel(Idea).ToString(), FString(TEXT("SENT WITH THIS SUGGESTION")));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHShortOfMinimumTest, "BetaHub.ReportScreen.Model.ShortOfMinimum", BH_MODEL_TEST_FLAGS)
+bool FBHShortOfMinimumTest::RunTest(const FString& Parameters)
+{
+    FBH_ScreenState S = Compose();
+    S.Type = EBH_ReportType::Suggestion;
+    S.Description.Empty();
+    TestEqual(TEXT("the minimum"), DescriptionTag(S).Text.ToString(), FString(TEXT("0 / 80 min")));
+    TestFalse(TEXT("an empty field is no warning yet"), DescriptionTag(S).bWarn);
+    TestTrue(TEXT("no note"), DescriptionNote(S).IsEmpty());
+
+    S.Description = TEXT("  The map should show where my friends are.  ");
+    TestEqual(TEXT("spaces around do not count"), DescriptionTag(S).Text.ToString(), FString(TEXT("41 / 80 min")));
+    TestTrue(TEXT("short of the minimum: the count warns"), DescriptionTag(S).bWarn);
+    TestTrue(TEXT("no note before trying to send"), DescriptionNote(S).IsEmpty());
+
+    S.bSendRefused = true;
+    TestEqual(TEXT("after trying to send"), DescriptionNote(S).ToString(), FString(TEXT("Write at least 80 characters (39 more).")));
+    S.Type = EBH_ReportType::Bug;
+    TestEqual(TEXT("a bug's own minimum"), DescriptionNote(S).ToString(), FString(TEXT("Write at least 50 characters (9 more).")));
+    S.Description = FString::ChrN(50, TEXT('a'));
+    TestTrue(TEXT("enough: no note"), DescriptionNote(S).IsEmpty());
+    TestFalse(TEXT("nor a warning"), DescriptionTag(S).bWarn);
+    S.Description.Empty();
+    TestTrue(TEXT("empty after trying to send: the count warns"), DescriptionTag(S).bWarn);
+    TestEqual(TEXT("and the note"), DescriptionNote(S).ToString(), FString(TEXT("Write at least 50 characters (50 more).")));
+    S.Screen = EBH_Screen::Sending;
+    TestTrue(TEXT("only while composing"), DescriptionNote(S).IsEmpty());
     return true;
 }
 

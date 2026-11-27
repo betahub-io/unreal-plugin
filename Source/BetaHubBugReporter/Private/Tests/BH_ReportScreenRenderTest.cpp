@@ -146,8 +146,53 @@ bool FBHScreenRendersTest::RunTest(const FString& Parameters)
             return false;
         }
         Screen.Press(EKeys::Up);
-        Screen.Press(EKeys::Enter);
+        Screen.Press(EKeys::Right);
         Render(Screen, 1920, 1080, TEXT("compose-suggestion"));
+        Screen.Close();
+    }
+    {
+        // A suggestion short of the minimum, before and after the player tries to send it.
+        BH_ScreenTest::FOpenOptions O = Options();
+        O.Description = FString();
+        FScreen Screen;
+        if (!Screen.Open(*this, O))
+        {
+            return false;
+        }
+        Screen.Press(EKeys::Up);
+        Screen.Press(EKeys::Right);
+        Screen.Press(EKeys::Down);
+        Screen.TypeInto(TEXT("DescriptionInput"), TEXT("The map should show where my friends are."));
+        Render(Screen, 1920, 1080, TEXT("compose-suggestion-short"));
+        Screen.Press(EKeys::Enter, true);
+        Render(Screen, 1920, 1080, TEXT("compose-suggestion-short-send"));
+        Screen.Close();
+    }
+    for (const TCHAR* Field : {TEXT("DescriptionInput"), TEXT("StepsInput")})
+    {
+        // One word wider than the field, typed as a player types it: it breaks inside the field.
+        BH_ScreenTest::FOpenOptions O = Options();
+        O.Description = FString();
+        FScreen Screen;
+        if (!Screen.Open(*this, O))
+        {
+            return false;
+        }
+        const bool bSteps = FCString::Strcmp(Field, TEXT("StepsInput")) == 0;
+        if (bSteps)
+        {
+            Screen.Press(EKeys::Down);
+        }
+        Screen.Press(EKeys::Enter);
+        FString Typed = TEXT("Crash at ");
+        for (int32 Part = 0; Part < 3; ++Part)
+        {
+            Typed += TEXT("InventorySlotWeaponPrimaryAttachmentScopeVariantLegendary");
+        }
+        Screen.TypeInto(Field, Typed + TEXT("END"));
+        const TCHAR* Which = bSteps ? TEXT("steps") : TEXT("description");
+        Render(Screen, 1920, 1080, FString::Printf(TEXT("compose-long-word-%s-1920"), Which));
+        Render(Screen, 1280, 800, FString::Printf(TEXT("compose-long-word-%s-1280"), Which));
         Screen.Close();
     }
     {

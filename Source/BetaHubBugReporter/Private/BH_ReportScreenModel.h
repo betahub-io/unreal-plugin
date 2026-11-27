@@ -179,6 +179,8 @@ struct FBH_ScreenState
 
     /** Set after a failed send: the compose screen shows it and offers to try again. */
     FString SubmissionError;
+    /** The player asked to send what cannot be sent yet: the form says why. */
+    bool bSendRefused = false;
 
     bool bTyping = false;
     EBH_Field TypingField = EBH_Field::Description;
@@ -233,6 +235,8 @@ namespace BH_ReportScreenModel
     bool LinkFocused(const FBH_ScreenState& S);
 
     FBH_TagText DescriptionTag(const FBH_ScreenState& S);
+    /** Under the description, once the player tried to send it short of the minimum: how much is missing. */
+    FText DescriptionNote(const FBH_ScreenState& S);
     FBH_TagText StepsTag(const FBH_ScreenState& S);
     FBH_TagText EmailTag(const FBH_ScreenState& S);
 

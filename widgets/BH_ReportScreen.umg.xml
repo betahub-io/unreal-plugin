@@ -68,12 +68,14 @@
                 <SizeBox name="DescriptionSize" MinDesiredHeight="112" bOverride_MinDesiredHeight="true"
                     MaxDesiredHeight="216" bOverride_MaxDesiredHeight="true">
                   <Overlay name="DescriptionStack">
-                    <MultiLineEditableText name="DescriptionInput" class="input" AllowContextMenu="false"/>
+                    <MultiLineEditableText name="DescriptionInput" class="input input-lines" AllowContextMenu="false"/>
                     <TextBlock name="DescriptionHint" class="hint">Describe what happened</TextBlock>
                   </Overlay>
                 </SizeBox>
               </Border>
             </Overlay>
+            <!-- shown once the player tries to send a description shorter than BetaHub takes -->
+            <TextBlock name="DescriptionNote" class="field-note" Visibility="Collapsed">Write at least 50 characters (9 more).</TextBlock>
           </VerticalBox>
 
           <VerticalBox name="StepsField" class="field">
@@ -87,7 +89,7 @@
               <Border name="StepsBox" class="box">
                 <SizeBox name="StepsSize" MaxDesiredHeight="144" bOverride_MaxDesiredHeight="true">
                   <Overlay name="StepsStack">
-                    <MultiLineEditableText name="StepsInput" class="input" AllowContextMenu="false"/>
+                    <MultiLineEditableText name="StepsInput" class="input input-lines" AllowContextMenu="false"/>
                     <TextBlock name="StepsHint" class="hint">Add steps if you can. It helps a lot.</TextBlock>
                   </Overlay>
                 </SizeBox>

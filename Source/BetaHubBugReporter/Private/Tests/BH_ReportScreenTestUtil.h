@@ -135,6 +135,22 @@ namespace BH_ScreenTest
             }
         }
 
+        /** Characters typed into a text field one by one, as a player types them, after what is there. */
+        void TypeInto(const TCHAR* Field, const FString& Text)
+        {
+            UWidget* Input = Cast<UWidget>(Widget->GetWidgetFromName(Field));
+            if (!Input)
+            {
+                return;
+            }
+            const TSharedRef<SWidget> InputSlate = Input->TakeWidget();
+            const FGeometry Geometry = FGeometry::MakeRoot(ScreenSize, FSlateLayoutTransform());
+            for (const TCHAR Character : Text)
+            {
+                InputSlate->OnKeyChar(Geometry, FCharacterEvent(Character, FModifierKeysState(), 0, false));
+            }
+        }
+
         template <typename T>
         T* Find(const TCHAR* Name) const
         {

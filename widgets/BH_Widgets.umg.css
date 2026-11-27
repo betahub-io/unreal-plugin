@@ -133,6 +133,9 @@ Border.box--focused { Background.TintColor: var(--bh-field-hi); Background.Outli
 .input { WidgetStyle.Font.FontObject: var(--barlow); WidgetStyle.Font.TypefaceFontName: Regular;
          WidgetStyle.Font.Size: 22.5; WidgetStyle.ColorAndOpacity: var(--bh-text);
          slot.HorizontalAlignment: Fill; slot.VerticalAlignment: Fill; }
+/* a word wider than a multi-line field breaks inside it, instead of scrolling the field sideways */
+.input-lines { WrappingPolicy: AllowPerCharacterWrapping; }
+.field-note { Font.Size: 19.5; ColorAndOpacity: var(--bh-warn); AutoWrapText: true; slot.Padding.Top: 10; }
 .hint  { Font.Size: 22.5; ColorAndOpacity: var(--bh-muted); Visibility: HitTestInvisible; }
 
 /* ------------------------------------------------------------------ rows */

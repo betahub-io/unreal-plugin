@@ -102,6 +102,7 @@ protected:
 private:
     EBH_Action Action = EBH_Action::Confirm;
     bool bClickable = false;
+    bool bClickSaysWhy = false;
     bool bBusy = false;
     float SpinDegrees = 0.0f;
     FLinearColor ArcColor = FLinearColor::White;

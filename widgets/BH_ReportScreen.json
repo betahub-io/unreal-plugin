@@ -851,6 +851,7 @@
                                                   "ColorUseRule": "UseColor_Specified"
                                                 }
                                               },
+                                              "WrappingPolicy": "AllowPerCharacterWrapping",
                                               "AllowContextMenu": false
                                             },
                                             "slot": {
@@ -928,6 +929,46 @@
                             "slot": {
                               "class": "VerticalBoxSlot",
                               "properties": {}
+                            }
+                          },
+                          {
+                            "name": "DescriptionNote",
+                            "class": "TextBlock",
+                            "properties": {
+                              "Font": {
+                                "FontObject": {
+                                  "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                                  "__class__": "/Script/Engine.Font"
+                                },
+                                "TypefaceFontName": "Regular",
+                                "Size": 19.5
+                              },
+                              "ColorAndOpacity": {
+                                "SpecifiedColor": {
+                                  "R": 0.814847,
+                                  "G": 0.48515,
+                                  "B": 0.066626,
+                                  "A": 1.0
+                                },
+                                "ColorUseRule": "UseColor_Specified"
+                              },
+                              "ShadowOffset": {
+                                "X": 0.0,
+                                "Y": 0.0
+                              },
+                              "AutoWrapText": true,
+                              "Visibility": "Collapsed",
+                              "Text": {
+                                "__text__": "Write at least 50 characters (9 more)."
+                              }
+                            },
+                            "slot": {
+                              "class": "VerticalBoxSlot",
+                              "properties": {
+                                "Padding": {
+                                  "Top": 10.0
+                                }
+                              }
                             }
                           }
                         ],
@@ -1172,6 +1213,7 @@
                                                   "ColorUseRule": "UseColor_Specified"
                                                 }
                                               },
+                                              "WrappingPolicy": "AllowPerCharacterWrapping",
                                               "AllowContextMenu": false
                                             },
                                             "slot": {
@@ -3371,8 +3413,8 @@
     ]
   },
   "_stats": {
-    "widgetsReachable": 133,
-    "widgetsInTree": 133,
-    "slots": 132
+    "widgetsReachable": 134,
+    "widgetsInTree": 134,
+    "slots": 133
   }
 }

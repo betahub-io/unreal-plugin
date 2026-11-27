@@ -152,6 +152,8 @@ void UBH_PromptItemWidget::Show(const FBH_Prompt& InPrompt, EBH_GlyphSet Set, TS
     bBusy = InPrompt.bBusy;
     // Move only names the arrow keys: clicking it would do nothing, so it does not look clickable.
     bClickable = !InPrompt.bDisabled && !InPrompt.bBusy && InPrompt.Action != EBH_Action::Move;
+    // A greyed-out Send still answers a click, so the form can say why it cannot send.
+    bClickSaysWhy = InPrompt.bDisabled && !InPrompt.bBusy && InPrompt.Action == EBH_Action::Send;
     Label->SetText(InPrompt.Label);
     SetClass(Label, TEXT("prompt-label--primary"), InPrompt.bPrimary);
     SetRenderOpacity(InPrompt.bDisabled ? DisabledPromptOpacity : 1.0f);
@@ -223,7 +225,7 @@ FReply UBH_PromptItemWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry
     {
         return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
     }
-    if (bClickable && OnClicked)
+    if ((bClickable || bClickSaysWhy) && OnClicked)
     {
         OnClicked(Action);
     }

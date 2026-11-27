@@ -95,7 +95,7 @@ bool FBHScreenComposeTest::RunTest(const FString& Parameters)
         Screen.Press(EKeys::Up);
     }
     TestEqual(TEXT("type prompt"), Screen.Prompts(false)[2], FString(TEXT("Bug or suggestion")));
-    Screen.Press(EKeys::Enter);
+    Screen.Press(EKeys::Right);
     TestEqual(TEXT("suggestion title"), Screen.Text(TEXT("Title")), FString(TEXT("SUGGEST AN IDEA")));
     TestEqual(TEXT("report tab follows the type"), Screen.TabText(false, TEXT("ReportText")), FString(TEXT("SUGGEST AN IDEA")));
     TestFalse(TEXT("no steps for a suggestion"), Screen.Shown(TEXT("StepsField")));
@@ -104,13 +104,102 @@ bool FBHScreenComposeTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("suggestion send prompt"), Screen.Prompts(true), TArray<FString>{TEXT("Send suggestion")});
     TestEqual(TEXT("only the screenshot goes with a suggestion"), Screen.Find<UVerticalBox>(TEXT("Rows"))->GetChildrenCount(), 1);
 
-    // Too short for BetaHub: Ctrl+Enter does nothing, the tag says why.
+    // Too short for BetaHub: Ctrl+Enter does not send.
     Screen.Find<UMultiLineEditableText>(TEXT("DescriptionInput"))->SetText(FText::FromString(TEXT("Short idea")));
     Screen.Press(EKeys::Enter, true);
     TestEqual(TEXT("still composing"), Screen.Text(TEXT("Title")), FString(TEXT("SUGGEST AN IDEA")));
     TestEqual(TEXT("minimum tag"), Screen.Text(TEXT("DescriptionTag")), FString(TEXT("10 / 80 min")));
     TestTrue(TEXT("send disabled"), FMath::IsWithin(Screen.PromptOpacity(true, 0), 0.0f, 1.0f));
 
+    Screen.Close();
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenTypeConfirmTest, "BetaHub.ReportScreen.Widget.ConfirmOnTypeMovesOn", BH_SCREEN_TEST_FLAGS)
+bool FBHScreenTypeConfirmTest::RunTest(const FString& Parameters)
+{
+    // Left and right choose the type; Enter, or A on a pad, takes it and goes on to the description.
+    for (const bool bPad : {false, true})
+    {
+        FScreen Screen;
+        if (!Screen.Open(*this))
+        {
+            return false;
+        }
+        Screen.Press(bPad ? EKeys::Gamepad_DPad_Up : EKeys::Up);
+        Screen.Press(bPad ? EKeys::Gamepad_DPad_Right : EKeys::Right);
+        Screen.Press(bPad ? EKeys::Gamepad_FaceButton_Bottom : EKeys::Enter);
+        const TCHAR* Device = bPad ? TEXT("pad") : TEXT("keyboard");
+        TestEqual(FString::Printf(TEXT("%s: still a suggestion"), Device), Screen.Text(TEXT("DescriptionLabel")), FString(TEXT("YOUR IDEA")));
+        TestEqual(FString::Printf(TEXT("%s: the description has the focus"), Device),
+                  Screen.Find<UTextBlock>(TEXT("DescriptionLabel"))->GetFont().TypefaceFontName, FName(TEXT("Bold")));
+        Screen.Close();
+    }
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenShortOfMinimumTest, "BetaHub.ReportScreen.Widget.ShortOfMinimumSaysWhy", BH_SCREEN_TEST_FLAGS)
+bool FBHScreenShortOfMinimumTest::RunTest(const FString& Parameters)
+{
+    FScreen Screen;
+    if (!Screen.Open(*this))
+    {
+        return false;
+    }
+    Screen.Press(EKeys::Up);
+    Screen.Press(EKeys::Right);
+    Screen.TypeInto(TEXT("DescriptionInput"), TEXT("The map should show where my friends are."));
+    TestFalse(TEXT("no note before trying to send"), Screen.Shown(TEXT("DescriptionNote")));
+    const FBH_ThemeColors Theme = BH_ThemeRecipe::BuiltIn(EBH_BuiltInTheme::Dark);
+    auto TagColor = [&Screen]() { return Screen.Find<UTextBlock>(TEXT("DescriptionTag"))->GetColorAndOpacity().GetSpecifiedColor().ToFColorSRGB(); };
+    TestEqual(TEXT("the count warns"), TagColor(), Theme.Warn);
+
+    Screen.Press(EKeys::Enter, true);
+    TestEqual(TEXT("not sent"), Screen.Text(TEXT("Title")), FString(TEXT("SUGGEST AN IDEA")));
+    TestTrue(TEXT("Ctrl+Enter says why"), Screen.Shown(TEXT("DescriptionNote")));
+    TestEqual(TEXT("how much is missing"), Screen.Text(TEXT("DescriptionNote")), FString(TEXT("Write at least 80 characters (39 more).")));
+    Screen.TypeInto(TEXT("DescriptionInput"), TEXT(", and the route to them as well."));
+    TestEqual(TEXT("the note counts down as the player types"), Screen.Text(TEXT("DescriptionNote")), FString(TEXT("Write at least 80 characters (7 more).")));
+    Screen.TypeInto(TEXT("DescriptionInput"), TEXT(" From any place."));
+    TestFalse(TEXT("enough: the note goes"), Screen.Shown(TEXT("DescriptionNote")));
+    TestNotEqual(TEXT("and the count no longer warns"), TagColor(), Theme.Warn);
+    Screen.Close();
+
+    // A click on the greyed-out send says why too.
+    FScreen Mouse;
+    if (!Mouse.Open(*this))
+    {
+        return false;
+    }
+    Mouse.Find<UMultiLineEditableText>(TEXT("DescriptionInput"))->SetText(FText::FromString(TEXT("Too short")));
+    Mouse.ClickPrompt(true, 0);
+    TestEqual(TEXT("a click on the disabled send"), Mouse.Text(TEXT("DescriptionNote")), FString(TEXT("Write at least 50 characters (41 more).")));
+    TestEqual(TEXT("and it is not sent"), Mouse.Text(TEXT("Title")), FString(TEXT("REPORT A BUG")));
+    Mouse.Close();
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenLongWordsWrapTest, "BetaHub.ReportScreen.Widget.LongWordsWrap", BH_SCREEN_TEST_FLAGS)
+bool FBHScreenLongWordsWrapTest::RunTest(const FString& Parameters)
+{
+    FScreen Screen;
+    if (!Screen.Open(*this))
+    {
+        return false;
+    }
+    // A word wider than the field breaks inside it instead of scrolling the field sideways.
+    // UE 5.3 has no getter for the policy, so it is read as the property it is.
+    const FEnumProperty* Policy = FindFProperty<FEnumProperty>(UTextLayoutWidget::StaticClass(), TEXT("WrappingPolicy"));
+    if (!TestNotNull(TEXT("wrapping policy property"), Policy))
+    {
+        return false;
+    }
+    for (const TCHAR* Name : {TEXT("DescriptionInput"), TEXT("StepsInput")})
+    {
+        const UMultiLineEditableText* Input = Screen.Find<UMultiLineEditableText>(Name);
+        const int64 Value = Policy->GetUnderlyingProperty()->GetSignedIntPropertyValue(Policy->ContainerPtrToValuePtr<void>(Input));
+        TestEqual(Name, static_cast<ETextWrappingPolicy>(Value), ETextWrappingPolicy::AllowPerCharacterWrapping);
+    }
     Screen.Close();
     return true;
 }
@@ -317,12 +406,12 @@ bool FBHScreenModuleRowsTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("included until the player leaves it out"), Screen.RowChecked(2) && Screen.RowChecked(3));
     TestEqual(TEXT("counted with the others"), Screen.Text(TEXT("GroupCount")), FString(TEXT("4 OF 4")));
 
-    // BetaHub takes no custom fields with a suggestion: up to the type, Enter switches it.
+    // BetaHub takes no custom fields with a suggestion: up to the type, right picks it.
     for (int32 i = 0; i < 4; ++i)
     {
         Screen.Press(EKeys::Up);
     }
-    Screen.Press(EKeys::Enter);
+    Screen.Press(EKeys::Right);
     TestEqual(TEXT("a suggestion now"), Screen.Text(TEXT("Title")), FString(TEXT("SUGGEST AN IDEA")));
     TestEqual(TEXT("a suggestion offers only the screenshot"), Screen.Find<UVerticalBox>(TEXT("Rows"))->GetChildrenCount(), 1);
 

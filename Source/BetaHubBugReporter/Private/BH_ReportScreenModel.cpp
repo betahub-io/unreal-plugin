@@ -421,9 +421,21 @@ FBH_TagText BH_ReportScreenModel::DescriptionTag(const FBH_ScreenState& S)
     const int32 Minimum = MinimumLength(S);
     if (Length < Minimum)
     {
-        return {FText::Format(LOCTEXT("TagMinimum", "{0} / {1} min"), Count(Length), Count(Minimum)), false};
+        // An empty field is where everyone starts: it warns only once the player tried to send it.
+        return {FText::Format(LOCTEXT("TagMinimum", "{0} / {1} min"), Count(Length), Count(Minimum)), Length > 0 || S.bSendRefused};
     }
     return LimitTag(S.Description.Len(), DescriptionLimit, LOCTEXT("Required", "required"));
+}
+
+FText BH_ReportScreenModel::DescriptionNote(const FBH_ScreenState& S)
+{
+    const int32 Length = S.Description.TrimStartAndEnd().Len();
+    const int32 Minimum = MinimumLength(S);
+    if (S.Screen != EBH_Screen::Compose || !S.bSendRefused || Length >= Minimum)
+    {
+        return FText::GetEmpty();
+    }
+    return FText::Format(LOCTEXT("NoteMinimum", "Write at least {0} characters ({1} more)."), Count(Minimum), Count(Minimum - Length));
 }
 
 FBH_TagText BH_ReportScreenModel::StepsTag(const FBH_ScreenState& S)
