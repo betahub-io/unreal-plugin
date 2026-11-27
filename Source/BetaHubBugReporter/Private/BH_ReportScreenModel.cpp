@@ -137,6 +137,22 @@ namespace
         return S.TrimStartAndEnd().IsEmpty();
     }
 
+    constexpr uint32 LowSurrogateFirst = 0xDC00;
+    constexpr uint32 LowSurrogateLast = 0xDFFF;
+
+    /** Characters as BetaHub counts them (Ruby's String#length: code points): an emoji is one, not
+        the two UTF-16 units FString::Len counts. Spaces around do not count. */
+    int32 CharacterCount(const FString& Text)
+    {
+        int32 Count = 0;
+        for (const TCHAR Unit : Text.TrimStartAndEnd())
+        {
+            const uint32 Code = static_cast<uint32>(Unit);
+            Count += Code >= LowSurrogateFirst && Code <= LowSurrogateLast ? 0 : 1;
+        }
+        return Count;
+    }
+
     /** "1,600": thousands grouped with commas, as the Unity widget shows counts. UE's invariant
         culture does not group, so this is spelt out. */
     FText Count(int32 Value)
@@ -237,7 +253,7 @@ bool BH_ReportScreenModel::CanSend(const FBH_ScreenState& S)
     {
         return false;
     }
-    return S.Description.TrimStartAndEnd().Len() >= MinimumLength(S);
+    return CharacterCount(S.Description) >= MinimumLength(S);
 }
 
 FText BH_ReportScreenModel::ReportTitle(EBH_ReportType Type)
@@ -383,7 +399,7 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
     }
     else
     {
-        Bar.Left.Add(Prompt(EBH_Action::Back, Close));
+        Bar.Left.Add(S.bCloseArmed ? Prompt(EBH_Action::Back, LOCTEXT("DiscardAgain", "Press again to discard"), true) : Prompt(EBH_Action::Back, Close));
         Bar.Left.Add(Prompt(EBH_Action::Move, LOCTEXT("Move", "Move")));
         if (!S.Focus.OnField())
         {
@@ -417,7 +433,7 @@ FBH_PromptBar BH_ReportScreenModel::Prompts(const FBH_ScreenState& S)
 
 FBH_TagText BH_ReportScreenModel::DescriptionTag(const FBH_ScreenState& S)
 {
-    const int32 Length = S.Description.TrimStartAndEnd().Len();
+    const int32 Length = CharacterCount(S.Description);
     const int32 Minimum = MinimumLength(S);
     if (Length < Minimum)
     {
@@ -429,13 +445,28 @@ FBH_TagText BH_ReportScreenModel::DescriptionTag(const FBH_ScreenState& S)
 
 FText BH_ReportScreenModel::DescriptionNote(const FBH_ScreenState& S)
 {
-    const int32 Length = S.Description.TrimStartAndEnd().Len();
+    const int32 Length = CharacterCount(S.Description);
     const int32 Minimum = MinimumLength(S);
     if (S.Screen != EBH_Screen::Compose || !S.bSendRefused || Length >= Minimum)
     {
         return FText::GetEmpty();
     }
     return FText::Format(LOCTEXT("NoteMinimum", "Write at least {0} characters ({1} more)."), Count(Minimum), Count(Minimum - Length));
+}
+
+FText BH_ReportScreenModel::TermsNote(const FBH_ScreenState& S)
+{
+    if (S.Screen != EBH_Screen::Compose || !S.bSendRefused || !S.bTermsRequired || S.bTermsAccepted)
+    {
+        return FText::GetEmpty();
+    }
+    return LOCTEXT("NoteTerms", "Accept the terms to send.");
+}
+
+bool BH_ReportScreenModel::HasUnsentText(const FBH_ScreenState& S)
+{
+    // A suggestion sends no steps, so they are not what closing loses.
+    return !IsBlank(S.Description) || (S.Type == EBH_ReportType::Bug && !IsBlank(S.Steps));
 }
 
 FBH_TagText BH_ReportScreenModel::StepsTag(const FBH_ScreenState& S)

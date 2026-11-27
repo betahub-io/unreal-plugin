@@ -496,6 +496,8 @@ void UBH_ReportScreenWidget::SyncState()
     bool bEmail = false;
     S.TypingField = TypingFieldNow(bTyping, bEmail);
     S.bTyping = bTyping;
+    // Typing, even after a click into a field that the form never sees, takes back a press of Back.
+    S.bCloseArmed = S.bCloseArmed && !bTyping;
     S.bTypingEmail = bEmail;
     S.bPadGlyphs = GlyphSet != EBH_GlyphSet::Keyboard;
     S.AttachmentIncluded.SetNum(VisibleCount());
@@ -676,6 +678,7 @@ FReply UBH_ReportScreenWidget::NativeOnMouseButtonDown(const FGeometry& InGeomet
         return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
     }
     SyncState();
+    S.bCloseArmed = false;
     const FVector2D At = InMouseEvent.GetScreenSpacePosition();
     const bool bCompose = S.Screen == EBH_Screen::Compose && S.bConfigured;
     // A click selects; only the switch's values and the checkbox change anything.
@@ -725,12 +728,14 @@ FReply UBH_ReportScreenWidget::NativeOnMouseButtonDown(const FGeometry& InGeomet
 
 void UBH_ReportScreenWidget::OnDescriptionChanged(const FText& Text)
 {
+    S.bCloseArmed = false;
     LimitText(DescriptionInput, Text, DescriptionLimit);
     Render();
 }
 
 void UBH_ReportScreenWidget::OnStepsChanged(const FText& Text)
 {
+    S.bCloseArmed = false;
     LimitText(StepsInput, Text, StepsLimit);
     Render();
 }
@@ -759,6 +764,10 @@ void UBH_ReportScreenWidget::LimitText(UWidget* Input, const FText& Text, int32 
 
 void UBH_ReportScreenWidget::Act(EBH_Action Action)
 {
+    if (Action != EBH_Action::Back)
+    {
+        S.bCloseArmed = false;
+    }
     ActOnScreen(Action);
     // Text set from code changes no state of ours but still changes tags and prompts.
     if (!bClosing)
@@ -845,6 +854,11 @@ void UBH_ReportScreenWidget::ActCompose(EBH_Action Action)
             if (S.bTyping)
             {
                 StopTyping();
+            }
+            else if (!S.bCloseArmed && HasUnsentText(S))
+            {
+                // Closing loses what the player wrote: the next press does it, the prompt says so.
+                S.bCloseArmed = true;
             }
             else
             {
@@ -958,6 +972,7 @@ void UBH_ReportScreenWidget::ActSent(EBH_Action Action)
 void UBH_ReportScreenWidget::Move(EBH_Direction Direction)
 {
     SyncState();
+    S.bCloseArmed = false;
     if (S.Screen == EBH_Screen::Preview)
     {
         if (Direction == EBH_Direction::Up || Direction == EBH_Direction::Down)
@@ -1107,6 +1122,7 @@ void UBH_ReportScreenWidget::SwitchType()
 void UBH_ReportScreenWidget::OnRowClicked(int32 Index)
 {
     SyncState();
+    S.bCloseArmed = false;
     if (S.Screen != EBH_Screen::Compose || !S.bConfigured)
     {
         return;
@@ -1120,6 +1136,7 @@ void UBH_ReportScreenWidget::OnRowClicked(int32 Index)
 void UBH_ReportScreenWidget::OnRowCheckClicked(int32 Index)
 {
     SyncState();
+    S.bCloseArmed = false;
     if (S.Screen != EBH_Screen::Compose || !S.bConfigured)
     {
         return;
@@ -1716,6 +1733,12 @@ void UBH_ReportScreenWidget::RenderForm()
     SetClass(TermsName, TEXT("row-name--off"), !S.bTermsAccepted);
     SetClass(TermsCheckBox, TEXT("check--on"), S.bTermsAccepted);
     SetClass(TermsCheckMark, TEXT("check-mark--on"), S.bTermsAccepted);
+    if (TermsNote)
+    {
+        const FText Note = BH_ReportScreenModel::TermsNote(S);
+        TermsNote->SetText(Note);
+        Show(TermsNote, !Note.IsEmpty());
+    }
 }
 
 void UBH_ReportScreenWidget::RebuildRows()

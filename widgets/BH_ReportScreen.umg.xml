@@ -109,6 +109,8 @@
               </HorizontalBox>
             </Border>
           </SizeBox>
+          <!-- shown once the player tries to send without accepting the terms -->
+          <TextBlock name="TermsNote" class="field-note" Visibility="Collapsed">Accept the terms to send.</TextBlock>
         </VerticalBox>
 
         <VerticalBox name="Sent" Visibility="Collapsed">

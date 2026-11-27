@@ -181,6 +181,8 @@ struct FBH_ScreenState
     FString SubmissionError;
     /** The player asked to send what cannot be sent yet: the form says why. */
     bool bSendRefused = false;
+    /** Back was pressed once over unsent text: the next press discards it and closes the form. */
+    bool bCloseArmed = false;
 
     bool bTyping = false;
     EBH_Field TypingField = EBH_Field::Description;
@@ -237,6 +239,10 @@ namespace BH_ReportScreenModel
     FBH_TagText DescriptionTag(const FBH_ScreenState& S);
     /** Under the description, once the player tried to send it short of the minimum: how much is missing. */
     FText DescriptionNote(const FBH_ScreenState& S);
+    /** Under the terms, once the player tried to send without accepting them. */
+    FText TermsNote(const FBH_ScreenState& S);
+    /** Text the player wrote that closing the form would lose. */
+    bool HasUnsentText(const FBH_ScreenState& S);
     FBH_TagText StepsTag(const FBH_ScreenState& S);
     FBH_TagText EmailTag(const FBH_ScreenState& S);
 

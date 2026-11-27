@@ -141,6 +141,8 @@ protected:
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UBorder> TermsCheckBox;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TermsCheckMark;
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> TermsName;
+    /** Optional, as DescriptionNote is. */
+    UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> TermsNote;
 
     // Sent
     UPROPERTY(meta = (BindWidget)) TObjectPtr<UWidget> Sent;

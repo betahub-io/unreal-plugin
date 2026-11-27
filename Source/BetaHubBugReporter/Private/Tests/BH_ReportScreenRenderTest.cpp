@@ -168,6 +168,20 @@ bool FBHScreenRendersTest::RunTest(const FString& Parameters)
         Render(Screen, 1920, 1080, TEXT("compose-suggestion-short-send"));
         Screen.Close();
     }
+    {
+        // Terms not accepted when the player tries to send; then Esc over the written text.
+        BH_ScreenTest::FOpenOptions O = Options(/*bTerms*/ true);
+        FScreen Screen;
+        if (!Screen.Open(*this, O))
+        {
+            return false;
+        }
+        Screen.Press(EKeys::Enter, true);
+        Render(Screen, 1920, 1080, TEXT("compose-terms-send"));
+        Screen.Press(EKeys::Escape);
+        Render(Screen, 1920, 1080, TEXT("compose-discard-asks"));
+        Screen.Close();
+    }
     for (const TCHAR* Field : {TEXT("DescriptionInput"), TEXT("StepsInput")})
     {
         // One word wider than the field, typed as a player types it: it breaks inside the field.

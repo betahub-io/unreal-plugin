@@ -1526,6 +1526,46 @@
                           "class": "VerticalBoxSlot",
                           "properties": {}
                         }
+                      },
+                      {
+                        "name": "TermsNote",
+                        "class": "TextBlock",
+                        "properties": {
+                          "Font": {
+                            "FontObject": {
+                              "__ref__": "/BetaHubBugReporter/Fonts/Barlow.Barlow",
+                              "__class__": "/Script/Engine.Font"
+                            },
+                            "TypefaceFontName": "Regular",
+                            "Size": 19.5
+                          },
+                          "ColorAndOpacity": {
+                            "SpecifiedColor": {
+                              "R": 0.814847,
+                              "G": 0.48515,
+                              "B": 0.066626,
+                              "A": 1.0
+                            },
+                            "ColorUseRule": "UseColor_Specified"
+                          },
+                          "ShadowOffset": {
+                            "X": 0.0,
+                            "Y": 0.0
+                          },
+                          "AutoWrapText": true,
+                          "Visibility": "Collapsed",
+                          "Text": {
+                            "__text__": "Accept the terms to send."
+                          }
+                        },
+                        "slot": {
+                          "class": "VerticalBoxSlot",
+                          "properties": {
+                            "Padding": {
+                              "Top": 10.0
+                            }
+                          }
+                        }
                       }
                     ],
                     "slot": {
@@ -3413,8 +3453,8 @@
     ]
   },
   "_stats": {
-    "widgetsReachable": 134,
-    "widgetsInTree": 134,
-    "slots": 133
+    "widgetsReachable": 135,
+    "widgetsInTree": 135,
+    "slots": 134
   }
 }

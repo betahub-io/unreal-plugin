@@ -288,6 +288,51 @@ bool FBHShortOfMinimumTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHSaysWhyTest, "BetaHub.ReportScreen.Model.SaysWhyItCannotSend", BH_MODEL_TEST_FLAGS)
+bool FBHSaysWhyTest::RunTest(const FString& Parameters)
+{
+    FBH_ScreenState S = Compose();
+    S.bTermsRequired = true;
+    TestTrue(TEXT("no terms note before trying to send"), TermsNote(S).IsEmpty());
+    S.bSendRefused = true;
+    TestEqual(TEXT("terms not accepted"), TermsNote(S).ToString(), FString(TEXT("Accept the terms to send.")));
+    S.bTermsAccepted = true;
+    TestTrue(TEXT("accepted: no note"), TermsNote(S).IsEmpty());
+    S.bTermsRequired = false;
+    S.bTermsAccepted = false;
+    TestTrue(TEXT("no terms to accept: no note"), TermsNote(S).IsEmpty());
+
+    // BetaHub counts characters as Ruby does, an emoji once; UTF-16 counts it twice.
+    S = Compose();
+    S.Description = FString::ChrN(46, TEXT('a')) + TEXT("\U0001F600\U0001F600");
+    TestEqual(TEXT("an emoji is one character"), DescriptionTag(S).Text.ToString(), FString(TEXT("48 / 50 min")));
+    TestFalse(TEXT("so this is short of the minimum"), CanSend(S));
+    S.bSendRefused = true;
+    TestEqual(TEXT("and the note counts the same"), DescriptionNote(S).ToString(), FString(TEXT("Write at least 50 characters (2 more).")));
+    S.Description += TEXT("ab");
+    TestTrue(TEXT("enough"), CanSend(S));
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHCloseArmedTest, "BetaHub.ReportScreen.Model.CloseAsksOverText", BH_MODEL_TEST_FLAGS)
+bool FBHCloseArmedTest::RunTest(const FString& Parameters)
+{
+    FBH_ScreenState S = Compose();
+    TestTrue(TEXT("a description is unsent text"), HasUnsentText(S));
+    S.Description = TEXT("   ");
+    TestFalse(TEXT("spaces are not"), HasUnsentText(S));
+    S.Steps = TEXT("1. Open the map");
+    TestTrue(TEXT("a bug's steps are"), HasUnsentText(S));
+    S.Type = EBH_ReportType::Suggestion;
+    TestFalse(TEXT("a suggestion sends no steps"), HasUnsentText(S));
+
+    S = Compose();
+    TestEqual(TEXT("Back closes"), Labels(Prompts(S).Left)[0], FString(TEXT("Close")));
+    S.bCloseArmed = true;
+    TestEqual(TEXT("armed, Back discards"), Labels(Prompts(S).Left)[0], FString(TEXT("Press again to discard")));
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHTagsAndValuesTest, "BetaHub.ReportScreen.TagsAndValues", BH_MODEL_TEST_FLAGS)
 bool FBHTagsAndValuesTest::RunTest(const FString& Parameters)
 {

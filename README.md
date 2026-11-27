@@ -81,7 +81,8 @@ attachment, preview the screenshot, the last seconds of play and the game log fu
 sending add an email to hear when the bug is fixed or copy a link to the report. The report and its
 attachments are two tabs, switched with 1 and 2 on a keyboard or the shoulder buttons on a controller;
 the arrow keys or the d-pad move between items, Tab and Shift+Tab go through them in order, and the
-first prompt in the bar always goes back.
+first prompt in the bar always goes back. Closing the form with a description, or a bug's steps, written
+takes a second press, so a stray Esc does not lose a report.
 
 ![The report form in the Light theme, with terms to accept](docs/images/report-form-light.webp)
 
@@ -91,7 +92,7 @@ Settings under *Project Settings → Plugins → BetaHub Bug Reporter → Report
 | --- | --- |
 | **Theme** | One of six built-in colour themes (Dark by default). |
 | **Theme Asset** | Your studio's colours instead: create a *BH_ThemeAsset* data asset with an accent colour, a neutral tint, a light or dark mode and a corner radius, and the form derives a full, contrast-checked theme from them. |
-| **Require Terms Acceptance** / **Terms Url** | Players must accept your terms of bug reporting before they can send; *Read terms* opens the URL. |
+| **Require Terms Acceptance** / **Terms Url** | Players must accept your terms of bug reporting before they can send, and are told so if they try; *Read terms* opens the URL. |
 | **Bug Min Length** / **Suggestion Min Length** | The shortest bug description and suggestion the form sends while it does not know your project's own minimums. The form reads those from BetaHub each time it opens and counts towards them next to the description's label; a player who tries to send a shorter one is told under the field how many characters are missing. A private project does not share them with a project token, so there these two apply: keep them at the project's minimum description lengths (BetaHub's defaults are 50 and 80), or BetaHub refuses shorter reports. A project that does not check descriptions takes a bug of any length: BetaHub tells the form 1; in a private one, set *Bug Min Length* to 1. When BetaHub does not give the minimums, a warning in the log says so once per session. |
 
 The same in `DefaultGame.ini`; the built-in themes are `Dark`, `Light`, `Neutral`, `Ocean`, `Forest` and `Violet`:

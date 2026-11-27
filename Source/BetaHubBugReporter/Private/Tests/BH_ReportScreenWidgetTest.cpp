@@ -4,6 +4,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "BH_ReportScreenTestUtil.h"
+#include "Components/Border.h"
 #include "BH_NetworkModule.h"
 
 /**
@@ -175,6 +176,86 @@ bool FBHScreenShortOfMinimumTest::RunTest(const FString& Parameters)
     Mouse.ClickPrompt(true, 0);
     TestEqual(TEXT("a click on the disabled send"), Mouse.Text(TEXT("DescriptionNote")), FString(TEXT("Write at least 50 characters (41 more).")));
     TestEqual(TEXT("and it is not sent"), Mouse.Text(TEXT("Title")), FString(TEXT("REPORT A BUG")));
+    Mouse.Close();
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenTermsSayWhyTest, "BetaHub.ReportScreen.Widget.TermsSayWhy", BH_SCREEN_TEST_FLAGS)
+bool FBHScreenTermsSayWhyTest::RunTest(const FString& Parameters)
+{
+    FScreen Screen;
+    BH_ScreenTest::FOpenOptions Options;
+    Options.bTermsRequired = true;
+    if (!Screen.Open(*this, Options))
+    {
+        return false;
+    }
+    Screen.TypeInto(TEXT("DescriptionInput"), TEXT("The sword vanishes when I drop it on the bridge in the second level."));
+    TestFalse(TEXT("no note before trying to send"), Screen.Shown(TEXT("TermsNote")));
+    Screen.Press(EKeys::Enter, true);
+    TestTrue(TEXT("trying to send says why"), Screen.Shown(TEXT("TermsNote")));
+    TestEqual(TEXT("the terms"), Screen.Text(TEXT("TermsNote")), FString(TEXT("Accept the terms to send.")));
+    TestFalse(TEXT("the description is long enough"), Screen.Shown(TEXT("DescriptionNote")));
+    Screen.Press(EKeys::Down);
+    Screen.Press(EKeys::Down);
+    TestEqual(TEXT("on the terms"), Screen.Prompts(false)[2], FString(TEXT("Accept")));
+    Screen.Press(EKeys::Enter);
+    TestFalse(TEXT("accepted: the note goes"), Screen.Shown(TEXT("TermsNote")));
+    Screen.Close();
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBHScreenBackAsksTest, "BetaHub.ReportScreen.Widget.BackAsksBeforeDiscarding", BH_SCREEN_TEST_FLAGS)
+bool FBHScreenBackAsksTest::RunTest(const FString& Parameters)
+{
+    // In a holder, so closing shows as the form leaving it: a form outside a viewport gets no destruct.
+    auto OpenHeld = [this](FScreen& Screen)
+    {
+        if (!Screen.Open(*this))
+        {
+            return false;
+        }
+        UBorder* Holder = NewObject<UBorder>(GetTransientPackage());
+        Holder->SetContent(Screen.Widget);
+        return true;
+    };
+
+    FScreen Empty;
+    if (!OpenHeld(Empty))
+    {
+        return false;
+    }
+    Empty.Press(EKeys::Escape);
+    TestNull(TEXT("nothing written: Esc closes"), Empty.Widget->GetParent());
+    Empty.Close();
+
+    FScreen Screen;
+    if (!OpenHeld(Screen))
+    {
+        return false;
+    }
+    Screen.TypeInto(TEXT("DescriptionInput"), TEXT("Half a report, written and not sent yet."));
+    Screen.Press(EKeys::Escape);
+    TestNotNull(TEXT("the first Esc keeps the form"), Screen.Widget->GetParent());
+    TestEqual(TEXT("and says what the next one does"), Screen.Prompts(false)[0], FString(TEXT("Press again to discard")));
+    Screen.Press(EKeys::Down);
+    TestEqual(TEXT("anything else takes it back"), Screen.Prompts(false)[0], FString(TEXT("Close")));
+    Screen.Press(EKeys::Gamepad_FaceButton_Right);
+    TestEqual(TEXT("B asks as Esc does"), Screen.Prompts(false)[0], FString(TEXT("Press again to discard")));
+    Screen.Press(EKeys::Gamepad_FaceButton_Right);
+    TestNull(TEXT("the second press closes"), Screen.Widget->GetParent());
+    Screen.Close();
+
+    FScreen Mouse;
+    if (!OpenHeld(Mouse))
+    {
+        return false;
+    }
+    Mouse.TypeInto(TEXT("DescriptionInput"), TEXT("Half a report."));
+    Mouse.ClickPrompt(false, 0);
+    TestNotNull(TEXT("a click on Close asks too"), Mouse.Widget->GetParent());
+    Mouse.ClickPrompt(false, 0);
+    TestNull(TEXT("and the second click closes"), Mouse.Widget->GetParent());
     Mouse.Close();
     return true;
 }

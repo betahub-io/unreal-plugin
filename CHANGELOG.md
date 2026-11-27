@@ -6,14 +6,17 @@
 
 - **A description shorter than BetaHub takes says so.** Its count next to the label turns to the warning colour once the field holds text, and trying to send it (the keys, the controller, or a click on the greyed-out *Send*) shows under the field how many characters are missing. Before, *Send* was only greyed out.
 - **On the report type switch, Enter or Space (A on a controller) keeps the chosen type** and goes on to the description, typing there on a keyboard. Left and right, or a click, choose the type. Before, Enter switched it back.
+- **Trying to send without accepting required terms says so** under them. Before, *Send* was only greyed out.
+- **Closing the form over written text asks first.** With text in the description, or in a bug's steps, Esc outside a text field (B on a controller, or a click on *Close*) changes the prompt to *Press again to discard*, and the next press closes the form. Moving, typing or another action in between cancels it. Before, one press closed the form and the text was lost.
 
 ### Fixed
 
 - A word wider than the description or steps field breaks inside the field, instead of scrolling the field sideways with its text cut off at both edges.
+- The minimum description length counts characters as BetaHub does. An emoji such as 😀 counted as two, so the form could send a description BetaHub then refused.
 
 ### Upgrading
 
-- A copy of the *BH_ReportScreen* widget made from an earlier version keeps working without the note and the wrapping: copy it again, or add a text named *DescriptionNote* under the description and set *Wrapping Policy* (under *Wrapping*, advanced) to *Allow Per Character Wrapping* on the description and steps fields.
+- A copy of the *BH_ReportScreen* widget made from an earlier version keeps working without the notes and the wrapping: copy it again, or add texts named *DescriptionNote* under the description and *TermsNote* under the terms, and set *Wrapping Policy* (under *Wrapping*, advanced) to *Allow Per Character Wrapping* on the description and steps fields.
 
 ## 2.3.0 - 2026-11-20
 
